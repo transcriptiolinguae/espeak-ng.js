@@ -5,9 +5,9 @@
   <title>Italian to IPA</title>
 </head>
 <body>
-  <h2>Italian → IPA (via eSpeak NG WASM)</h2>
+  <h2>Italian → IPA (eSpeak NG WASM)</h2>
   <textarea id="text" rows="4" cols="50">ciao come stai</textarea><br>
-  <button id="convert">Convert to IPA</button>
+  <button id="convert">Convert</button>
   <pre id="output">[IPA transcription will appear here]</pre>
 
   <script type="module">
@@ -22,23 +22,37 @@
 
     document.getElementById("convert").addEventListener("click", () => {
       if (!espeak) {
-        alert("eSpeak NG not loaded yet.");
+        alert("eSpeak NG is still loading...");
         return;
       }
 
-      const text = document.getElementById("text").value;
+      const inputText = document.getElementById("text").value;
 
-      const args = [
-        "--ipa=3",
-        "--sep= ",
+      // Clean FS first
+      try {
+        espeak.FS_unlink("/output.txt");
+      } catch (e) {}
+
+      // Write input text to a file in the WASM virtual FS
+      espeak.FS.writeFile("/input.txt", inputText);
+
+      // Run eSpeak with arguments
+      espeak.callMain([
         "-v", "it",
-        text
-      ];
+        "--ipa=3",
+        "-f", "/input.txt",
+        "--phonout", "/output.txt"
+      ]);
 
-      const result = espeak.callMain(args);
-      document.getElementById("output").textContent = result;
+      // Read the resulting IPA output
+      try {
+        const ipa = espeak.FS.readFile("/output.txt", { encoding: "utf8" });
+        document.getElementById("output").innerText = ipa;
+      } catch (e) {
+        document.getElementById("output").innerText = "[Failed to read IPA output]";
+        console.error(e);
+      }
     });
   </script>
 </body>
 </html>
-
