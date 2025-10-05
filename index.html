@@ -2,54 +2,43 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Italian to IPA (Clear Word Boundaries)</title>
+  <title>Italian to IPA</title>
 </head>
 <body>
-  <h2>Italian → IPA</h2>
+  <h2>Italian → IPA (via eSpeak NG WASM)</h2>
   <textarea id="text" rows="4" cols="50">ciao come stai</textarea><br>
-  <button id="convert">Convert</button>
-  <pre id="output">[IPA output will appear here]</pre>
+  <button id="convert">Convert to IPA</button>
+  <pre id="output">[IPA transcription will appear here]</pre>
 
   <script type="module">
-    import initESpeak from './espeak-ng.js';
+    import ESpeakNG from './espeak-ng.js';
 
-    let espeakModule = null;
+    let espeak;
 
-    // Load the WASM engine once
-    initESpeak().then(instance => {
-      espeakModule = instance;
-      console.log("eSpeak NG loaded");
+    ESpeakNG().then(instance => {
+      espeak = instance;
+      console.log("eSpeak NG WASM loaded");
     });
 
-    document.getElementById("convert").addEventListener("click", async () => {
-      if (!espeakModule) {
-        alert("Engine still loading...");
+    document.getElementById("convert").addEventListener("click", () => {
+      if (!espeak) {
+        alert("eSpeak NG not loaded yet.");
         return;
       }
 
-      const text = document.getElementById("text").value.trim();
-      const words = text.split(/\s+/); // split by whitespace
-      const ipaWords = [];
+      const text = document.getElementById("text").value;
 
-      for (const word of words) {
-        let output = "";
+      const args = [
+        "--ipa=3",
+        "--sep= ",
+        "-v", "it",
+        text
+      ];
 
-        await initESpeak({
-          arguments: [
-            "-v", "it",
-            "--ipa=3",
-            "--sep="
-          ],
-          print: (line) => { output += line; },
-          printErr: (err) => console.error("stderr:", err)
-        });
-
-        ipaWords.push(output.replace(/\s+/g, ''));
-      }
-
-      const finalOutput = ipaWords.join(' ');
-      document.getElementById("output").innerText = finalOutput;
+      const result = espeak.callMain(args);
+      document.getElementById("output").textContent = result;
     });
   </script>
 </body>
 </html>
+
