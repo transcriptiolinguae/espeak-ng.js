@@ -28,15 +28,13 @@
 
       const inputText = document.getElementById("text").value;
 
-      // Clean FS first
-      try {
-        espeak.FS_unlink("/output.txt");
-      } catch (e) {}
+      // Remove old output file
+      try { espeak.FS_unlink("/output.txt"); } catch (e) {}
 
-      // Write input text to a file in the WASM virtual FS
+      // Write input text to a virtual file
       espeak.FS.writeFile("/input.txt", inputText);
 
-      // Run eSpeak with arguments
+      // Run with IPA and output to virtual file
       espeak.callMain([
         "-v", "it",
         "--ipa=3",
@@ -44,12 +42,11 @@
         "--phonout", "/output.txt"
       ]);
 
-      // Read the resulting IPA output
       try {
         const ipa = espeak.FS.readFile("/output.txt", { encoding: "utf8" });
         document.getElementById("output").innerText = ipa;
       } catch (e) {
-        document.getElementById("output").innerText = "[Failed to read IPA output]";
+        document.getElementById("output").innerText = "[Failed to get IPA]";
         console.error(e);
       }
     });
