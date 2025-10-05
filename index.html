@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Italian to IPA</title>
+</head>
+<body>
+  <h2>Italian → IPA (eSpeak NG in WASM)</h2>
+  <textarea id="input" rows="4" cols="50">ciao come stai</textarea><br>
+  <button id="btn">Convert to IPA</button>
+  <pre id="output">[IPA will appear here]</pre>
+
+  <script type="module">
+    import ESpeakNG from "./espeak-ng.js";
+
+    let espeakInstance;
+
+    ESpeakNG().then((instance) => {
+      espeakInstance = instance;
+      console.log("eSpeak NG WASM loaded");
+    });
+
+    document.getElementById("btn").addEventListener("click", async () => {
+      if (!espeakInstance) {
+        alert("WASM not loaded yet");
+        return;
+      }
+
+      const text = document.getElementById("input").value;
+      const args = [
+        "--phonout", "ipa.txt",
+        "--ipa=3",
+        "-v", "it",
+        text
+      ];
+
+      // Clear FS and run command
+      espeakInstance.FS.writeFile("input.txt", text);
+      await ESpeakNG({
+        arguments: args,
+      });
+
+      try {
+        const ipa = espeakInstance.FS.readFile("ipa.txt", { encoding: "utf8" });
+        document.getElementById("output").innerText = ipa;
+      } catch (e) {
+        document.getElementById("output").innerText = "Failed to get IPA output.";
+        console.error(e);
+      }
+    });
+  </script>
+</body>
+</html>
