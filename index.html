@@ -5,49 +5,40 @@
   <title>Italian to IPA</title>
 </head>
 <body>
-  <h2>Italian → IPA (eSpeak NG in WASM)</h2>
-  <textarea id="input" rows="4" cols="50">ciao come stai</textarea><br>
-  <button id="btn">Convert to IPA</button>
-  <pre id="output">[IPA will appear here]</pre>
+  <h2>Italian → IPA (via eSpeak NG WASM)</h2>
+  <textarea id="text" rows="4" cols="50">ciao come stai</textarea><br>
+  <button id="convert">Convert to IPA</button>
+  <pre id="output">[IPA transcription will appear here]</pre>
 
   <script type="module">
-    import ESpeakNG from "./espeak-ng.js";
+    import ESpeakNG from './espeak-ng.js';
 
-    let espeakInstance;
+    let espeak;
 
-    ESpeakNG().then((instance) => {
-      espeakInstance = instance;
+    ESpeakNG().then(instance => {
+      espeak = instance;
       console.log("eSpeak NG WASM loaded");
     });
 
-    document.getElementById("btn").addEventListener("click", async () => {
-      if (!espeakInstance) {
-        alert("WASM not loaded yet");
+    document.getElementById("convert").addEventListener("click", () => {
+      if (!espeak) {
+        alert("eSpeak NG not loaded yet.");
         return;
       }
 
-      const text = document.getElementById("input").value;
+      const text = document.getElementById("text").value;
+
       const args = [
-        "--phonout", "ipa.txt",
         "--ipa=3",
+        "--sep= ",
         "-v", "it",
         text
       ];
 
-      // Clear FS and run command
-      espeakInstance.FS.writeFile("input.txt", text);
-      await ESpeakNG({
-        arguments: args,
-      });
-
-      try {
-        const ipa = espeakInstance.FS.readFile("ipa.txt", { encoding: "utf8" });
-        document.getElementById("output").innerText = ipa;
-      } catch (e) {
-        document.getElementById("output").innerText = "Failed to get IPA output.";
-        console.error(e);
-      }
+      const result = espeak.callMain(args);
+      document.getElementById("output").textContent = result;
     });
   </script>
 </body>
 </html>
+
