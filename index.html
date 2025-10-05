@@ -2,38 +2,53 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Italian to IPA (eSpeak NG WASM)</title>
+  <title>Italian to IPA (Clear Word Boundaries)</title>
 </head>
 <body>
-  <h1>Italian → IPA Transcription</h1>
-
-  <textarea id="input" rows="4" cols="50">ciao come stai</textarea><br>
+  <h2>Italian → IPA</h2>
+  <textarea id="text" rows="4" cols="50">ciao come stai</textarea><br>
   <button id="convert">Convert</button>
-  <pre id="output">[IPA transcription will appear here]</pre>
+  <pre id="output">[IPA output will appear here]</pre>
 
   <script type="module">
     import initESpeak from './espeak-ng.js';
 
+    let espeakModule = null;
+
+    // Load the WASM engine once
+    initESpeak().then(instance => {
+      espeakModule = instance;
+      console.log("eSpeak NG loaded");
+    });
+
     document.getElementById("convert").addEventListener("click", async () => {
-      const text = document.getElementById("input").value;
+      if (!espeakModule) {
+        alert("Engine still loading...");
+        return;
+      }
 
-      const espeak = await initESpeak({
-        arguments: [
-          "-v", "it",
-          "--ipa=3",
-          "--sep= ",
-          text
-        ],
-        print: (output) => {
-          // eSpeak prints IPA transcription here
-          document.getElementById("output").innerText += output + "\n";
-        },
-        printErr: (err) => {
-          console.error("stderr:", err);
-        }
-      });
+      const text = document.getElementById("text").value.trim();
+      const words = text.split(/\s+/); // split by whitespace
+      const ipaWords = [];
 
-      // After init, the output should already be printed
+      for (const word of words) {
+        let output = "";
+
+        await initESpeak({
+          arguments: [
+            "-v", "it",
+            "--ipa=3",
+            "--sep="
+          ],
+          print: (line) => { output += line; },
+          printErr: (err) => console.error("stderr:", err)
+        });
+
+        ipaWords.push(output.replace(/\s+/g, ''));
+      }
+
+      const finalOutput = ipaWords.join(' ');
+      document.getElementById("output").innerText = finalOutput;
     });
   </script>
 </body>
