@@ -45,9 +45,6 @@
       ],
       print: (output) => {
         outputElem.innerText += output + '\n';
-
-          // Post-process to fix affricates
-  outputElem.innerText = outputElem.innerText.replace(/͡\s/g, '͡');
       },
       
       printErr: (err) => {
