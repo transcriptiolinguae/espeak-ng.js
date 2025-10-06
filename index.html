@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Italian to IPA (eSpeak NG WASM)</title>
+  <title>Italian to IPA (eSpeak NG WASM) - Fast</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; max-width: 700px; }
     textarea { font-size: 16px; }
@@ -14,8 +14,7 @@
   <h1>Italian → IPA Transcription</h1>
 
   <textarea id="input" rows="6" cols="60">Ciao, come stai. Va tutto bene?</textarea><br />
-  <button id="convert">Convert</button>
-  <button id="convertInline">Convert with Inline IPA</button>
+  <button id="convert">Convert Full IPA</button>
   <pre id="output">[IPA transcription will appear here]</pre>
 
   <script type="module">
@@ -65,7 +64,8 @@
         return;
       }
 
-      const markedInput = rawInput.replace(/\s+/g, '|');
+      // Replace spaces with a marker that eSpeak won't remove
+      const markedInput = rawInput.replace(/\s+/g, ' | ');
 
       let ipaOutput = '';
       try {
@@ -77,85 +77,10 @@
           printErr: printErrFiltered
         });
 
+        // Replace markers with spaces in output
         ipaOutput = ipaOutput.replace(/\|/g, ' ').trim();
+
         outputElem.innerText = ipaOutput || '[No output generated]';
-      } catch (e) {
-        outputElem.innerText = 'Error during transcription: ' + e.message;
-      }
-    });
-
-    // Batch inline IPA conversion (fast)
-    document.getElementById('convertInline').addEventListener('click', async () => {
-      outputElem.innerText = '';
-
-      if (!wasmLoaded) {
-        alert('Please wait, WASM is still loading...');
-        return;
-      }
-
-      const rawInput = inputElem.value.trim();
-      if (!rawInput) {
-        outputElem.innerText = '[Please enter some text]';
-        return;
-      }
-
-      // Tokenize words and punctuation
-      const tokens = rawInput.match(/\w+|[^\w\s]/g);
-      if (!tokens) {
-        outputElem.innerText = '[No valid input]';
-        return;
-      }
-
-      // Extract only words (skip punctuation)
-      const words = tokens.filter(t => /^\w+$/.test(t));
-      if (words.length === 0) {
-        outputElem.innerText = '[No words found]';
-        return;
-      }
-
-      // Create a single input string with | separating words
-      const markedInput = words.join('|');
-
-      let ipaOutput = '';
-      try {
-        await initESpeak({
-          arguments: ['-v', 'it', '--ipa=3', markedInput],
-          print: (text) => {
-            ipaOutput += text;
-          },
-          printErr: printErrFiltered
-        });
-
-        ipaOutput = ipaOutput.trim();
-
-        // Try to split IPA output by '|'
-        const ipaList = ipaOutput.split('|').map(p => p.trim());
-
-        if (ipaList.length !== words.length) {
-          console.warn('Mismatch between IPA segments and words count');
-          outputElem.innerText = 'Unable to split IPA per word properly.\n\n' + ipaOutput.replace(/\|/g, ' ');
-          return;
-        }
-
-        // Rebuild text with inline IPA
-        let result = [];
-        let ipaIndex = 0;
-
-        for (const token of tokens) {
-          if (/^\w+$/.test(token)) {
-            const ipa = ipaList[ipaIndex++] || '';
-            result.push(`${token} (${ipa})`);
-          } else {
-            if (result.length > 0) {
-              // Attach punctuation to previous token without space
-              result[result.length - 1] += token;
-            } else {
-              result.push(token);
-            }
-          }
-        }
-
-        outputElem.innerText = result.join(' ');
       } catch (e) {
         outputElem.innerText = 'Error during transcription: ' + e.message;
       }
