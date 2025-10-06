@@ -1,55 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Italian to IPA (eSpeak NG WASM)</title>
 </head>
 <body>
   <h1>Italian → IPA Transcription</h1>
 
-  <textarea id="input" rows="4" cols="50">ciao come stai</textarea><br />
+  <textarea id="input" rows="4" cols="50">ciao come stai</textarea><br>
   <button id="convert">Convert</button>
   <pre id="output">[IPA transcription will appear here]</pre>
 
   <script type="module">
     import initESpeak from './espeak-ng.js';
 
-    let espeakInstance;
-
-    // Initialize eSpeak NG once when the page loads
-    initESpeak({
-      locateFile: (file) => {
-        // Tell WASM loader where to find espeak-ng.wasm
-        return `./${file}`;
-      },
-      print: (output) => {
-        // This prints the IPA output
-        document.getElementById("output").innerText += output + "\n";
-      },
-      printErr: (err) => {
-        console.error("stderr:", err);
-      }
-    }).then(instance => {
-      espeakInstance = instance;
-      console.log("eSpeak NG WASM loaded!");
-    });
-
-    document.getElementById("convert").addEventListener("click", () => {
-      if (!espeakInstance) {
-        alert("eSpeak NG not loaded yet, please wait.");
-        return;
-      }
-
+    document.getElementById("convert").addEventListener("click", async () => {
       const text = document.getElementById("input").value;
-      document.getElementById("output").innerText = ""; // clear previous output
 
-      // Run the transcription command
-      espeakInstance.callMain([
-        "-v", "it",
-        "--ipa=3",
-        "--sep= ",
-        text
-      ]);
+      const espeak = await initESpeak({
+        arguments: [
+          "-v", "it",
+          "--ipa=3",
+          "--sep= ",
+          text
+        ],
+        print: (output) => {
+          // eSpeak prints IPA transcription here
+          document.getElementById("output").innerText += output + "\n";
+        },
+        printErr: (err) => {
+          console.error("stderr:", err);
+        }
+      });
+
+      // After init, the output should already be printed
     });
   </script>
 </body>
