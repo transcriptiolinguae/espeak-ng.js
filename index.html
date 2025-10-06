@@ -12,29 +12,44 @@
   <pre id="output">[IPA transcription will appear here]</pre>
 
   <script type="module">
-    import initESpeak from './espeak-ng.js';
+  import initESpeak from './espeak-ng.js';
 
-    document.getElementById("convert").addEventListener("click", async () => {
-      const text = document.getElementById("input").value;
+  let espeak;  // Will hold the initialized WASM module
 
-      const espeak = await initESpeak({
-        arguments: [
-          "-v", "it",
-          "--ipa=3",
-          "--sep= ",
-          text
-        ],
-        print: (output) => {
-          // eSpeak prints IPA transcription here
-          document.getElementById("output").innerText += output + "\n";
-        },
-        printErr: (err) => {
-          console.error("stderr:", err);
-        }
-      });
-
-      // After init, the output should already be printed
+  // Initialize once on page load
+  window.addEventListener('load', async () => {
+    espeak = await initESpeak({
+      print: (output) => {
+        // We'll handle output separately on each run, so do nothing here or just log if you want
+        console.log(output);
+      },
+      printErr: (err) => {
+        console.error("stderr:", err);
+      }
     });
-  </script>
+    console.log('eSpeak WASM initialized');
+  });
+
+  document.getElementById("convert").addEventListener("click", () => {
+    if (!espeak) {
+      alert('eSpeak is still loading. Please wait.');
+      return;
+    }
+
+    const text = document.getElementById("input").value;
+    const outputElem = document.getElementById("output");
+    outputElem.innerText = '';  // Clear previous output
+
+    // Run the conversion
+    espeak.run([
+      "-v", "it",
+      "--ipa=3",
+      "--sep= ",
+      text
+    ]);
+
+    // You can customize the print callback to update outputElem when initESpeak is called.
+  });
+</script>
 </body>
 </html>
