@@ -15,21 +15,22 @@
   <script type="module">
     import initESpeak from './espeak-ng.js';
 
+    let espeak;      // Store the initialized module here
     let wasmReady = false;
 
     window.addEventListener('load', async () => {
-      await initESpeak({
+      espeak = await initESpeak({
         print: () => {},
         printErr: () => {}
       });
       wasmReady = true;
-      console.log('WASM loaded and cached');
+      console.log('eSpeak NG WASM loaded and ready');
     });
 
     const outputElem = document.getElementById('output');
     const inputElem = document.getElementById('input');
 
-    // Original full IPA transcription
+    // Convert → full IPA transcription (no word wrapping)
     document.getElementById('convert').addEventListener('click', async () => {
       if (!wasmReady) {
         alert('Please wait, WASM still loading...');
@@ -40,19 +41,21 @@
       const rawInput = inputElem.value.trim();
       const markedInput = rawInput.replace(/\s+/g, '|');
 
-      await initESpeak({
-        arguments: ['-v', 'it', '--ipa=3', markedInput],
-        print: (output) => {
-          const cleanedOutput = output.replace(/\|/g, ' ').trim();
-          outputElem.innerText += cleanedOutput + '\n';
-        },
-        printErr: (err) => {
-          console.error('stderr:', err);
-        }
+      let outputText = '';
+      espeak.setPrint((line) => {
+        outputText += line + '\n';
       });
+      espeak.setPrintErr(console.error);
+
+      await espeak.run({
+        arguments: ['-v', 'it', '--ipa=3', markedInput]
+      });
+
+      const cleaned = outputText.replace(/\|/g, ' ').trim();
+      outputElem.innerText = cleaned;
     });
 
-    // Optimized inline IPA output
+    // Convert with Inline IPA → word-by-word with parentheses
     document.getElementById('convertInline').addEventListener('click', async () => {
       if (!wasmReady) {
         alert('Please wait, WASM still loading...');
@@ -62,41 +65,34 @@
       outputElem.innerText = '';
 
       const rawInput = inputElem.value.trim();
-
-      // Split input into tokens: words + punctuation
       const tokens = rawInput.match(/\w+|[^\w\s]/g);
       if (!tokens) {
         outputElem.innerText = '[No valid input]';
         return;
       }
 
-      // Extract only words for transcription
       const wordsOnly = tokens.filter(t => /^\w+$/.test(t));
       const markedInput = wordsOnly.join('|');
 
-      let ipaList = [];
+      let ipaText = '';
+      espeak.setPrint((line) => {
+        ipaText += line;
+      });
+      espeak.setPrintErr(console.error);
 
-      // Run one fast eSpeak call for all words
-      await initESpeak({
-        arguments: ['-v', 'it', '--ipa=3', markedInput],
-        print: (output) => {
-          ipaList = output.trim().split('|').map(p => p.trim());
-        },
-        printErr: (err) => {
-          console.error('stderr:', err);
-        }
+      await espeak.run({
+        arguments: ['-v', 'it', '--ipa=3', markedInput]
       });
 
+      const ipaList = ipaText.trim().split('|').map(p => p.trim());
       let result = [];
       let ipaIndex = 0;
 
       for (const token of tokens) {
         if (/^\w+$/.test(token)) {
-          // Word → attach IPA
           const ipa = ipaList[ipaIndex++] || '';
           result.push(`${token} (${ipa})`);
         } else {
-          // Punctuation → attach to previous word
           if (result.length > 0) {
             result[result.length - 1] += token;
           } else {
