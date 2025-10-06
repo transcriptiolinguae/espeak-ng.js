@@ -3,29 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <title>Italian to IPA (eSpeak NG WASM)</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    textarea {
+      width: 100%;
+      max-width: 500px;
+    }
+    pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      margin-top: 1em;
+      font-family: 'Charis SIL', 'Noto Sans', 'Arial', sans-serif;
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 4px;
+    }
+  </style>
 </head>
 <body>
   <h1>Italian → IPA Transcription</h1>
 
   <textarea id="input" rows="4" cols="50">ciao come stai</textarea><br>
   <button id="convert">Convert</button>
-  <pre id="output" style="font-family: 'Charis SIL', 'Noto Sans', 'Arial', sans-serif;">[IPA transcription will appear here]</pre>
+  <pre id="output">[IPA transcription will appear here]</pre>
 
   <script type="module">
     import initESpeak from './espeak-ng.js';
 
     let wasmReady = false;
 
-    // Preload WASM once
+    // Preload eSpeak NG WASM on page load for faster use later
     window.addEventListener('load', async () => {
-      await initESpeak({
-        print: () => {},
-        printErr: () => {}
-      });
-      wasmReady = true;
-      console.log('WASM loaded and ready');
+      try {
+        await initESpeak({
+          print: () => {},
+          printErr: () => {}
+        });
+        wasmReady = true;
+        console.log('WASM loaded and ready');
+      } catch (err) {
+        console.error('Failed to preload eSpeak NG:', err);
+      }
     });
 
+    const inputElem = document.getElementById('input');
     const outputElem = document.getElementById('output');
 
     document.getElementById('convert').addEventListener('click', async () => {
@@ -34,31 +58,33 @@
         return;
       }
 
-      const inputText = document.getElementById('input').value.trim();
-      const words = inputText.split(/\s+/);
-      outputElem.innerText = ''; // Clear output
+      const inputText = inputElem.value.trim();
+      outputElem.innerText = '[Transcribing…]';
 
-      let ipaRaw = '';
+      let ipaOutput = '';
 
-      await initESpeak({
-        arguments: [
-          '-v', 'it',
-          '--ipa=2',
-          inputText
-        ],
-        print: (output) => {
-          ipaRaw += output;
-        },
-        printErr: (err) => {
-          console.error('stderr:', err);
-        }
-      });
+      try {
+        await initESpeak({
+          arguments: [
+            '-v', 'it',
+            '--ipa=2',     // IPA with proper affricates
+            '--sep=|',     // Word separator we will post-process
+            inputText
+          ],
+          print: (output) => {
+            // Replace separator with real space
+            ipaOutput += output.replace(/\|/g, ' ');
+          },
+          printErr: (err) => {
+            console.error('stderr:', err);
+          }
+        });
 
-      // Post-process: naive word alignment
-      // Since espeak outputs no word separators, we can't perfectly realign
-      // So we just show the raw IPA output (no internal spaces), and rely on user understanding
-
-      outputElem.innerText = ipaRaw.trim();
+        outputElem.innerText = ipaOutput.trim();
+      } catch (err) {
+        console.error('Error during transcription:', err);
+        outputElem.innerText = '[Error during transcription]';
+      }
     });
   </script>
 </body>
