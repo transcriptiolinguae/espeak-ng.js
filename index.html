@@ -7,57 +7,50 @@
 <body>
   <h1>Italian → IPA Transcription</h1>
 
-  <textarea id="input" rows="4" cols="50">ciao, come stai?</textarea><br>
+  <textarea id="input" rows="4" cols="50">ciao come stai</textarea><br>
   <button id="convert">Convert</button>
   <pre id="output">[IPA transcription will appear here]</pre>
 
   <script type="module">
-    import initESpeak from './espeak-ng.js';
+  import initESpeak from './espeak-ng.js';
 
-    let wasmReady = false;
+  let wasmReady = false;
 
-    // Preload the WASM on page load
-    window.addEventListener('load', async () => {
-      await initESpeak({
-        print: () => {},
-        printErr: () => {}
-      });
-      wasmReady = true;
-      console.log('WASM loaded and cached');
+  // Load the WASM once at page load to cache it (no args)
+  window.addEventListener('load', async () => {
+    await initESpeak({
+      print: () => {},
+      printErr: () => {}
     });
+    wasmReady = true;
+    console.log('WASM loaded and cached');
+  });
 
-    const outputElem = document.getElementById('output');
+  const outputElem = document.getElementById('output');
 
-    document.getElementById('convert').addEventListener('click', async () => {
-      if (!wasmReady) {
-        alert('Please wait, WASM still loading...');
-        return;
+  document.getElementById('convert').addEventListener('click', async () => {
+    if (!wasmReady) {
+      alert('Please wait, WASM still loading...');
+      return;
+    }
+
+    outputElem.innerText = '';  // Clear output
+
+    await initESpeak({
+      arguments: [
+        '-v', 'it',
+        '--ipa=3',
+        '--sep= ',
+        document.getElementById('input').value
+      ],
+      print: (output) => {
+        outputElem.innerText += output + '\n';
+      },
+      printErr: (err) => {
+        console.error('stderr:', err);
       }
-
-      outputElem.innerText = ''; // Clear previous output
-
-      await initESpeak({
-        arguments: [
-          '-v', 'it',
-          '--ipa=3',
-          '--sep= ',  // Use space as separator for fast output
-          document.getElementById('input').value
-        ],
-        print: (output) => {
-          // Clean up affricate and punctuation spacing on-the-fly
-          const cleanOutput = output
-            .replace(/([td]͡[ʃʒ])\s/g, '$1')     // Remove space after affricates like t͡ʃ, d͡ʒ
-            .replace(/\s([,.!?;:])/g, '$1')      // Remove space before punctuation
-            .replace(/\s+/g, ' ')                // Optional: normalize multiple spaces
-            .trim();                             // Remove leading/trailing spaces
-
-          outputElem.innerText += cleanOutput + '\n';
-        },
-        printErr: (err) => {
-          console.error('stderr:', err);
-        }
-      });
     });
-  </script>
+  });
+</script>
 </body>
 </html>
