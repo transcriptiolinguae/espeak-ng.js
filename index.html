@@ -26,12 +26,11 @@
 
     let wasmLoaded = false;
 
-    // Load WASM once on page load to cache and speed things up
     window.addEventListener('load', async () => {
       try {
         await initESpeak({
-          print: () => {},      // silent
-          printErr: () => {}    // silent for initial load
+          print: () => {},
+          printErr: () => {}
         });
         wasmLoaded = true;
         console.log('eSpeak NG WASM loaded and ready');
@@ -41,14 +40,12 @@
       }
     });
 
-    // Helper to filter noisy stderr messages from Emscripten
     function printErrFiltered(err) {
       if (
         err.includes('still waiting on run dependencies') ||
         err.includes('dependency: wasm-instantiate') ||
         err.includes('(end of list)')
       ) {
-        // Ignore these known benign messages
         return;
       }
       console.error('eSpeak stderr:', err);
@@ -87,6 +84,7 @@
       }
     });
 
+    // Corrected inline IPA button handler
     document.getElementById('convertInline').addEventListener('click', async () => {
       outputElem.innerText = '';
 
@@ -101,55 +99,46 @@
         return;
       }
 
-      // Tokenize input into words and punctuation
       const tokens = rawInput.match(/\w+|[^\w\s]/g);
       if (!tokens) {
         outputElem.innerText = '[No valid input]';
         return;
       }
 
-      // Extract words only for batch transcription
-      const wordsOnly = tokens.filter(t => /^\w+$/.test(t));
-      if (wordsOnly.length === 0) {
-        outputElem.innerText = '[No words found]';
-        return;
+      const ipaMap = new Map();
+      const uniqueWords = [...new Set(tokens.filter(t => /^\w+$/.test(t)))];
+
+      for (const word of uniqueWords) {
+        let ipaOutput = '';
+        try {
+          await initESpeak({
+            arguments: ['-v', 'it', '--ipa=3', word],
+            print: (text) => {
+              ipaOutput += text;
+            },
+            printErr: printErrFiltered
+          });
+          ipaMap.set(word, ipaOutput.trim());
+        } catch (e) {
+          ipaMap.set(word, '');
+        }
       }
 
-      const markedWords = wordsOnly.join('|');
-
-      let ipaOutput = '';
-      try {
-        await initESpeak({
-          arguments: ['-v', 'it', '--ipa=3', markedWords],
-          print: (text) => {
-            ipaOutput += text;
-          },
-          printErr: printErrFiltered
-        });
-
-        const ipaList = ipaOutput.trim().split('|').map(p => p.trim());
-
-        let result = [];
-        let ipaIndex = 0;
-
-        for (const token of tokens) {
-          if (/^\w+$/.test(token)) {
-            const ipa = ipaList[ipaIndex++] || '';
-            result.push(`${token} (${ipa})`);
+      let result = [];
+      for (const token of tokens) {
+        if (/^\w+$/.test(token)) {
+          const ipa = ipaMap.get(token) || '';
+          result.push(`${token} (${ipa})`);
+        } else {
+          if (result.length > 0) {
+            result[result.length - 1] += token;
           } else {
-            // Attach punctuation immediately after the last word
-            if (result.length > 0) {
-              result[result.length - 1] += token;
-            } else {
-              result.push(token);
-            }
+            result.push(token);
           }
         }
-
-        outputElem.innerText = result.join(' ');
-      } catch (e) {
-        outputElem.innerText = 'Error during inline transcription: ' + e.message;
       }
+
+      outputElem.innerText = result.join(' ');
     });
   </script>
 </body>
