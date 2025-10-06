@@ -88,7 +88,7 @@
       }
     });
 
-    // Convert with inline IPA
+    // Inline transcription
     document.getElementById('convertInline').addEventListener('click', async () => {
       outputElem.innerText = '';
 
@@ -112,7 +112,7 @@
 
       const ipaMap = new Map();
 
-      // Extract unique words (excluding numbers)
+      // Unique word tokens (not numbers)
       const uniqueWords = [...new Set(
         tokens.filter(t =>
           /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
@@ -129,7 +129,7 @@
       }
 
       const result = [];
-      let buffer = '';
+      let prevTokenType = null; // "word", "number", "punct"
 
       for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
@@ -138,32 +138,32 @@
         const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
         const isPunct = !isWord && !isNumber;
 
-        if (isWord) {
-          const ipa = ipaMap.get(token) || '';
-          buffer += `${token} (${ipa})`;
-        } else if (isNumber) {
-          buffer += token;
-        } else if (isPunct) {
-          // Punctuation: add it directly to buffer or space it properly
-          if (token === '(') {
-            buffer += token; // no space after
-          } else if (token === ')') {
-            buffer += token; // no space before
-          } else if (token === ',') {
-            buffer += token; // no space before comma
-          } else {
-            buffer += token;
-          }
+        // Decide if we need a space before the token
+        const prev = result[result.length - 1];
+        const needsSpace = (
+          prevTokenType === "word" || prevTokenType === "number"
+        ) && (
+          isWord || isNumber || (isPunct && token !== ')' && token !== ',' && token !== '.')
+        );
+
+        if (needsSpace) {
+          result.push(' ');
         }
 
-        // Add space unless next token is a closing punctuation
-        const nextToken = tokens[i + 1];
-        if (nextToken && !/^[)\],.!?;:]/.test(nextToken)) {
-          buffer += ' ';
+        if (isWord) {
+          const ipa = ipaMap.get(token) || '';
+          result.push(`${token} (${ipa})`);
+          prevTokenType = "word";
+        } else if (isNumber) {
+          result.push(token);
+          prevTokenType = "number";
+        } else {
+          result.push(token);
+          prevTokenType = "punct";
         }
       }
 
-      outputElem.innerText = buffer.trim();
+      outputElem.innerText = result.join('');
     });
   </script>
 </body>
