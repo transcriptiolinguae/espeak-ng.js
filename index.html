@@ -1,92 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Italian to IPA (eSpeak NG WASM)</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      padding: 20px;
-    }
-    textarea {
-      width: 100%;
-      max-width: 500px;
-    }
-    pre {
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      margin-top: 1em;
-      font-family: 'Charis SIL', 'Noto Sans', 'Arial', sans-serif;
-      background: #f4f4f4;
-      padding: 10px;
-      border-radius: 4px;
-    }
-  </style>
 </head>
 <body>
   <h1>Italian → IPA Transcription</h1>
 
-  <textarea id="input" rows="4" cols="50">ciao come stai</textarea><br />
+  <textarea id="input" rows="4" cols="50">ciao come stai</textarea><br>
   <button id="convert">Convert</button>
   <pre id="output">[IPA transcription will appear here]</pre>
 
   <script type="module">
-    import initESpeak from './espeak-ng.js';
+  import initESpeak from './espeak-ng.js';
 
-    let espeakInstance = null;
-    let wasmReady = false;
+  let wasmReady = false;
 
-    window.addEventListener('load', async () => {
-      try {
-        espeakInstance = await initESpeak({
-          print: () => {},
-          printErr: () => {},
-        });
-        wasmReady = true;
-        console.log('WASM loaded and ready');
-      } catch (err) {
-        console.error('Failed to load eSpeak NG WASM:', err);
+  // Load the WASM once at page load to cache it (no args)
+  window.addEventListener('load', async () => {
+    await initESpeak({
+      print: () => {},
+      printErr: () => {}
+    });
+    wasmReady = true;
+    console.log('WASM loaded and cached');
+  });
+
+  const outputElem = document.getElementById('output');
+
+  document.getElementById('convert').addEventListener('click', async () => {
+    if (!wasmReady) {
+      alert('Please wait, WASM still loading...');
+      return;
+    }
+
+    outputElem.innerText = '';  // Clear output
+
+    await initESpeak({
+      arguments: [
+        '-v', 'it',
+        '--ipa=3',
+        '--sep= ',
+        document.getElementById('input').value
+      ],
+      print: (output) => {
+        outputElem.innerText += output + '\n';
+      },
+      printErr: (err) => {
+        console.error('stderr:', err);
       }
     });
-
-    const inputElem = document.getElementById('input');
-    const outputElem = document.getElementById('output');
-
-    document.getElementById('convert').addEventListener('click', async () => {
-      if (!wasmReady || !espeakInstance) {
-        alert('Please wait, eSpeak NG is still loading...');
-        return;
-      }
-
-      const inputText = inputElem.value.trim();
-      if (!inputText) {
-        outputElem.innerText = '[Please enter some text]';
-        return;
-      }
-
-      const words = inputText.split(/\s+/);
-      const ipaWords = [];
-      outputElem.innerText = '[Transcribing…]';
-
-      for (const word of words) {
-        let wordIpa = '';
-        await espeakInstance.run({
-          arguments: ['-v', 'it', '--ipa=2', word],
-          print: (output) => {
-            wordIpa += output;
-          },
-          printErr: (err) => {
-            console.error('stderr:', err);
-          }
-        });
-
-        // Remove any whitespace inside IPA output for the word
-        wordIpa = wordIpa.replace(/\s+/g, '');
-        ipaWords.push(wordIpa);
-      }
-
-      outputElem.innerText = ipaWords.join(' ');
-    });
-  </script>
+  });
+</script>
 </body>
 </html>
