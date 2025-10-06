@@ -16,42 +16,38 @@
 
     let espeakInstance;
 
-    // Initialize eSpeak NG once at page load
-    async function init() {
-      espeakInstance = await initESpeak({
-        locateFile: (file) => {
-          // Explicitly tell where to find the wasm file
-          if (file.endsWith('.wasm')) {
-            return './espeak-ng.wasm';
-          }
-          return file;
-        },
-        print: (output) => {
-          document.getElementById('output').innerText += output + '\n';
-        },
-        printErr: (err) => {
-          console.error('stderr:', err);
-        }
-      });
-      console.log('eSpeak NG initialized');
-    }
+    // Initialize eSpeak NG once when the page loads
+    initESpeak({
+      locateFile: (file) => {
+        // Tell WASM loader where to find espeak-ng.wasm
+        return `./${file}`;
+      },
+      print: (output) => {
+        // This prints the IPA output
+        document.getElementById("output").innerText += output + "\n";
+      },
+      printErr: (err) => {
+        console.error("stderr:", err);
+      }
+    }).then(instance => {
+      espeakInstance = instance;
+      console.log("eSpeak NG WASM loaded!");
+    });
 
-    init();
-
-    document.getElementById('convert').addEventListener('click', () => {
+    document.getElementById("convert").addEventListener("click", () => {
       if (!espeakInstance) {
-        alert('eSpeak NG not initialized yet. Please wait a moment and try again.');
+        alert("eSpeak NG not loaded yet, please wait.");
         return;
       }
-      // Clear previous output
-      document.getElementById('output').innerText = '';
 
-      const text = document.getElementById('input').value;
-      // Run eSpeak NG with new text
+      const text = document.getElementById("input").value;
+      document.getElementById("output").innerText = ""; // clear previous output
+
+      // Run the transcription command
       espeakInstance.callMain([
-        '-v', 'it',
-        '--ipa=3',
-        '--sep= ',
+        "-v", "it",
+        "--ipa=3",
+        "--sep= ",
         text
       ]);
     });
