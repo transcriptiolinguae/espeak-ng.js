@@ -9,6 +9,7 @@
 
   <textarea id="input" rows="4" cols="50">ciao come stai</textarea><br>
   <button id="convert">Convert</button>
+  <button id="convertInline">Convert with Inline IPA</button>
   <pre id="output">[IPA transcription will appear here]</pre>
 
   <script type="module">
@@ -27,7 +28,9 @@
     });
 
     const outputElem = document.getElementById('output');
+    const inputElem = document.getElementById('input');
 
+    // Original "Convert" button
     document.getElementById('convert').addEventListener('click', async () => {
       if (!wasmReady) {
         alert('Please wait, WASM still loading...');
@@ -35,9 +38,7 @@
       }
 
       outputElem.innerText = '';  // Clear previous output
-
-      // Replace word spaces with a marker (e.g., "|")
-      const rawInput = document.getElementById('input').value.trim();
+      const rawInput = inputElem.value.trim();
       const markedInput = rawInput.replace(/\s+/g, '|');
 
       await initESpeak({
@@ -47,7 +48,6 @@
           markedInput
         ],
         print: (output) => {
-          // Replace marker with actual spaces in the final output
           const cleanedOutput = output.replace(/\|/g, ' ').trim();
           outputElem.innerText += cleanedOutput + '\n';
         },
@@ -55,6 +55,40 @@
           console.error('stderr:', err);
         }
       });
+    });
+
+    // New "Convert with Inline IPA" button
+    document.getElementById('convertInline').addEventListener('click', async () => {
+      if (!wasmReady) {
+        alert('Please wait, WASM still loading...');
+        return;
+      }
+
+      outputElem.innerText = '';  // Clear previous output
+
+      const rawInput = inputElem.value.trim();
+      const words = rawInput.split(/\s+/);
+
+      let inlineOutput = [];
+
+      for (const word of words) {
+        await initESpeak({
+          arguments: [
+            '-v', 'it',
+            '--ipa=3',
+            word
+          ],
+          print: (output) => {
+            const ipa = output.trim();
+            inlineOutput.push(`${word} (${ipa})`);
+          },
+          printErr: (err) => {
+            console.error('stderr:', err);
+          }
+        });
+      }
+
+      outputElem.innerText = inlineOutput.join(' ');
     });
   </script>
 </body>
