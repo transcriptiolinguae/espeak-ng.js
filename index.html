@@ -12,45 +12,48 @@
   <pre id="output">[IPA transcription will appear here]</pre>
 
   <script type="module">
-  import initESpeak from './espeak-ng.js';
+    import initESpeak from './espeak-ng.js';
 
-  let wasmReady = false;
+    let wasmReady = false;
 
-  // Load the WASM once at page load to cache it (no args)
-  window.addEventListener('load', async () => {
-    await initESpeak({
-      print: () => {},
-      printErr: () => {}
+    // Load and cache WASM at startup (no input yet)
+    window.addEventListener('load', async () => {
+      await initESpeak({
+        print: () => {},
+        printErr: (err) => console.error('WASM stderr during preload:', err)
+      });
+      wasmReady = true;
+      console.log('WASM loaded and ready');
     });
-    wasmReady = true;
-    console.log('WASM loaded and cached');
-  });
 
-  const outputElem = document.getElementById('output');
+    const outputElem = document.getElementById('output');
 
-  document.getElementById('convert').addEventListener('click', async () => {
-    if (!wasmReady) {
-      alert('Please wait, WASM still loading...');
-      return;
-    }
-
-    outputElem.innerText = '';  // Clear output
-
-    await initESpeak({
-      arguments: [
-        '-v', 'it',
-        '--ipa=3',
-        '--sep= ',
-        document.getElementById('input').value
-      ],
-      print: (output) => {
-        outputElem.innerText += output + '\n';
-      },
-      printErr: (err) => {
-        console.error('stderr:', err);
+    document.getElementById('convert').addEventListener('click', async () => {
+      if (!wasmReady) {
+        alert('Please wait, eSpeak NG is still loading...');
+        return;
       }
+
+      const inputText = document.getElementById('input').value.trim();
+      outputElem.innerText = ''; // Clear previous output
+
+      await initESpeak({
+        arguments: [
+          '-v', 'it',
+          '--ipa=3',
+          '--sep=|',
+          inputText
+        ],
+        print: (output) => {
+          // Replace separator with real spaces after processing
+          const cleaned = output.replace(/\|/g, ' ').trim();
+          outputElem.innerText += cleaned + '\n';
+        },
+        printErr: (err) => {
+          console.error('WASM stderr:', err);
+        }
+      });
     });
-  });
-</script>
+  </script>
 </body>
 </html>
