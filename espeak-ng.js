@@ -1458,7 +1458,7 @@ function dbg(text) {
         if (typeof window != 'undefined' &&
           typeof window.prompt == 'function') {
           // Browser.
-          result = window.prompt('Inputsssr: ');  // returns null on cancel
+          result = window.prompt('Input: ');  // returns null on cancel
           if (result !== null) {
             result += '\n';
           }
