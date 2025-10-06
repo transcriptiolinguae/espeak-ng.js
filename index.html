@@ -63,7 +63,88 @@
       return ipaOutput.trim();
     }
 
-    // Convert full text to IPA (no inline)
+    // Inline transcription
+    document.getElementById('convertInline').addEventListener('click', async () => {
+      outputElem.innerText = '';
+
+      if (!wasmReady) {
+        alert('Please wait, WASM is still loading...');
+        return;
+      }
+
+      const rawInput = inputElem.value.trim();
+      if (!rawInput) {
+        outputElem.innerText = '[Please enter some text]';
+        return;
+      }
+
+      // Tokenize: words (with accents), numbers, and punctuation
+      const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+      if (!tokens) {
+        outputElem.innerText = '[No valid input]';
+        return;
+      }
+
+      const ipaMap = new Map();
+
+      // Unique words only (exclude numbers and punctuation)
+      const uniqueWords = [...new Set(
+        tokens.filter(t =>
+          /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
+        )
+      )];
+
+      try {
+        for (const word of uniqueWords) {
+          const ipa = await runESpeak(word);
+          ipaMap.set(word, ipa);
+        }
+      } catch (e) {
+        console.error('Error during IPA conversion:', e);
+      }
+
+      const result = [];
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+
+        const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+        const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
+        const isPunct = !isWord && !isNumber;
+
+        // Add space before this token if needed
+        if (i > 0) {
+          const prev = tokens[i - 1];
+          const isPrevPunct = /^[^\w\s]$/.test(prev);
+
+          // No space after opening ( or before closing ), . , etc.
+          if (
+            !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
+            !(prev === '(')
+          ) {
+            result.push(' ');
+          }
+        }
+
+        if (isWord) {
+          const ipa = ipaMap.get(token) || '';
+          result.push(`${token} (${ipa})`);
+        } else if (isNumber) {
+          result.push(token);
+        } else {
+          result.push(token);
+        }
+
+        // Add space **after punctuation** like comma, unless next token is closing punctuation
+        const next = tokens[i + 1];
+        if (token.match(/^[,.;!?]$/) && next && !next.match(/^[)\],.;!?]$/)) {
+          result.push(' ');
+        }
+      }
+
+      outputElem.innerText = result.join('');
+    });
+
+    // Convert full input (no inline IPA)
     document.getElementById('convert').addEventListener('click', async () => {
       outputElem.innerText = '';
 
@@ -86,84 +167,6 @@
       } catch (e) {
         outputElem.innerText = 'Error during transcription: ' + e.message;
       }
-    });
-
-    // Inline transcription
-    document.getElementById('convertInline').addEventListener('click', async () => {
-      outputElem.innerText = '';
-
-      if (!wasmReady) {
-        alert('Please wait, WASM is still loading...');
-        return;
-      }
-
-      const rawInput = inputElem.value.trim();
-      if (!rawInput) {
-        outputElem.innerText = '[Please enter some text]';
-        return;
-      }
-
-      // Tokenize words (with accents), numbers, and punctuation
-      const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-      if (!tokens) {
-        outputElem.innerText = '[No valid input]';
-        return;
-      }
-
-      const ipaMap = new Map();
-
-      // Unique word tokens (not numbers)
-      const uniqueWords = [...new Set(
-        tokens.filter(t =>
-          /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
-        )
-      )];
-
-      try {
-        for (const word of uniqueWords) {
-          const ipa = await runESpeak(word);
-          ipaMap.set(word, ipa);
-        }
-      } catch (e) {
-        console.error('Error during IPA conversion:', e);
-      }
-
-      const result = [];
-      let prevTokenType = null; // "word", "number", "punct"
-
-      for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-
-        const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
-        const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
-        const isPunct = !isWord && !isNumber;
-
-        // Decide if we need a space before the token
-        const prev = result[result.length - 1];
-        const needsSpace = (
-          prevTokenType === "word" || prevTokenType === "number"
-        ) && (
-          isWord || isNumber || (isPunct && token !== ')' && token !== ',' && token !== '.')
-        );
-
-        if (needsSpace) {
-          result.push(' ');
-        }
-
-        if (isWord) {
-          const ipa = ipaMap.get(token) || '';
-          result.push(`${token} (${ipa})`);
-          prevTokenType = "word";
-        } else if (isNumber) {
-          result.push(token);
-          prevTokenType = "number";
-        } else {
-          result.push(token);
-          prevTokenType = "punct";
-        }
-      }
-
-      outputElem.innerText = result.join('');
     });
   </script>
 </body>
