@@ -7,7 +7,7 @@
 <body>
   <h1>Italian → IPA Transcription</h1>
 
-  <textarea id="input" rows="4" cols="50">ciao come stai</textarea><br>
+  <textarea id="input" rows="4" cols="50">Ciao, come stai.</textarea><br>
   <button id="convert">Convert</button>
   <button id="convertInline">Convert with Inline IPA</button>
   <pre id="output">[IPA transcription will appear here]</pre>
@@ -30,7 +30,7 @@
     const outputElem = document.getElementById('output');
     const inputElem = document.getElementById('input');
 
-    // Original "Convert" button
+    // "Convert" button: just raw IPA output
     document.getElementById('convert').addEventListener('click', async () => {
       if (!wasmReady) {
         alert('Please wait, WASM still loading...');
@@ -57,7 +57,7 @@
       });
     });
 
-    // New "Convert with Inline IPA" button
+    // "Convert with Inline IPA" button
     document.getElementById('convertInline').addEventListener('click', async () => {
       if (!wasmReady) {
         alert('Please wait, WASM still loading...');
@@ -67,25 +67,42 @@
       outputElem.innerText = '';  // Clear previous output
 
       const rawInput = inputElem.value.trim();
-      const words = rawInput.split(/\s+/);
+
+      // Match words and punctuation separately: "Ciao," → ["Ciao", ","]
+      const tokens = rawInput.match(/\w+|[^\w\s]/g);
+      if (!tokens) {
+        outputElem.innerText = '[No valid input]';
+        return;
+      }
 
       let inlineOutput = [];
 
-      for (const word of words) {
-        await initESpeak({
-          arguments: [
-            '-v', 'it',
-            '--ipa=3',
-            word
-          ],
-          print: (output) => {
-            const ipa = output.trim();
-            inlineOutput.push(`${word} (${ipa})`);
-          },
-          printErr: (err) => {
-            console.error('stderr:', err);
+      for (const token of tokens) {
+        if (/^\w+$/.test(token)) {
+          // Token is a word (letters/numbers only)
+          await initESpeak({
+            arguments: [
+              '-v', 'it',
+              '--ipa=3',
+              token
+            ],
+            print: (output) => {
+              const ipa = output.trim();
+              inlineOutput.push(`${token} (${ipa})`);
+            },
+            printErr: (err) => {
+              console.error('stderr:', err);
+            }
+          });
+        } else {
+          // Token is punctuation (e.g., ",", "."), attach it to the previous word
+          if (inlineOutput.length > 0) {
+            inlineOutput[inlineOutput.length - 1] += token;
+          } else {
+            // If punctuation appears first (unlikely), just add it
+            inlineOutput.push(token);
           }
-        });
+        }
       }
 
       outputElem.innerText = inlineOutput.join(' ');
