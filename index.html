@@ -9,55 +9,57 @@
 
   <textarea id="input" rows="4" cols="50">ciao come stai</textarea><br>
   <button id="convert">Convert</button>
-  <pre id="output">[IPA transcription will appear here]</pre>
+  <pre id="output" style="font-family: 'Charis SIL', 'Noto Sans', 'Arial', sans-serif;">[IPA transcription will appear here]</pre>
 
   <script type="module">
-  import initESpeak from './espeak-ng.js';
+    import initESpeak from './espeak-ng.js';
 
-  let wasmReady = false;
+    let wasmReady = false;
 
-  window.addEventListener('load', async () => {
-    await initESpeak({
-      print: () => {},
-      printErr: () => {}
+    // Preload WASM once
+    window.addEventListener('load', async () => {
+      await initESpeak({
+        print: () => {},
+        printErr: () => {}
+      });
+      wasmReady = true;
+      console.log('WASM loaded and ready');
     });
-    wasmReady = true;
-    console.log('WASM loaded and ready');
-  });
 
-  const outputElem = document.getElementById('output');
+    const outputElem = document.getElementById('output');
 
-  document.getElementById('convert').addEventListener('click', async () => {
-    if (!wasmReady) {
-      alert('Please wait, eSpeak NG is still loading...');
-      return;
-    }
+    document.getElementById('convert').addEventListener('click', async () => {
+      if (!wasmReady) {
+        alert('Please wait, eSpeak NG is still loading...');
+        return;
+      }
 
-    const inputText = document.getElementById('input').value.trim();
-    const words = inputText.split(/\s+/);
-    outputElem.innerText = ''; // Clear output
+      const inputText = document.getElementById('input').value.trim();
+      const words = inputText.split(/\s+/);
+      outputElem.innerText = ''; // Clear output
 
-    let ipaResult = '';
+      let ipaRaw = '';
 
-    for (const word of words) {
       await initESpeak({
         arguments: [
           '-v', 'it',
           '--ipa=2',
-          word
+          inputText
         ],
         print: (output) => {
-          ipaResult += output.trim() + ' ';
+          ipaRaw += output;
         },
         printErr: (err) => {
           console.error('stderr:', err);
         }
       });
-    }
 
-    outputElem.innerText = ipaResult.trim();
-  });
-</script>
+      // Post-process: naive word alignment
+      // Since espeak outputs no word separators, we can't perfectly realign
+      // So we just show the raw IPA output (no internal spaces), and rely on user understanding
 
+      outputElem.innerText = ipaRaw.trim();
+    });
+  </script>
 </body>
 </html>
