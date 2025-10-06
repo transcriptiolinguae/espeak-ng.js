@@ -1,4 +1,17 @@
-<script type="module">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Italian to IPA (eSpeak NG WASM)</title>
+</head>
+<body>
+  <h1>Italian → IPA Transcription</h1>
+
+  <textarea id="input" rows="4" cols="50">ciao come stai</textarea><br>
+  <button id="convert">Convert</button>
+  <pre id="output">[IPA transcription will appear here]</pre>
+
+  <script type="module">
   import initESpeak from './espeak-ng.js';
 
   let wasmReady = false;
@@ -45,3 +58,6 @@
     outputElem.innerText = ipaResult.trim();
   });
 </script>
+
+</body>
+</html>
