@@ -13,7 +13,7 @@
 <body>
   <h1>Italian → IPA Transcription</h1>
 
-  <textarea id="input" rows="6" cols="60">Però nel 2025 ci saranno 3.14 milioni di persone.</textarea><br />
+  <textarea id="input" rows="6" cols="60">pericolosamente (lotte civili), all</textarea><br />
   <button id="convert">Convert</button>
   <button id="convertInline">Convert with Inline IPA</button>
   <pre id="output">[IPA transcription will appear here]</pre>
@@ -103,7 +103,7 @@
         return;
       }
 
-      // Unicode-aware tokenization: words, numbers, punctuation
+      // Tokenize words (with accents), numbers, and punctuation
       const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
       if (!tokens) {
         outputElem.innerText = '[No valid input]';
@@ -112,10 +112,10 @@
 
       const ipaMap = new Map();
 
-      // Get unique words (excluding numbers)
+      // Extract unique words (excluding numbers)
       const uniqueWords = [...new Set(
         tokens.filter(t =>
-          /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t) // word with accents
+          /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
         )
       )];
 
@@ -128,27 +128,42 @@
         console.error('Error during IPA conversion:', e);
       }
 
-      // Build result
       const result = [];
-      for (const token of tokens) {
-        if (/^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token)) {
-          // Word with IPA
+      let buffer = '';
+
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+
+        const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+        const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
+        const isPunct = !isWord && !isNumber;
+
+        if (isWord) {
           const ipa = ipaMap.get(token) || '';
-          result.push(`${token} (${ipa})`);
-        } else if (/^[0-9]+(?:[.,][0-9]+)?$/.test(token)) {
-          // Preserve numbers as-is
-          result.push(token);
-        } else {
-          // Attach punctuation to previous
-          if (result.length > 0) {
-            result[result.length - 1] += token;
+          buffer += `${token} (${ipa})`;
+        } else if (isNumber) {
+          buffer += token;
+        } else if (isPunct) {
+          // Punctuation: add it directly to buffer or space it properly
+          if (token === '(') {
+            buffer += token; // no space after
+          } else if (token === ')') {
+            buffer += token; // no space before
+          } else if (token === ',') {
+            buffer += token; // no space before comma
           } else {
-            result.push(token);
+            buffer += token;
           }
+        }
+
+        // Add space unless next token is a closing punctuation
+        const nextToken = tokens[i + 1];
+        if (nextToken && !/^[)\],.!?;:]/.test(nextToken)) {
+          buffer += ' ';
         }
       }
 
-      outputElem.innerText = result.join(' ');
+      outputElem.innerText = buffer.trim();
     });
   </script>
 </body>
