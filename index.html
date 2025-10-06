@@ -63,7 +63,6 @@
       return ipaOutput.trim();
     }
 
-    // Inline transcription
     document.getElementById('convertInline').addEventListener('click', async () => {
       outputElem.innerText = '';
 
@@ -78,7 +77,6 @@
         return;
       }
 
-      // Tokenize: words (with accents), numbers, and punctuation
       const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
       if (!tokens) {
         outputElem.innerText = '[No valid input]';
@@ -87,7 +85,6 @@
 
       const ipaMap = new Map();
 
-      // Unique words only (exclude numbers and punctuation)
       const uniqueWords = [...new Set(
         tokens.filter(t =>
           /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
@@ -111,12 +108,11 @@
         const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
         const isPunct = !isWord && !isNumber;
 
-        // Add space before this token if needed
+        // Determine whether to add space before current token
         if (i > 0) {
           const prev = tokens[i - 1];
           const isPrevPunct = /^[^\w\s]$/.test(prev);
 
-          // No space after opening ( or before closing ), . , etc.
           if (
             !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
             !(prev === '(')
@@ -133,18 +129,11 @@
         } else {
           result.push(token);
         }
-
-        // Add space **after punctuation** like comma, unless next token is closing punctuation
-        const next = tokens[i + 1];
-        if (token.match(/^[,.;!?]$/) && next && !next.match(/^[)\],.;!?]$/)) {
-          result.push(' ');
-        }
       }
 
       outputElem.innerText = result.join('');
     });
 
-    // Convert full input (no inline IPA)
     document.getElementById('convert').addEventListener('click', async () => {
       outputElem.innerText = '';
 
