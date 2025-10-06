@@ -14,41 +14,42 @@
   <script type="module">
   import initESpeak from './espeak-ng.js';
 
-  let espeak;  // Will hold the initialized WASM module
+  let wasmReady = false;
 
-  // Initialize once on page load
+  // Load the WASM once at page load to cache it (no args)
   window.addEventListener('load', async () => {
-    espeak = await initESpeak({
-      print: (output) => {
-        // We'll handle output separately on each run, so do nothing here or just log if you want
-        console.log(output);
-      },
-      printErr: (err) => {
-        console.error("stderr:", err);
-      }
+    await initESpeak({
+      print: () => {},
+      printErr: () => {}
     });
-    console.log('eSpeak WASM initialized');
+    wasmReady = true;
+    console.log('WASM loaded and cached');
   });
 
-  document.getElementById("convert").addEventListener("click", () => {
-    if (!espeak) {
-      alert('eSpeak is still loading. Please wait.');
+  const outputElem = document.getElementById('output');
+
+  document.getElementById('convert').addEventListener('click', async () => {
+    if (!wasmReady) {
+      alert('Please wait, WASM still loading...');
       return;
     }
 
-    const text = document.getElementById("input").value;
-    const outputElem = document.getElementById("output");
-    outputElem.innerText = '';  // Clear previous output
+    outputElem.innerText = '';  // Clear output
 
-    // Run the conversion
-    espeak.run([
-      "-v", "it",
-      "--ipa=3",
-      "--sep= ",
-      text
-    ]);
-
-    // You can customize the print callback to update outputElem when initESpeak is called.
+    await initESpeak({
+      arguments: [
+        '-v', 'it',
+        '--ipa=3',
+        '--sep= ',
+        document.getElementById('input').value
+      ],
+      print: (output) => {
+        outputElem.innerText += output + '\n';
+      },
+      printErr: (err) => {
+        console.error('stderr:', err);
+      }
+    });
   });
 </script>
 </body>
