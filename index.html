@@ -61,20 +61,27 @@
 
       outputElem.innerText = '[Transcribing…]';
 
+      // Sequentially process each word
       for (const word of words) {
         let wordIpa = '';
         await initESpeak({
           arguments: ['-v', 'it', '--ipa=2', word],
           print: (output) => {
+            // accumulate output exactly as received (don't trim here)
             wordIpa += output;
           },
           printErr: (err) => {
             console.error('stderr:', err);
           },
         });
-        ipaWords.push(wordIpa.trim());
+
+        // Clean the output carefully:
+        // Remove newlines and extra spaces, keep IPA intact
+        wordIpa = wordIpa.replace(/\s+/g, '');
+        ipaWords.push(wordIpa);
       }
 
+      // Join with single space between words only
       outputElem.innerText = ipaWords.join(' ');
     });
   </script>
