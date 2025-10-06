@@ -33,19 +33,27 @@
   <script type="module">
     import initESpeak from './espeak-ng.js';
 
+    let espeakInstance = null;
     let wasmReady = false;
 
     window.addEventListener('load', async () => {
-      await initESpeak({ print: () => {}, printErr: () => {} });
-      wasmReady = true;
-      console.log('WASM loaded and ready');
+      try {
+        espeakInstance = await initESpeak({
+          print: () => {},
+          printErr: () => {},
+        });
+        wasmReady = true;
+        console.log('WASM loaded and ready');
+      } catch (err) {
+        console.error('Failed to load eSpeak NG WASM:', err);
+      }
     });
 
     const inputElem = document.getElementById('input');
     const outputElem = document.getElementById('output');
 
     document.getElementById('convert').addEventListener('click', async () => {
-      if (!wasmReady) {
+      if (!wasmReady || !espeakInstance) {
         alert('Please wait, eSpeak NG is still loading...');
         return;
       }
@@ -58,30 +66,25 @@
 
       const words = inputText.split(/\s+/);
       const ipaWords = [];
-
       outputElem.innerText = '[Transcribing…]';
 
-      // Sequentially process each word
       for (const word of words) {
         let wordIpa = '';
-        await initESpeak({
+        await espeakInstance.run({
           arguments: ['-v', 'it', '--ipa=2', word],
           print: (output) => {
-            // accumulate output exactly as received (don't trim here)
             wordIpa += output;
           },
           printErr: (err) => {
             console.error('stderr:', err);
-          },
+          }
         });
 
-        // Clean the output carefully:
-        // Remove newlines and extra spaces, keep IPA intact
+        // Remove any whitespace inside IPA output for the word
         wordIpa = wordIpa.replace(/\s+/g, '');
         ipaWords.push(wordIpa);
       }
 
-      // Join with single space between words only
       outputElem.innerText = ipaWords.join(' ');
     });
   </script>
