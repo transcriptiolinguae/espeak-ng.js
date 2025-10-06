@@ -12,45 +12,50 @@
   <pre id="output">[IPA transcription will appear here]</pre>
 
   <script type="module">
-  import initESpeak from './espeak-ng.js';
+    import initESpeak from './espeak-ng.js';
 
-  let wasmReady = false;
+    let wasmReady = false;
 
-  // Load the WASM once at page load to cache it (no args)
-  window.addEventListener('load', async () => {
-    await initESpeak({
-      print: () => {},
-      printErr: () => {}
+    // Load the WASM once at page load
+    window.addEventListener('load', async () => {
+      await initESpeak({
+        print: () => {},
+        printErr: () => {}
+      });
+      wasmReady = true;
+      console.log('WASM loaded and cached');
     });
-    wasmReady = true;
-    console.log('WASM loaded and cached');
-  });
 
-  const outputElem = document.getElementById('output');
+    const outputElem = document.getElementById('output');
 
-  document.getElementById('convert').addEventListener('click', async () => {
-    if (!wasmReady) {
-      alert('Please wait, WASM still loading...');
-      return;
-    }
-
-    outputElem.innerText = '';  // Clear output
-
-    await initESpeak({
-      arguments: [
-        '-v', 'it',
-        '--ipa=3',
-        '--sep= ',
-        document.getElementById('input').value
-      ],
-      print: (output) => {
-        outputElem.innerText += output + '\n';
-      },
-      printErr: (err) => {
-        console.error('stderr:', err);
+    document.getElementById('convert').addEventListener('click', async () => {
+      if (!wasmReady) {
+        alert('Please wait, WASM still loading...');
+        return;
       }
+
+      outputElem.innerText = '';  // Clear previous output
+
+      // Replace word spaces with a marker (e.g., "|")
+      const rawInput = document.getElementById('input').value.trim();
+      const markedInput = rawInput.replace(/\s+/g, '|');
+
+      await initESpeak({
+        arguments: [
+          '-v', 'it',
+          '--ipa=3',
+          markedInput
+        ],
+        print: (output) => {
+          // Replace marker with actual spaces in the final output
+          const cleanedOutput = output.replace(/\|/g, ' ').trim();
+          outputElem.innerText += cleanedOutput + '\n';
+        },
+        printErr: (err) => {
+          console.error('stderr:', err);
+        }
+      });
     });
-  });
-</script>
+  </script>
 </body>
 </html>
