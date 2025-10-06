@@ -84,7 +84,7 @@
       }
     });
 
-    // Corrected inline IPA button handler
+    // Batch inline IPA conversion (fast)
     document.getElementById('convertInline').addEventListener('click', async () => {
       outputElem.innerText = '';
 
@@ -99,46 +99,66 @@
         return;
       }
 
+      // Tokenize words and punctuation
       const tokens = rawInput.match(/\w+|[^\w\s]/g);
       if (!tokens) {
         outputElem.innerText = '[No valid input]';
         return;
       }
 
-      const ipaMap = new Map();
-      const uniqueWords = [...new Set(tokens.filter(t => /^\w+$/.test(t)))];
-
-      for (const word of uniqueWords) {
-        let ipaOutput = '';
-        try {
-          await initESpeak({
-            arguments: ['-v', 'it', '--ipa=3', word],
-            print: (text) => {
-              ipaOutput += text;
-            },
-            printErr: printErrFiltered
-          });
-          ipaMap.set(word, ipaOutput.trim());
-        } catch (e) {
-          ipaMap.set(word, '');
-        }
+      // Extract only words (skip punctuation)
+      const words = tokens.filter(t => /^\w+$/.test(t));
+      if (words.length === 0) {
+        outputElem.innerText = '[No words found]';
+        return;
       }
 
-      let result = [];
-      for (const token of tokens) {
-        if (/^\w+$/.test(token)) {
-          const ipa = ipaMap.get(token) || '';
-          result.push(`${token} (${ipa})`);
-        } else {
-          if (result.length > 0) {
-            result[result.length - 1] += token;
+      // Create a single input string with | separating words
+      const markedInput = words.join('|');
+
+      let ipaOutput = '';
+      try {
+        await initESpeak({
+          arguments: ['-v', 'it', '--ipa=3', markedInput],
+          print: (text) => {
+            ipaOutput += text;
+          },
+          printErr: printErrFiltered
+        });
+
+        ipaOutput = ipaOutput.trim();
+
+        // Try to split IPA output by '|'
+        const ipaList = ipaOutput.split('|').map(p => p.trim());
+
+        if (ipaList.length !== words.length) {
+          console.warn('Mismatch between IPA segments and words count');
+          outputElem.innerText = 'Unable to split IPA per word properly.\n\n' + ipaOutput.replace(/\|/g, ' ');
+          return;
+        }
+
+        // Rebuild text with inline IPA
+        let result = [];
+        let ipaIndex = 0;
+
+        for (const token of tokens) {
+          if (/^\w+$/.test(token)) {
+            const ipa = ipaList[ipaIndex++] || '';
+            result.push(`${token} (${ipa})`);
           } else {
-            result.push(token);
+            if (result.length > 0) {
+              // Attach punctuation to previous token without space
+              result[result.length - 1] += token;
+            } else {
+              result.push(token);
+            }
           }
         }
-      }
 
-      outputElem.innerText = result.join(' ');
+        outputElem.innerText = result.join(' ');
+      } catch (e) {
+        outputElem.innerText = 'Error during transcription: ' + e.message;
+      }
     });
   </script>
 </body>
