@@ -2,18 +2,19 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Italian to IPA (Fast Inline) - Persistent WASM</title>
+  <title>Italian to IPA (eSpeak NG WASM)</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; max-width: 700px; }
-    textarea { font-size: 16px; }
+    textarea { font-size: 16px; width: 100%; }
     pre { background: #f0f0f0; padding: 15px; white-space: pre-wrap; word-wrap: break-word; }
     button { margin: 5px 10px 15px 0; padding: 8px 16px; font-size: 16px; }
   </style>
 </head>
 <body>
-  <h1>Italian → IPA Transcription (Fast Inline)</h1>
+  <h1>Italian → IPA Transcription</h1>
 
   <textarea id="input" rows="6" cols="60">Ciao, come stai. Va tutto bene?</textarea><br />
+  <button id="convert">Convert</button>
   <button id="convertInline">Convert with Inline IPA</button>
   <pre id="output">[IPA transcription will appear here]</pre>
 
@@ -23,31 +24,54 @@
     const outputElem = document.getElementById('output');
     const inputElem = document.getElementById('input');
 
-    let espeakInstance;
+    let wasmLoaded = false;
+    let espeakInstance = null;
 
-    async function loadWasm() {
-      outputElem.innerText = 'Loading WASM...';
-      espeakInstance = await initESpeak({
-        print: () => {},
-        printErr: () => {}
-      });
-      outputElem.innerText = '[WASM loaded and ready]';
-      console.log('WASM loaded');
-    }
+    // Load WASM once on page load
+    window.addEventListener('load', async () => {
+      try {
+        espeakInstance = await initESpeak({
+          print: () => {},
+          printErr: () => {}
+        });
+        wasmLoaded = true;
+        console.log('eSpeak NG WASM loaded and ready');
+      } catch (e) {
+        console.error('Error loading WASM:', e);
+        outputElem.innerText = 'Error loading eSpeak WASM module.';
+      }
+    });
 
-    async function getIPA(word) {
-      let ipa = '';
+    // Helper to run IPA conversion using loaded instance
+    async function runESpeak(text) {
+      let ipaOutput = '';
       await espeakInstance({
-        arguments: ['-v', 'it', '--ipa=3', word],
-        print: (out) => { ipa += out; },
-        printErr: (err) => { if (err) console.error('eSpeak error:', err); }
+        arguments: ['-v', 'it', '--ipa=3', text],
+        print: (text) => {
+          ipaOutput += text;
+        },
+        printErr: printErrFiltered
       });
-      return ipa.trim();
+      return ipaOutput.trim();
     }
 
-    document.getElementById('convertInline').addEventListener('click', async () => {
-      if (!espeakInstance) {
-        alert('Please wait for WASM to load.');
+    function printErrFiltered(err) {
+      if (
+        err.includes('still waiting on run dependencies') ||
+        err.includes('dependency: wasm-instantiate') ||
+        err.includes('(end of list)')
+      ) {
+        return;
+      }
+      console.error('eSpeak stderr:', err);
+    }
+
+    // Button: Convert full text
+    document.getElementById('convert').addEventListener('click', async () => {
+      outputElem.innerText = '';
+
+      if (!wasmLoaded) {
+        alert('Please wait, WASM is still loading...');
         return;
       }
 
@@ -57,29 +81,58 @@
         return;
       }
 
-      // Tokenize words and punctuation separately
+      const markedInput = rawInput.replace(/\s+/g, '|');
+
+      try {
+        const ipa = await runESpeak(markedInput);
+        outputElem.innerText = ipa.replace(/\|/g, ' ') || '[No output generated]';
+      } catch (e) {
+        outputElem.innerText = 'Error during transcription: ' + e.message;
+      }
+    });
+
+    // Button: Convert with inline IPA
+    document.getElementById('convertInline').addEventListener('click', async () => {
+      outputElem.innerText = '';
+
+      if (!wasmLoaded) {
+        alert('Please wait, WASM is still loading...');
+        return;
+      }
+
+      const rawInput = inputElem.value.trim();
+      if (!rawInput) {
+        outputElem.innerText = '[Please enter some text]';
+        return;
+      }
+
+      // Tokenize: words + punctuation
       const tokens = rawInput.match(/\w+|[^\w\s]/g);
       if (!tokens) {
         outputElem.innerText = '[No valid input]';
         return;
       }
 
-      outputElem.innerText = 'Processing...';
+      // Get unique words
+      const ipaMap = new Map();
+      const uniqueWords = [...new Set(tokens.filter(t => /^\w+$/.test(t)))];
 
+      try {
+        for (const word of uniqueWords) {
+          const ipa = await runESpeak(word);
+          ipaMap.set(word, ipa);
+        }
+      } catch (e) {
+        console.error('Error during IPA conversion:', e);
+      }
+
+      // Reconstruct sentence with inline IPA
       const result = [];
-
       for (const token of tokens) {
         if (/^\w+$/.test(token)) {
-          // It's a word — get IPA for it
-          try {
-            const ipa = await getIPA(token);
-            result.push(`${token} (${ipa})`);
-          } catch (e) {
-            result.push(token); // fallback: just word
-            console.error('Error getting IPA for', token, e);
-          }
+          const ipa = ipaMap.get(token) || '';
+          result.push(`${token} (${ipa})`);
         } else {
-          // Punctuation — append directly to previous token if any
           if (result.length > 0) {
             result[result.length - 1] += token;
           } else {
@@ -90,9 +143,6 @@
 
       outputElem.innerText = result.join(' ');
     });
-
-    // Load WASM immediately on page load
-    loadWasm();
   </script>
 </body>
 </html>
