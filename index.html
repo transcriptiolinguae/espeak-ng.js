@@ -13,7 +13,7 @@
 <body>
   <h1>Italian → IPA Transcription</h1>
 
-  <textarea id="input" rows="6" cols="60">Ciao, come stai. Va tutto bene?</textarea><br />
+  <textarea id="input" rows="6" cols="60">Però nel 2025 ci saranno 3.14 milioni di persone.</textarea><br />
   <button id="convert">Convert</button>
   <button id="convertInline">Convert with Inline IPA</button>
   <pre id="output">[IPA transcription will appear here]</pre>
@@ -28,7 +28,6 @@
 
     window.addEventListener('load', async () => {
       try {
-        // Run once to ensure WASM is loaded and cached
         await initESpeak({
           print: () => {},
           printErr: () => {}
@@ -64,7 +63,7 @@
       return ipaOutput.trim();
     }
 
-    // Full text conversion
+    // Convert full text to IPA (no inline)
     document.getElementById('convert').addEventListener('click', async () => {
       outputElem.innerText = '';
 
@@ -89,7 +88,7 @@
       }
     });
 
-    // Inline conversion
+    // Convert with inline IPA
     document.getElementById('convertInline').addEventListener('click', async () => {
       outputElem.innerText = '';
 
@@ -104,14 +103,21 @@
         return;
       }
 
-      const tokens = rawInput.match(/\w+|[^\w\s]/g);
+      // Unicode-aware tokenization: words, numbers, punctuation
+      const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
       if (!tokens) {
         outputElem.innerText = '[No valid input]';
         return;
       }
 
       const ipaMap = new Map();
-      const uniqueWords = [...new Set(tokens.filter(t => /^\w+$/.test(t)))];
+
+      // Get unique words (excluding numbers)
+      const uniqueWords = [...new Set(
+        tokens.filter(t =>
+          /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t) // word with accents
+        )
+      )];
 
       try {
         for (const word of uniqueWords) {
@@ -122,12 +128,18 @@
         console.error('Error during IPA conversion:', e);
       }
 
+      // Build result
       const result = [];
       for (const token of tokens) {
-        if (/^\w+$/.test(token)) {
+        if (/^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token)) {
+          // Word with IPA
           const ipa = ipaMap.get(token) || '';
           result.push(`${token} (${ipa})`);
+        } else if (/^[0-9]+(?:[.,][0-9]+)?$/.test(token)) {
+          // Preserve numbers as-is
+          result.push(token);
         } else {
+          // Attach punctuation to previous
           if (result.length > 0) {
             result[result.length - 1] += token;
           } else {
