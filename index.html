@@ -1,39 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Italian to IPA (eSpeak NG WASM)</title>
 </head>
 <body>
   <h1>Italian → IPA Transcription</h1>
 
-  <textarea id="input" rows="4" cols="50">ciao come stai</textarea><br>
+  <textarea id="input" rows="4" cols="50">ciao come stai</textarea><br />
   <button id="convert">Convert</button>
   <pre id="output">[IPA transcription will appear here]</pre>
 
   <script type="module">
     import initESpeak from './espeak-ng.js';
 
-    document.getElementById("convert").addEventListener("click", async () => {
-      const text = document.getElementById("input").value;
+    let espeakInstance;
 
-      const espeak = await initESpeak({
-        arguments: [
-          "-v", "it",
-          "--ipa=3",
-          "--sep= ",
-          text
-        ],
+    // Initialize eSpeak NG once at page load
+    async function init() {
+      espeakInstance = await initESpeak({
+        locateFile: (file) => {
+          // Explicitly tell where to find the wasm file
+          if (file.endsWith('.wasm')) {
+            return './espeak-ng.wasm';
+          }
+          return file;
+        },
         print: (output) => {
-          // eSpeak prints IPA transcription here
-          document.getElementById("output").innerText += output + "\n";
+          document.getElementById('output').innerText += output + '\n';
         },
         printErr: (err) => {
-          console.error("stderr:", err);
+          console.error('stderr:', err);
         }
       });
+      console.log('eSpeak NG initialized');
+    }
 
-      // After init, the output should already be printed
+    init();
+
+    document.getElementById('convert').addEventListener('click', () => {
+      if (!espeakInstance) {
+        alert('eSpeak NG not initialized yet. Please wait a moment and try again.');
+        return;
+      }
+      // Clear previous output
+      document.getElementById('output').innerText = '';
+
+      const text = document.getElementById('input').value;
+      // Run eSpeak NG with new text
+      espeakInstance.callMain([
+        '-v', 'it',
+        '--ipa=3',
+        '--sep= ',
+        text
+      ]);
     });
   </script>
 </body>
