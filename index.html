@@ -12,29 +12,28 @@
   <pre id="output">[IPA transcription will appear here]</pre>
 
   <script type="module">
-    import initESpeak from './espeak-ng.js';
+  import ESpeakNG from './espeak-ng.js';
 
-    document.getElementById("convert").addEventListener("click", async () => {
-      const text = document.getElementById("input").value;
+  let espeak;
 
-      const espeak = await initESpeak({
-        arguments: [
-          "-v", "it",
-          "--ipa=3",
-          "--sep= ",
-          text
-        ],
-        print: (output) => {
-          // eSpeak prints IPA transcription here
-          document.getElementById("output").innerText += output + "\n";
-        },
-        printErr: (err) => {
-          console.error("stderr:", err);
-        }
-      });
+  ESpeakNG({
+    locateFile: (file) => file.endsWith('.wasm') ? './espeak-ng.wasm' : file
+  }).then(instance => {
+    espeak = instance;
+    console.log("eSpeak NG WASM loaded");
+  });
 
-      // After init, the output should already be printed
-    });
-  </script>
+  document.getElementById("convert").addEventListener("click", () => {
+    if (!espeak) {
+      alert("eSpeak NG not loaded yet.");
+      return;
+    }
+    const text = document.getElementById("text").value;
+    const args = ["--ipa=3", "--sep= ", "-v", "it", text];
+    const result = espeak.callMain(args);
+    document.getElementById("output").textContent = result;
+  });
+</script>
+
 </body>
 </html>
