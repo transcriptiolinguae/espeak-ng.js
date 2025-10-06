@@ -12,52 +12,48 @@
   <pre id="output">[IPA transcription will appear here]</pre>
 
   <script type="module">
-  import initESpeak from './espeak-ng.js';
+    import initESpeak from './espeak-ng.js';
 
-  let wasmReady = false;
+    let wasmReady = false;
 
-  window.addEventListener('load', async () => {
-    await initESpeak({
-      print: () => {},
-      printErr: () => {}
+    // Load and cache WASM at startup (no input yet)
+    window.addEventListener('load', async () => {
+      await initESpeak({
+        print: () => {},
+        printErr: (err) => console.error('WASM stderr during preload:', err)
+      });
+      wasmReady = true;
+      console.log('WASM loaded and ready');
     });
-    wasmReady = true;
-    console.log('WASM loaded and ready');
-  });
 
-  const outputElem = document.getElementById('output');
+    const outputElem = document.getElementById('output');
 
-  document.getElementById('convert').addEventListener('click', async () => {
-    if (!wasmReady) {
-      alert('Please wait, eSpeak NG is still loading...');
-      return;
-    }
+    document.getElementById('convert').addEventListener('click', async () => {
+      if (!wasmReady) {
+        alert('Please wait, eSpeak NG is still loading...');
+        return;
+      }
 
-    const inputText = document.getElementById('input').value.trim();
-    const words = inputText.split(/\s+/);
-    outputElem.innerText = ''; // Clear output
+      const inputText = document.getElementById('input').value.trim();
+      outputElem.innerText = ''; // Clear previous output
 
-    let ipaResult = '';
-
-    for (const word of words) {
       await initESpeak({
         arguments: [
           '-v', 'it',
-          '--ipa=2',
-          word
+          '--ipa=3',
+          '--sep=|',
+          inputText
         ],
         print: (output) => {
-          ipaResult += output.trim() + ' ';
+          // Replace separator with real spaces after processing
+          const cleaned = output.replace(/\|/g, ' ').trim();
+          outputElem.innerText += cleaned + '\n';
         },
         printErr: (err) => {
-          console.error('stderr:', err);
+          console.error('WASM stderr:', err);
         }
       });
-    }
-
-    outputElem.innerText = ipaResult.trim();
-  });
-</script>
-
+    });
+  </script>
 </body>
 </html>
