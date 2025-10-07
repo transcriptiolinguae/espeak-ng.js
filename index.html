@@ -1,200 +1,60 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Italian to IPA (eSpeak NG WASM)</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      max-width: 700px;
-    }
-    textarea {
-      font-size: 16px;
-      width: 100%;
-    }
-    pre {
-      background: #f0f0f0;
-      padding: 15px;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
-    button {
-      margin: 5px 10px 15px 0;
-      padding: 8px 16px;
-      font-size: 16px;
-    }
-  </style>
 </head>
 <body>
   <h1>Italian → IPA Transcription</h1>
-  <textarea id="input" rows="6" cols="60">
-La civiltà romana è spesso annoverata nell'antichità classica insieme all'antica Grecia, essendo quest'ultima una civiltà che ha ispirato parte della cultura romana.
-  </textarea><br />
+
+  <textarea id="input" rows="4" cols="50">ciao come stai</textarea><br>
   <button id="convert">Convert</button>
-  <button id="convertInline">Convert with Inline IPA</button>
   <pre id="output">[IPA transcription will appear here]</pre>
 
   <script type="module">
     import initESpeak from './espeak-ng.js';
 
-    const outputElem = document.getElementById('output');
-    const inputElem = document.getElementById('input');
     let wasmReady = false;
 
-    // These are the letter pairs to check in orthography and add length mark in IPA
-    const lengthenMap = {
-      'rr': 'r',
-      'nn': 'n',
-      'ss': 's',
-      'vv': 'v',
-      'oo': 'o'
-    };
-
+    // Load the WASM once at page load
     window.addEventListener('load', async () => {
-      try {
-        await initESpeak({ print: () => {}, printErr: () => {} });
-        wasmReady = true;
-        console.log('eSpeak NG WASM loaded and ready');
-      } catch (e) {
-        console.error('Error loading WASM:', e);
-        outputElem.innerText = 'Error loading eSpeak WASM module.';
-      }
-    });
-
-    function printErrFiltered(err) {
-      if (
-        err.includes('still waiting on run dependencies') ||
-        err.includes('dependency: wasm-instantiate') ||
-        err.includes('(end of list)')
-      ) {
-        return;
-      }
-      console.error('eSpeak stderr:', err);
-    }
-
-    // Adds length mark ː based on original double letter if missing in IPA
-    function forceLengthMarks(originalWord, ipa) {
-      for (const [doubleLetter, ipaChar] of Object.entries(lengthenMap)) {
-        if (originalWord.toLowerCase().includes(doubleLetter)) {
-          const expected = ipaChar + 'ː';
-          const plain = ipaChar;
-
-          // Only add length mark if not already present
-          ipa = ipa.replace(new RegExp(`(${ipaChar})(?!ː)`, 'g'), (match, p1, offset) => {
-            // Inject ː only for the first match not already long
-            if (!ipa.includes(expected)) {
-              return p1 + 'ː';
-            }
-            return match;
-          });
-        }
-      }
-      return ipa;
-    }
-
-    async function runESpeak(word) {
-      let ipaOutput = '';
       await initESpeak({
-        arguments: ['-v', 'it', '--ipa=3', word],
-        print: (text) => {
-          ipaOutput += text;
-        },
-        printErr: printErrFiltered
+        print: () => {},
+        printErr: () => {}
       });
-
-      return ipaOutput.trim();
-    }
-
-    document.getElementById('convertInline').addEventListener('click', async () => {
-      outputElem.innerText = '';
-      if (!wasmReady) {
-        alert('Please wait, WASM is still loading...');
-        return;
-      }
-
-      const rawInput = inputElem.value.trim();
-      if (!rawInput) {
-        outputElem.innerText = '[Please enter some text]';
-        return;
-      }
-
-      const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-      if (!tokens) {
-        outputElem.innerText = '[No valid input]';
-        return;
-      }
-
-      const ipaMap = new Map();
-      const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
-
-      try {
-        for (const word of uniqueWords) {
-          const ipa = await runESpeak(word);
-          const fixedIpa = forceLengthMarks(word, ipa);
-          ipaMap.set(word, fixedIpa);
-        }
-      } catch (e) {
-        console.error('Error during IPA conversion:', e);
-      }
-
-      const result = [];
-
-      for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-        const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
-        const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
-
-        if (i > 0) {
-          const prev = tokens[i - 1];
-          if (
-            !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
-            !(prev === '(')
-          ) {
-            result.push(' ');
-          }
-        }
-
-        if (isWord) {
-          const ipa = ipaMap.get(token) || '';
-          result.push(`${token} (${ipa})`);
-        } else if (isNumber) {
-          result.push(token);
-        } else {
-          result.push(token);
-        }
-      }
-
-      outputElem.innerText = result.join('');
+      wasmReady = true;
+      console.log('WASM loaded and cached');
     });
+
+    const outputElem = document.getElementById('output');
 
     document.getElementById('convert').addEventListener('click', async () => {
-      outputElem.innerText = '';
       if (!wasmReady) {
-        alert('Please wait, WASM is still loading...');
+        alert('Please wait, WASM still loading...');
         return;
       }
 
-      const rawInput = inputElem.value.trim();
-      if (!rawInput) {
-        outputElem.innerText = '[Please enter some text]';
-        return;
-      }
+      outputElem.innerText = '';  // Clear previous output
 
-      const words = rawInput.split(/\s+/);
-      const ipaWords = [];
+      // Replace word spaces with a marker (e.g., "|")
+      const rawInput = document.getElementById('input').value.trim();
+      const markedInput = rawInput.replace(/\s+/g, '|');
 
-      try {
-        for (const word of words) {
-          let ipa = await runESpeak(word);
-          ipa = forceLengthMarks(word, ipa);
-          ipaWords.push(ipa);
+      await initESpeak({
+        arguments: [
+          '-v', 'it',
+          '--ipa=3',
+          markedInput
+        ],
+        print: (output) => {
+          // Replace marker with actual spaces in the final output
+          const cleanedOutput = output.replace(/\|/g, ' ').trim();
+          outputElem.innerText += cleanedOutput + '\n';
+        },
+        printErr: (err) => {
+          console.error('stderr:', err);
         }
-
-        outputElem.innerText = ipaWords.join(' ') || '[No output generated]';
-      } catch (e) {
-        outputElem.innerText = 'Error during transcription: ' + e.message;
-      }
+      });
     });
   </script>
 </body>
