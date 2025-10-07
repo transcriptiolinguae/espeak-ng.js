@@ -13,7 +13,7 @@
 <body>
   <h1>Italian → IPA Transcription</h1>
 
-  <textarea id="input" rows="6" cols="60">pericolosamente (lotte civili), all</textarea><br />
+  <textarea id="input" rows="6" cols="60">posso arriva anno ovvio all</textarea><br />
   <button id="convert">Convert</button>
   <button id="convertInline">Convert with Inline IPA</button>
   <pre id="output">[IPA transcription will appear here]</pre>
@@ -51,14 +51,14 @@
       console.error('eSpeak stderr:', err);
     }
 
-    // 👇 Post-processing function to replace double consonants with long IPA
+    // ✅ Replace known geminate consonants with long IPA versions
     function applyLongConsonants(ipa) {
       return ipa
-        .replace(/s{2}/g, 'sː')
-        .replace(/r{2}/g, 'rː')
-        .replace(/n{2}/g, 'nː')
-        .replace(/v{2}/g, 'vː')
-        .replace(/o{2}/g, 'oː');
+        .replace(/ss/g, 'sː')
+        .replace(/rr/g, 'rː')
+        .replace(/nn/g, 'nː')
+        .replace(/vv/g, 'vː')
+        .replace(/oo/g, 'oː');
     }
 
     async function runESpeak(text) {
@@ -70,6 +70,8 @@
         },
         printErr: printErrFiltered
       });
+
+      console.log('Raw IPA output:', ipaOutput); // Debug log
       return ipaOutput.trim();
     }
 
@@ -94,7 +96,6 @@
       }
 
       const ipaMap = new Map();
-
       const uniqueWords = [...new Set(
         tokens.filter(t =>
           /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
@@ -104,7 +105,7 @@
       try {
         for (const word of uniqueWords) {
           let ipa = await runESpeak(word);
-          ipa = applyLongConsonants(ipa);
+          ipa = applyLongConsonants(ipa); // ✅ Apply long consonant fix here
           ipaMap.set(word, ipa);
         }
       } catch (e) {
@@ -162,7 +163,7 @@
 
       try {
         let ipa = await runESpeak(markedInput);
-        ipa = applyLongConsonants(ipa);
+        ipa = applyLongConsonants(ipa); // ✅ Apply long consonants here too
         outputElem.innerText = ipa.replace(/\|/g, ' ') || '[No output generated]';
       } catch (e) {
         outputElem.innerText = 'Error during transcription: ' + e.message;
