@@ -51,16 +51,6 @@
       console.error('eSpeak stderr:', err);
     }
 
-    // Function to replace double consonants with IPA long forms
-    function replaceDoubleConsonants(ipa) {
-      return ipa
-        .replace(/rr/g, 'rː')
-        .replace(/vv/g, 'vː')
-        .replace(/nn/g, 'nː')
-        .replace(/ss/g, 'sː')
-        .replace(/oo/g, 'oː');
-    }
-
     async function runESpeak(text) {
       let ipaOutput = '';
       await initESpeak({
@@ -103,8 +93,7 @@
 
       try {
         for (const word of uniqueWords) {
-          let ipa = await runESpeak(word);
-          ipa = replaceDoubleConsonants(ipa);
+          const ipa = await runESpeak(word);
           ipaMap.set(word, ipa);
         }
       } catch (e) {
@@ -162,8 +151,7 @@
       const markedInput = rawInput.replace(/\s+/g, '|');
 
       try {
-        let ipa = await runESpeak(markedInput);
-        ipa = replaceDoubleConsonants(ipa);
+        const ipa = await runESpeak(markedInput);
         outputElem.innerText = ipa.replace(/\|/g, ' ') || '[No output generated]';
       } catch (e) {
         outputElem.innerText = 'Error during transcription: ' + e.message;
