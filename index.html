@@ -2,55 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Italian → IPA (geminate correction debug)</title>
+  <title>Italian to IPA (eSpeak NG WASM)</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      max-width: 700px;
-    }
-    textarea {
-      font-size: 16px;
-      width: 100%;
-    }
-    pre {
-      background: #f0f0f0;
-      padding: 15px;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-    }
-    button {
-      margin: 5px 10px 15px 0;
-      padding: 8px 16px;
-      font-size: 16px;
-    }
-    #debug {
-      margin-top: 20px;
-      padding: 10px;
-      background: #eef;
-      white-space: pre-wrap;
-      font-size: 14px;
-    }
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 700px; }
+    textarea { font-size: 16px; width: 100%; }
+    pre { background: #f0f0f0; padding: 15px; white-space: pre-wrap; word-wrap: break-word; }
+    button { margin: 5px 10px 15px 0; padding: 8px 16px; font-size: 16px; }
   </style>
 </head>
 <body>
-  <h1>Italian → IPA Transcription (geminate correction debug)</h1>
-  <textarea id="input" rows="6" cols="60">La civiltà romana è spesso annoverata nell'antichità classica insieme all'antica Grecia, essendo quest'ultima una civiltà che ha ispirato parte della cultura romana.</textarea><br />
+  <h1>Italian → IPA Transcription</h1>
+
+  <textarea id="input" rows="6" cols="60">pericolosamente (lotte civili), all</textarea><br />
   <button id="convert">Convert</button>
   <button id="convertInline">Convert with Inline IPA</button>
   <pre id="output">[IPA transcription will appear here]</pre>
-  <div id="debug">[Debug info here]</div>
 
   <script type="module">
     import initESpeak from './espeak-ng.js';
+
     const outputElem = document.getElementById('output');
-    const debugElem = document.getElementById('debug');
     const inputElem = document.getElementById('input');
+
     let wasmReady = false;
 
     window.addEventListener('load', async () => {
       try {
-        await initESpeak({ print: () => {}, printErr: () => {} });
+        await initESpeak({
+          print: () => {},
+          printErr: () => {}
+        });
         wasmReady = true;
         console.log('eSpeak NG WASM loaded and ready');
       } catch (e) {
@@ -70,108 +51,87 @@
       console.error('eSpeak stderr:', err);
     }
 
+    // Function to replace double consonants with IPA long forms
+    function replaceDoubleConsonants(ipa) {
+      return ipa
+        .replace(/rr/g, 'rː')
+        .replace(/vv/g, 'vː')
+        .replace(/nn/g, 'nː')
+        .replace(/ss/g, 'sː')
+        .replace(/oo/g, 'oː');
+    }
+
     async function runESpeak(text) {
       let ipaOutput = '';
       await initESpeak({
         arguments: ['-v', 'it', '--ipa=3', text],
-        print: (chunk) => { ipaOutput += chunk; },
+        print: (text) => {
+          ipaOutput += text;
+        },
         printErr: printErrFiltered
       });
-      ipaOutput = ipaOutput.trim();
-
-      debugElem.innerText = "Raw IPA output:\n" + ipaOutput;
-
-      // Now attempt to replace any “double” identical characters (geminates) by single + ː
-      // A more permissive regex: look for two identical characters not separated by anything
-      // But only for consonants. We'll define a set of IPA consonants likely used in Italian.
-
-      const consonants = [
-        'p','b','t','d','k','g',
-        'f','v','s','z',
-        'ʃ',  // “sh” sound
-        'ʎ', 'ɲ', 'm', 'n',
-        'l','r'
-      ];
-
-      // Build a regex that matches any of these doubled.
-      // Escape special regex chars
-      const esc = (c) => c.replace(/([\\^$*+?.()|\[\]{}])/g, '\\$1');
-      const doubled = consonants.map(c => esc(c) + esc(c)).join('|');
-      const gemRe = new RegExp('(' + doubled + ')', 'gu');
-
-      const before = ipaOutput;
-      const after = ipaOutput.replace(gemRe, (match) => {
-        const first = [...match][0];
-        return first + 'ː';
-      });
-
-      debugElem.innerText += "\n\nAfter geminate‑replacement:\n" + after;
-
-      return after;
+      return ipaOutput.trim();
     }
-
-    document.getElementById('convert').addEventListener('click', async () => {
-      outputElem.innerText = '';
-      debugElem.innerText = '';
-      if (!wasmReady) {
-        alert('Please wait, WASM is still loading...');
-        return;
-      }
-      const rawInput = inputElem.value.trim();
-      if (!rawInput) {
-        outputElem.innerText = '[Please enter some text]';
-        return;
-      }
-      try {
-        let ipa = await runESpeak(rawInput);
-        outputElem.innerText = ipa || '[No output generated]';
-      } catch (e) {
-        outputElem.innerText = 'Error during transcription: ' + e.message;
-      }
-    });
 
     document.getElementById('convertInline').addEventListener('click', async () => {
       outputElem.innerText = '';
-      debugElem.innerText = '';
+
       if (!wasmReady) {
         alert('Please wait, WASM is still loading...');
         return;
       }
+
       const rawInput = inputElem.value.trim();
       if (!rawInput) {
         outputElem.innerText = '[Please enter some text]';
         return;
       }
+
       const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
       if (!tokens) {
         outputElem.innerText = '[No valid input]';
         return;
       }
+
       const ipaMap = new Map();
-      const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+
+      const uniqueWords = [...new Set(
+        tokens.filter(t =>
+          /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
+        )
+      )];
+
       try {
         for (const word of uniqueWords) {
-          const ipa = await runESpeak(word);
+          let ipa = await runESpeak(word);
+          ipa = replaceDoubleConsonants(ipa);
           ipaMap.set(word, ipa);
         }
       } catch (e) {
         console.error('Error during IPA conversion:', e);
       }
+
       const result = [];
       for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
+
         const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
         const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
+        const isPunct = !isWord && !isNumber;
+
+        // Determine whether to add space before current token
         if (i > 0) {
           const prev = tokens[i - 1];
+          const isPrevPunct = /^[^\w\s]$/.test(prev);
+
           if (
-            !(token === ')' || token === ',' || token === '.' ||
-              token === ';' || token === ':' || token === '!' || token === '?')
-            && !(prev === '(')
+            !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
+            !(prev === '(')
           ) {
             result.push(' ');
           }
         }
+
         if (isWord) {
           const ipa = ipaMap.get(token) || '';
           result.push(`${token} (${ipa})`);
@@ -181,7 +141,33 @@
           result.push(token);
         }
       }
+
       outputElem.innerText = result.join('');
+    });
+
+    document.getElementById('convert').addEventListener('click', async () => {
+      outputElem.innerText = '';
+
+      if (!wasmReady) {
+        alert('Please wait, WASM is still loading...');
+        return;
+      }
+
+      const rawInput = inputElem.value.trim();
+      if (!rawInput) {
+        outputElem.innerText = '[Please enter some text]';
+        return;
+      }
+
+      const markedInput = rawInput.replace(/\s+/g, '|');
+
+      try {
+        let ipa = await runESpeak(markedInput);
+        ipa = replaceDoubleConsonants(ipa);
+        outputElem.innerText = ipa.replace(/\|/g, ' ') || '[No output generated]';
+      } catch (e) {
+        outputElem.innerText = 'Error during transcription: ' + e.message;
+      }
     });
   </script>
 </body>
