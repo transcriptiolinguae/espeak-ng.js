@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Italian → IPA with geminate‑correction</title>
+  <title>Italian → IPA (geminate correction debug)</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -24,19 +24,27 @@
       padding: 8px 16px;
       font-size: 16px;
     }
+    #debug {
+      margin-top: 20px;
+      padding: 10px;
+      background: #eef;
+      white-space: pre-wrap;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
-  <h1>Italian → IPA Transcription (corrected geminates)</h1>
+  <h1>Italian → IPA Transcription (geminate correction debug)</h1>
   <textarea id="input" rows="6" cols="60">La civiltà romana è spesso annoverata nell'antichità classica insieme all'antica Grecia, essendo quest'ultima una civiltà che ha ispirato parte della cultura romana.</textarea><br />
   <button id="convert">Convert</button>
   <button id="convertInline">Convert with Inline IPA</button>
   <pre id="output">[IPA transcription will appear here]</pre>
+  <div id="debug">[Debug info here]</div>
 
   <script type="module">
     import initESpeak from './espeak-ng.js';
-
     const outputElem = document.getElementById('output');
+    const debugElem = document.getElementById('debug');
     const inputElem = document.getElementById('input');
     let wasmReady = false;
 
@@ -71,32 +79,60 @@
       });
       ipaOutput = ipaOutput.trim();
 
-      // Correction: match double identical consonants in IPA output and replace with single + ː
-      // Use Unicode regex and explicitly list possible consonants for Italian geminates
+      debugElem.innerText = "Raw IPA output:\n" + ipaOutput;
 
-      // Example set: t, d, n, s, l, r, ʃ, etc. Add more as needed
-      const geminateConsonants = [
-        'bb', 'cc', 'dd', 'ff', 'gg', 'll', 'mm', 'nn', 'pp', 'rr', 'ss', 'tt',
-        // Also IPA symbols like ʃʃ, ʎʎ, etc., if they appear doubled
-        'ʃʃ', 'ʎʎ', 'ɲɲ'
+      // Now attempt to replace any “double” identical characters (geminates) by single + ː
+      // A more permissive regex: look for two identical characters not separated by anything
+      // But only for consonants. We'll define a set of IPA consonants likely used in Italian.
+
+      const consonants = [
+        'p','b','t','d','k','g',
+        'f','v','s','z',
+        'ʃ',  // “sh” sound
+        'ʎ', 'ɲ', 'm', 'n',
+        'l','r'
       ];
-      // We’ll build a regex from that list
-      const escaped = geminateConsonants.map(s => s.replace(/([\\^$*+?.()|\[\]{}])/g, '\\$1'));
-      const gemRe = new RegExp('(' + escaped.join('|') + ')', 'gu');
 
-      ipaOutput = ipaOutput.replace(gemRe, (match) => {
-        // match is e.g. 'nn' or 'SS' etc. We want single + ː
-        const firstChar = [...match][0]; 
-        // Keep case: if both uppercase, uppercase; else lowercase
-        // But IPA is usually lowercase so simpler:
-        return firstChar + 'ː';
+      // Build a regex that matches any of these doubled.
+      // Escape special regex chars
+      const esc = (c) => c.replace(/([\\^$*+?.()|\[\]{}])/g, '\\$1');
+      const doubled = consonants.map(c => esc(c) + esc(c)).join('|');
+      const gemRe = new RegExp('(' + doubled + ')', 'gu');
+
+      const before = ipaOutput;
+      const after = ipaOutput.replace(gemRe, (match) => {
+        const first = [...match][0];
+        return first + 'ː';
       });
 
-      return ipaOutput;
+      debugElem.innerText += "\n\nAfter geminate‑replacement:\n" + after;
+
+      return after;
     }
+
+    document.getElementById('convert').addEventListener('click', async () => {
+      outputElem.innerText = '';
+      debugElem.innerText = '';
+      if (!wasmReady) {
+        alert('Please wait, WASM is still loading...');
+        return;
+      }
+      const rawInput = inputElem.value.trim();
+      if (!rawInput) {
+        outputElem.innerText = '[Please enter some text]';
+        return;
+      }
+      try {
+        let ipa = await runESpeak(rawInput);
+        outputElem.innerText = ipa || '[No output generated]';
+      } catch (e) {
+        outputElem.innerText = 'Error during transcription: ' + e.message;
+      }
+    });
 
     document.getElementById('convertInline').addEventListener('click', async () => {
       outputElem.innerText = '';
+      debugElem.innerText = '';
       if (!wasmReady) {
         alert('Please wait, WASM is still loading...');
         return;
@@ -146,26 +182,6 @@
         }
       }
       outputElem.innerText = result.join('');
-    });
-
-    document.getElementById('convert').addEventListener('click', async () => {
-      outputElem.innerText = '';
-      if (!wasmReady) {
-        alert('Please wait, WASM is still loading...');
-        return;
-      }
-      const rawInput = inputElem.value.trim();
-      if (!rawInput) {
-        outputElem.innerText = '[Please enter some text]';
-        return;
-      }
-      const markedInput = rawInput.replace(/\s+/g, '|');
-      try {
-        let ipa = await runESpeak(markedInput);
-        outputElem.innerText = ipa.replace(/\|/g, ' ') || '[No output generated]';
-      } catch (e) {
-        outputElem.innerText = 'Error during transcription: ' + e.message;
-      }
     });
   </script>
 </body>
