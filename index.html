@@ -66,19 +66,23 @@
       let ipaOutput = '';
       await initESpeak({
         arguments: ['-v', 'it', '--ipa=3', text],
-        print: (text) => {
-          ipaOutput += text;
+        print: (txt) => {
+          ipaOutput += txt;
         },
         printErr: printErrFiltered
       });
 
-      // Replace specific double letters with single letter + ː
+      console.log('>>> Raw IPA from eSpeak:', ipaOutput);
+
+      // Now do the replacements
       ipaOutput = ipaOutput
         .replace(/rr/g, 'rː')
         .replace(/vv/g, 'vː')
         .replace(/nn/g, 'nː')
         .replace(/ss/g, 'sː')
         .replace(/oo/g, 'oː');
+
+      console.log('>>> After replacement:', ipaOutput);
 
       return ipaOutput.trim();
     }
@@ -120,11 +124,9 @@
         const token = tokens[i];
         const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
         const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
-        const isPunct = !isWord && !isNumber;
 
         if (i > 0) {
           const prev = tokens[i - 1];
-          const isPrevPunct = /^[^\w\s]$/.test(prev);
           if (
             !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
             !(prev === '(')
