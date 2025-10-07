@@ -51,6 +51,16 @@
       console.error('eSpeak stderr:', err);
     }
 
+    // 👇 Post-processing function to replace double consonants with long IPA
+    function applyLongConsonants(ipa) {
+      return ipa
+        .replace(/s{2}/g, 'sː')
+        .replace(/r{2}/g, 'rː')
+        .replace(/n{2}/g, 'nː')
+        .replace(/v{2}/g, 'vː')
+        .replace(/o{2}/g, 'oː');
+    }
+
     async function runESpeak(text) {
       let ipaOutput = '';
       await initESpeak({
@@ -93,7 +103,8 @@
 
       try {
         for (const word of uniqueWords) {
-          const ipa = await runESpeak(word);
+          let ipa = await runESpeak(word);
+          ipa = applyLongConsonants(ipa);
           ipaMap.set(word, ipa);
         }
       } catch (e) {
@@ -108,7 +119,6 @@
         const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
         const isPunct = !isWord && !isNumber;
 
-        // Determine whether to add space before current token
         if (i > 0) {
           const prev = tokens[i - 1];
           const isPrevPunct = /^[^\w\s]$/.test(prev);
@@ -151,7 +161,8 @@
       const markedInput = rawInput.replace(/\s+/g, '|');
 
       try {
-        const ipa = await runESpeak(markedInput);
+        let ipa = await runESpeak(markedInput);
+        ipa = applyLongConsonants(ipa);
         outputElem.innerText = ipa.replace(/\|/g, ' ') || '[No output generated]';
       } catch (e) {
         outputElem.innerText = 'Error during transcription: ' + e.message;
