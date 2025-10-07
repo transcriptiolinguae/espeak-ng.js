@@ -13,7 +13,7 @@
 <body>
   <h1>Italian → IPA Transcription</h1>
 
-  <textarea id="input" rows="6" cols="60">posso arriva anno ovvio all</textarea><br />
+  <textarea id="input" rows="6" cols="60">pericolosamente (lotte civili), all</textarea><br />
   <button id="convert">Convert</button>
   <button id="convertInline">Convert with Inline IPA</button>
   <pre id="output">[IPA transcription will appear here]</pre>
@@ -24,7 +24,7 @@
     const outputElem = document.getElementById('output');
     const inputElem = document.getElementById('input');
 
-    let wasmReady = false;
+    let wasmReady = false;a
 
     window.addEventListener('load', async () => {
       try {
@@ -51,16 +51,6 @@
       console.error('eSpeak stderr:', err);
     }
 
-    // ✅ Replace known geminate consonants with long IPA versions
-    function applyLongConsonants(ipa) {
-      return ipa
-        .replace(/ss/g, 'sː')
-        .replace(/rr/g, 'rː')
-        .replace(/nn/g, 'nː')
-        .replace(/vv/g, 'vː')
-        .replace(/oo/g, 'oː');
-    }
-
     async function runESpeak(text) {
       let ipaOutput = '';
       await initESpeak({
@@ -70,8 +60,6 @@
         },
         printErr: printErrFiltered
       });
-
-      console.log('Raw IPA output:', ipaOutput); // Debug log
       return ipaOutput.trim();
     }
 
@@ -96,6 +84,7 @@
       }
 
       const ipaMap = new Map();
+
       const uniqueWords = [...new Set(
         tokens.filter(t =>
           /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
@@ -104,8 +93,7 @@
 
       try {
         for (const word of uniqueWords) {
-          let ipa = await runESpeak(word);
-          ipa = applyLongConsonants(ipa); // ✅ Apply long consonant fix here
+          const ipa = await runESpeak(word);
           ipaMap.set(word, ipa);
         }
       } catch (e) {
@@ -120,6 +108,7 @@
         const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
         const isPunct = !isWord && !isNumber;
 
+        // Determine whether to add space before current token
         if (i > 0) {
           const prev = tokens[i - 1];
           const isPrevPunct = /^[^\w\s]$/.test(prev);
@@ -162,8 +151,7 @@
       const markedInput = rawInput.replace(/\s+/g, '|');
 
       try {
-        let ipa = await runESpeak(markedInput);
-        ipa = applyLongConsonants(ipa); // ✅ Apply long consonants here too
+        const ipa = await runESpeak(markedInput);
         outputElem.innerText = ipa.replace(/\|/g, ' ') || '[No output generated]';
       } catch (e) {
         outputElem.innerText = 'Error during transcription: ' + e.message;
