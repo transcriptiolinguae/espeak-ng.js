@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Italian → IPA (with geminate to ː conversion)</title>
+  <title>Italian → IPA with geminate‑correction</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -27,16 +27,15 @@
   </style>
 </head>
 <body>
-  <h1>Italian → IPA Transcription</h1>
-  <textarea id="input" rows="6" cols="60">
-La civiltà romana è spesso annoverata nell'antichità classica insieme all'antica Grecia, essendo quest'ultima una civiltà che ha ispirato parte della cultura romana.
-  </textarea><br />
+  <h1>Italian → IPA Transcription (corrected geminates)</h1>
+  <textarea id="input" rows="6" cols="60">La civiltà romana è spesso annoverata nell'antichità classica insieme all'antica Grecia, essendo quest'ultima una civiltà che ha ispirato parte della cultura romana.</textarea><br />
   <button id="convert">Convert</button>
   <button id="convertInline">Convert with Inline IPA</button>
   <pre id="output">[IPA transcription will appear here]</pre>
 
   <script type="module">
     import initESpeak from './espeak-ng.js';
+
     const outputElem = document.getElementById('output');
     const inputElem = document.getElementById('input');
     let wasmReady = false;
@@ -72,19 +71,26 @@ La civiltà romana è spesso annoverata nell'antichità classica insieme all'ant
       });
       ipaOutput = ipaOutput.trim();
 
-      // Replace geminated (double) consonants by single + ː
-      // We'll target common Italian consonants that may geminate.
-      // We use a regex capturing two identical consonants and replace with one + length mark.
-      // We also do uppercase variants.
-      ipaOutput = ipaOutput.replace(
-        /([ptkbdgfszʃʎɲnmrlv])\1/gi,
-        (match, p1) => {
-          // Use the lowercase/uppercase of p1, then append ː
-          // match might be uppercase or lowercase depending on input,
-          // so we preserve the case of p1.
-          return p1 + 'ː';
-        }
-      );
+      // Correction: match double identical consonants in IPA output and replace with single + ː
+      // Use Unicode regex and explicitly list possible consonants for Italian geminates
+
+      // Example set: t, d, n, s, l, r, ʃ, etc. Add more as needed
+      const geminateConsonants = [
+        'bb', 'cc', 'dd', 'ff', 'gg', 'll', 'mm', 'nn', 'pp', 'rr', 'ss', 'tt',
+        // Also IPA symbols like ʃʃ, ʎʎ, etc., if they appear doubled
+        'ʃʃ', 'ʎʎ', 'ɲɲ'
+      ];
+      // We’ll build a regex from that list
+      const escaped = geminateConsonants.map(s => s.replace(/([\\^$*+?.()|\[\]{}])/g, '\\$1'));
+      const gemRe = new RegExp('(' + escaped.join('|') + ')', 'gu');
+
+      ipaOutput = ipaOutput.replace(gemRe, (match) => {
+        // match is e.g. 'nn' or 'SS' etc. We want single + ː
+        const firstChar = [...match][0]; 
+        // Keep case: if both uppercase, uppercase; else lowercase
+        // But IPA is usually lowercase so simpler:
+        return firstChar + 'ː';
+      });
 
       return ipaOutput;
     }
@@ -122,7 +128,6 @@ La civiltà romana è spesso annoverata nell'antichità classica insieme all'ant
         const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
         if (i > 0) {
           const prev = tokens[i - 1];
-          const isPrevPunct = /^[^\w\s]$/.test(prev);
           if (
             !(token === ')' || token === ',' || token === '.' ||
               token === ';' || token === ':' || token === '!' || token === '?')
