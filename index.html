@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Italian to IPA (eSpeak NG WASM)</title>
+  <title>Italian → IPA (with geminate to ː conversion)</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -28,7 +28,9 @@
 </head>
 <body>
   <h1>Italian → IPA Transcription</h1>
-  <textarea id="input" rows="6" cols="60">pericolosamente (lotte civili), all</textarea><br />
+  <textarea id="input" rows="6" cols="60">
+La civiltà romana è spesso annoverata nell'antichità classica insieme all'antica Grecia, essendo quest'ultima una civiltà che ha ispirato parte della cultura romana.
+  </textarea><br />
   <button id="convert">Convert</button>
   <button id="convertInline">Convert with Inline IPA</button>
   <pre id="output">[IPA transcription will appear here]</pre>
@@ -70,23 +72,18 @@
       });
       ipaOutput = ipaOutput.trim();
 
-      // Replace only the specific doubles you want:
-      const replacements = {
-        'rr': 'rː',
-        'RR': 'Rː',
-        'vv': 'vː',
-        'VV': 'Vː',
-        'nn': 'nː',
-        'NN': 'Nː',
-        'ss': 'sː',
-        'SS': 'Sː',
-        'oo': 'oː',
-        'OO': 'Oː'
-      };
-
+      // Replace geminated (double) consonants by single + ː
+      // We'll target common Italian consonants that may geminate.
+      // We use a regex capturing two identical consonants and replace with one + length mark.
+      // We also do uppercase variants.
       ipaOutput = ipaOutput.replace(
-        /rr|RR|vv|VV|nn|NN|ss|SS|oo|OO/g,
-        (match) => replacements[match] || match
+        /([ptkbdgfszʃʎɲnmrlv])\1/gi,
+        (match, p1) => {
+          // Use the lowercase/uppercase of p1, then append ː
+          // match might be uppercase or lowercase depending on input,
+          // so we preserve the case of p1.
+          return p1 + 'ː';
+        }
       );
 
       return ipaOutput;
@@ -123,7 +120,6 @@
         const token = tokens[i];
         const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
         const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
-        const isPunct = !isWord && !isNumber;
         if (i > 0) {
           const prev = tokens[i - 1];
           const isPrevPunct = /^[^\w\s]$/.test(prev);
