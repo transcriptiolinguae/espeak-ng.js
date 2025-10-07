@@ -68,6 +68,7 @@
         .replace(/ll/g, 'lː')
         .replace(/nn/g, 'nː')
         .replace(/s\u200Ds/g, 'sː') // s‍s = s + zero-width joiner + s
+        .replace(/t\u200D/g, 't')
         .replace(/oo/g, 'oː')
         .trim();
     }
