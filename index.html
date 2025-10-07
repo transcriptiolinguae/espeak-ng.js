@@ -33,137 +33,139 @@
   <button id="convertInline">Convert with Inline IPA</button>
   <pre id="output">[IPA transcription will appear here]</pre>
 
-<script type="module">
-  import initESpeak from './espeak-ng.js';
-  const outputElem = document.getElementById('output');
-  const inputElem = document.getElementById('input');
-  let wasmReady = false;
+  <script type="module">
+    import initESpeak from './espeak-ng.js';
+    const outputElem = document.getElementById('output');
+    const inputElem = document.getElementById('input');
+    let wasmReady = false;
 
-  window.addEventListener('load', async () => {
-    try {
-      await initESpeak({ print: () => {}, printErr: () => {} });
-      wasmReady = true;
-      console.log('eSpeak NG WASM loaded and ready');
-    } catch (e) {
-      console.error('Error loading WASM:', e);
-      outputElem.innerText = 'Error loading eSpeak WASM module.';
-    }
-  });
-
-  function printErrFiltered(err) {
-    if ( err.includes('still waiting on run dependencies')
-         || err.includes('dependency: wasm-instantiate')
-         || err.includes('(end of list)') ) {
-      return;
-    }
-    console.error('eSpeak stderr:', err);
-  }
-
-  async function runESpeak(text) {
-    let ipaOutput = '';
-    await initESpeak({
-      arguments: ['-v', 'it', '--ipa=3', text],
-      print: (text) => { ipaOutput += text; },
-      printErr: printErrFiltered
-    });
-    ipaOutput = ipaOutput.trim();
-
-    // Now replace only the specific doubles you want: rr, vv, nn, ss, oo
-    // (case-insensitive, if relevant)  
-    // We'll use a mapping for safety:
-    const replacements = {
-      'rr': 'rː',
-      'RR': 'Rː',
-      'vv': 'vː',
-      'VV': 'Vː',
-      'nn': 'nː',
-      'NN': 'Nː',
-      'ss': 'sː',
-      'SS': 'Sː',
-      'oo': 'oː',
-      'OO': 'Oː'
-    };
-
-    // Use a regex that finds those double letters
-    ipaOutput = ipaOutput.replace(
-      /rr|RR|vv|VV|nn|NN|ss|SS|oo|OO/g,
-      (match) => replacements[match] || match
-    );
-
-    return ipaOutput;
-  }
-
-  document.getElementById('convertInline').addEventListener('click', async () => {
-    outputElem.innerText = '';
-    if (!wasmReady) {
-      alert('Please wait, WASM is still loading...');
-      return;
-    }
-    const rawInput = inputElem.value.trim();
-    if (!rawInput) {
-      outputElem.innerText = '[Please enter some text]';
-      return;
-    }
-    const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-    if (!tokens) {
-      outputElem.innerText = '[No valid input]';
-      return;
-    }
-    const ipaMap = new Map();
-    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
-    try {
-      for (const word of uniqueWords) {
-        const ipa = await runESpeak(word);
-        ipaMap.set(word, ipa);
+    window.addEventListener('load', async () => {
+      try {
+        await initESpeak({ print: () => {}, printErr: () => {} });
+        wasmReady = true;
+        console.log('eSpeak NG WASM loaded and ready');
+      } catch (e) {
+        console.error('Error loading WASM:', e);
+        outputElem.innerText = 'Error loading eSpeak WASM module.';
       }
-    } catch (e) {
-      console.error('Error during IPA conversion:', e);
+    });
+
+    function printErrFiltered(err) {
+      if (
+        err.includes('still waiting on run dependencies') ||
+        err.includes('dependency: wasm-instantiate') ||
+        err.includes('(end of list)')
+      ) {
+        return;
+      }
+      console.error('eSpeak stderr:', err);
     }
-    const result = [];
-    for (let i = 0; i < tokens.length; i++) {
-      const token = tokens[i];
-      const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
-      const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
-      const isPunct = !isWord && !isNumber;
-      if (i > 0) {
-        const prev = tokens[i - 1];
-        const isPrevPunct = /^[^\w\s]$/.test(prev);
-        if ( !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?')
-            && !(prev === '(') ) {
-          result.push(' ');
+
+    async function runESpeak(text) {
+      let ipaOutput = '';
+      await initESpeak({
+        arguments: ['-v', 'it', '--ipa=3', text],
+        print: (chunk) => { ipaOutput += chunk; },
+        printErr: printErrFiltered
+      });
+      ipaOutput = ipaOutput.trim();
+
+      // Replace only the specific doubles you want:
+      const replacements = {
+        'rr': 'rː',
+        'RR': 'Rː',
+        'vv': 'vː',
+        'VV': 'Vː',
+        'nn': 'nː',
+        'NN': 'Nː',
+        'ss': 'sː',
+        'SS': 'Sː',
+        'oo': 'oː',
+        'OO': 'Oː'
+      };
+
+      ipaOutput = ipaOutput.replace(
+        /rr|RR|vv|VV|nn|NN|ss|SS|oo|OO/g,
+        (match) => replacements[match] || match
+      );
+
+      return ipaOutput;
+    }
+
+    document.getElementById('convertInline').addEventListener('click', async () => {
+      outputElem.innerText = '';
+      if (!wasmReady) {
+        alert('Please wait, WASM is still loading...');
+        return;
+      }
+      const rawInput = inputElem.value.trim();
+      if (!rawInput) {
+        outputElem.innerText = '[Please enter some text]';
+        return;
+      }
+      const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+      if (!tokens) {
+        outputElem.innerText = '[No valid input]';
+        return;
+      }
+      const ipaMap = new Map();
+      const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+      try {
+        for (const word of uniqueWords) {
+          const ipa = await runESpeak(word);
+          ipaMap.set(word, ipa);
+        }
+      } catch (e) {
+        console.error('Error during IPA conversion:', e);
+      }
+      const result = [];
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+        const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
+        const isPunct = !isWord && !isNumber;
+        if (i > 0) {
+          const prev = tokens[i - 1];
+          const isPrevPunct = /^[^\w\s]$/.test(prev);
+          if (
+            !(token === ')' || token === ',' || token === '.' ||
+              token === ';' || token === ':' || token === '!' || token === '?')
+            && !(prev === '(')
+          ) {
+            result.push(' ');
+          }
+        }
+        if (isWord) {
+          const ipa = ipaMap.get(token) || '';
+          result.push(`${token} (${ipa})`);
+        } else if (isNumber) {
+          result.push(token);
+        } else {
+          result.push(token);
         }
       }
-      if (isWord) {
-        const ipa = ipaMap.get(token) || '';
-        result.push(`${token} (${ipa})`);
-      } else if (isNumber) {
-        result.push(token);
-      } else {
-        result.push(token);
-      }
-    }
-    outputElem.innerText = result.join('');
-  });
+      outputElem.innerText = result.join('');
+    });
 
-  document.getElementById('convert').addEventListener('click', async () => {
-    outputElem.innerText = '';
-    if (!wasmReady) {
-      alert('Please wait, WASM is still loading...');
-      return;
-    }
-    const rawInput = inputElem.value.trim();
-    if (!rawInput) {
-      outputElem.innerText = '[Please enter some text]';
-      return;
-    }
-    const markedInput = rawInput.replace(/\s+/g, '|');
-    try {
-      let ipa = await runESpeak(markedInput);
-      outputElem.innerText = ipa.replace(/\|/g, ' ') || '[No output generated]';
-    } catch (e) {
-      outputElem.innerText = 'Error during transcription: ' + e.message;
-    }
-  });
-</script>
+    document.getElementById('convert').addEventListener('click', async () => {
+      outputElem.innerText = '';
+      if (!wasmReady) {
+        alert('Please wait, WASM is still loading...');
+        return;
+      }
+      const rawInput = inputElem.value.trim();
+      if (!rawInput) {
+        outputElem.innerText = '[Please enter some text]';
+        return;
+      }
+      const markedInput = rawInput.replace(/\s+/g, '|');
+      try {
+        let ipa = await runESpeak(markedInput);
+        outputElem.innerText = ipa.replace(/\|/g, ' ') || '[No output generated]';
+      } catch (e) {
+        outputElem.innerText = 'Error during transcription: ' + e.message;
+      }
+    });
+  </script>
 </body>
 </html>
