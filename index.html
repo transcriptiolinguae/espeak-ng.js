@@ -70,6 +70,7 @@
         .replace(/s\u200Ds/g, 'sː') // s‍s = s + zero-width joiner + s
         .replace(/t\u200D/g, 't')
         .replace(/d\u200D/g, 'd')
+        .replace(/ɾ/g, 'r')
         .replace(/oo/g, 'oː')
         .trim();
     }
