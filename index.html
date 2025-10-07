@@ -28,7 +28,9 @@
 </head>
 <body>
   <h1>Italian → IPA Transcription</h1>
-  <textarea id="input" rows="6" cols="60">pericolosamente (lotte civili), all</textarea><br />
+  <textarea id="input" rows="6" cols="60">
+La civiltà romana è spesso annoverata nell'antichità classica insieme all'antica Grecia, essendo quest'ultima una civiltà che ha ispirato parte della cultura romana.
+  </textarea><br />
   <button id="convert">Convert</button>
   <button id="convertInline">Convert with Inline IPA</button>
   <pre id="output">[IPA transcription will appear here]</pre>
@@ -39,6 +41,15 @@
     const outputElem = document.getElementById('output');
     const inputElem = document.getElementById('input');
     let wasmReady = false;
+
+    // These are the letter pairs to check in orthography and add length mark in IPA
+    const lengthenMap = {
+      'rr': 'r',
+      'nn': 'n',
+      'ss': 's',
+      'vv': 'v',
+      'oo': 'o'
+    };
 
     window.addEventListener('load', async () => {
       try {
@@ -62,23 +73,35 @@
       console.error('eSpeak stderr:', err);
     }
 
-    async function runESpeak(text) {
+    // Adds length mark ː based on original double letter if missing in IPA
+    function forceLengthMarks(originalWord, ipa) {
+      for (const [doubleLetter, ipaChar] of Object.entries(lengthenMap)) {
+        if (originalWord.toLowerCase().includes(doubleLetter)) {
+          const expected = ipaChar + 'ː';
+          const plain = ipaChar;
+
+          // Only add length mark if not already present
+          ipa = ipa.replace(new RegExp(`(${ipaChar})(?!ː)`, 'g'), (match, p1, offset) => {
+            // Inject ː only for the first match not already long
+            if (!ipa.includes(expected)) {
+              return p1 + 'ː';
+            }
+            return match;
+          });
+        }
+      }
+      return ipa;
+    }
+
+    async function runESpeak(word) {
       let ipaOutput = '';
       await initESpeak({
-        arguments: ['-v', 'it', '--ipa=3', text],
+        arguments: ['-v', 'it', '--ipa=3', word],
         print: (text) => {
           ipaOutput += text;
         },
         printErr: printErrFiltered
       });
-
-      // Replace specific double letters with single letter + ː
-      ipaOutput = ipaOutput
-        .replace(/rr/g, 'rː')
-        .replace(/vv/g, 'vː')
-        .replace(/nn/g, 'nː')
-        .replace(/ss/g, 'sː')
-        .replace(/oo/g, 'oː');
 
       return ipaOutput.trim();
     }
@@ -108,7 +131,8 @@
       try {
         for (const word of uniqueWords) {
           const ipa = await runESpeak(word);
-          ipaMap.set(word, ipa);
+          const fixedIpa = forceLengthMarks(word, ipa);
+          ipaMap.set(word, fixedIpa);
         }
       } catch (e) {
         console.error('Error during IPA conversion:', e);
@@ -120,11 +144,9 @@
         const token = tokens[i];
         const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
         const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
-        const isPunct = !isWord && !isNumber;
 
         if (i > 0) {
           const prev = tokens[i - 1];
-          const isPrevPunct = /^[^\w\s]$/.test(prev);
           if (
             !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
             !(prev === '(')
@@ -159,11 +181,17 @@
         return;
       }
 
-      const markedInput = rawInput.replace(/\s+/g, '|');
+      const words = rawInput.split(/\s+/);
+      const ipaWords = [];
 
       try {
-        let ipa = await runESpeak(markedInput);
-        outputElem.innerText = ipa.replace(/\|/g, ' ') || '[No output generated]';
+        for (const word of words) {
+          let ipa = await runESpeak(word);
+          ipa = forceLengthMarks(word, ipa);
+          ipaWords.push(ipa);
+        }
+
+        outputElem.innerText = ipaWords.join(' ') || '[No output generated]';
       } catch (e) {
         outputElem.innerText = 'Error during transcription: ' + e.message;
       }
