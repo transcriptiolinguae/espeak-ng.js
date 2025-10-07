@@ -4,15 +4,30 @@
   <meta charset="UTF-8" />
   <title>Italian to IPA (eSpeak NG WASM)</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 700px; }
-    textarea { font-size: 16px; width: 100%; }
-    pre { background: #f0f0f0; padding: 15px; white-space: pre-wrap; word-wrap: break-word; }
-    button { margin: 5px 10px 15px 0; padding: 8px 16px; font-size: 16px; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      max-width: 700px;
+    }
+    textarea {
+      font-size: 16px;
+      width: 100%;
+    }
+    pre {
+      background: #f0f0f0;
+      padding: 15px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    button {
+      margin: 5px 10px 15px 0;
+      padding: 8px 16px;
+      font-size: 16px;
+    }
   </style>
 </head>
 <body>
   <h1>Italian → IPA Transcription</h1>
-
   <textarea id="input" rows="6" cols="60">pericolosamente (lotte civili), all</textarea><br />
   <button id="convert">Convert</button>
   <button id="convertInline">Convert with Inline IPA</button>
@@ -23,15 +38,11 @@
 
     const outputElem = document.getElementById('output');
     const inputElem = document.getElementById('input');
-
     let wasmReady = false;
 
     window.addEventListener('load', async () => {
       try {
-        await initESpeak({
-          print: () => {},
-          printErr: () => {}
-        });
+        await initESpeak({ print: () => {}, printErr: () => {} });
         wasmReady = true;
         console.log('eSpeak NG WASM loaded and ready');
       } catch (e) {
@@ -63,23 +74,13 @@
       return ipaOutput.trim();
     }
 
-    // Canonicalize double consonants only if not already transcribed as long
-    function canonicalizeIPA(ipa) {
-      // List of consonants in Italian that commonly geminate
-      const geminatable = ['b', 'd', 'f', 'g', 'k', 'l', 'm', 'n', 'p', 'r', 's', 't', 'v', 'z', 'ɲ', 'ʎ'];
-
-      for (const cons of geminatable) {
-        // Replace only if not already followed by ː
-        const re = new RegExp(`(?<!${cons})${cons}${cons}(?!ː)`, 'g');
-        ipa = ipa.replace(re, `${cons}ː`);
-      }
-
-      return ipa;
+    // 🔄 Replace double consonants with single consonant + ː
+    function normalizeGeminates(ipa) {
+      return ipa.replace(/([ptkbdɡmnɲlrfszʃʎ])\1/g, '$1ː');
     }
 
     document.getElementById('convertInline').addEventListener('click', async () => {
       outputElem.innerText = '';
-
       if (!wasmReady) {
         alert('Please wait, WASM is still loading...');
         return;
@@ -98,17 +99,12 @@
       }
 
       const ipaMap = new Map();
-
-      const uniqueWords = [...new Set(
-        tokens.filter(t =>
-          /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
-        )
-      )];
+      const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
 
       try {
         for (const word of uniqueWords) {
-          const ipaRaw = await runESpeak(word);
-          const ipa = canonicalizeIPA(ipaRaw);
+          let ipa = await runESpeak(word);
+          ipa = normalizeGeminates(ipa);
           ipaMap.set(word, ipa);
         }
       } catch (e) {
@@ -118,16 +114,12 @@
       const result = [];
       for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
-
         const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
         const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
-        const isPunct = !isWord && !isNumber;
 
-        // Determine whether to add space before current token
         if (i > 0) {
           const prev = tokens[i - 1];
           const isPrevPunct = /^[^\w\s]$/.test(prev);
-
           if (
             !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
             !(prev === '(')
@@ -151,7 +143,6 @@
 
     document.getElementById('convert').addEventListener('click', async () => {
       outputElem.innerText = '';
-
       if (!wasmReady) {
         alert('Please wait, WASM is still loading...');
         return;
@@ -164,11 +155,10 @@
       }
 
       const markedInput = rawInput.replace(/\s+/g, '|');
-
       try {
-        const ipaRaw = await runESpeak(markedInput);
-        const ipa = canonicalizeIPA(ipaRaw.replace(/\|/g, ' '));
-        outputElem.innerText = ipa || '[No output generated]';
+        let ipa = await runESpeak(markedInput);
+        ipa = normalizeGeminates(ipa);
+        outputElem.innerText = ipa.replace(/\|/g, ' ') || '[No output generated]';
       } catch (e) {
         outputElem.innerText = 'Error during transcription: ' + e.message;
       }
@@ -176,4 +166,3 @@
   </script>
 </body>
 </html>
->
