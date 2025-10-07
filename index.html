@@ -71,12 +71,11 @@
         },
         printErr: printErrFiltered
       });
-      return ipaOutput.trim();
-    }
 
-    // 🔄 Replace double consonants with single consonant + ː
-    function normalizeGeminates(ipa) {
-      return ipa.replace(/([ptkbdɡmnɲlrfszʃʎ])\1/g, '$1ː');
+      // Replace double consonants with consonant + ː
+      ipaOutput = ipaOutput.replace(/([pbtdkgfvszʃʎɲmnlr])\1/g, '$1ː');
+
+      return ipaOutput.trim();
     }
 
     document.getElementById('convertInline').addEventListener('click', async () => {
@@ -103,8 +102,7 @@
 
       try {
         for (const word of uniqueWords) {
-          let ipa = await runESpeak(word);
-          ipa = normalizeGeminates(ipa);
+          const ipa = await runESpeak(word);
           ipaMap.set(word, ipa);
         }
       } catch (e) {
@@ -112,10 +110,12 @@
       }
 
       const result = [];
+
       for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
         const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
         const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
+        const isPunct = !isWord && !isNumber;
 
         if (i > 0) {
           const prev = tokens[i - 1];
@@ -155,9 +155,9 @@
       }
 
       const markedInput = rawInput.replace(/\s+/g, '|');
+
       try {
         let ipa = await runESpeak(markedInput);
-        ipa = normalizeGeminates(ipa);
         outputElem.innerText = ipa.replace(/\|/g, ' ') || '[No output generated]';
       } catch (e) {
         outputElem.innerText = 'Error during transcription: ' + e.message;
