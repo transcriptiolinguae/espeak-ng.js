@@ -63,6 +63,20 @@
       return ipaOutput.trim();
     }
 
+    // Canonicalize double consonants only if not already transcribed as long
+    function canonicalizeIPA(ipa) {
+      // List of consonants in Italian that commonly geminate
+      const geminatable = ['b', 'd', 'f', 'g', 'k', 'l', 'm', 'n', 'p', 'r', 's', 't', 'v', 'z', 'ɲ', 'ʎ'];
+
+      for (const cons of geminatable) {
+        // Replace only if not already followed by ː
+        const re = new RegExp(`(?<!${cons})${cons}${cons}(?!ː)`, 'g');
+        ipa = ipa.replace(re, `${cons}ː`);
+      }
+
+      return ipa;
+    }
+
     document.getElementById('convertInline').addEventListener('click', async () => {
       outputElem.innerText = '';
 
@@ -93,7 +107,8 @@
 
       try {
         for (const word of uniqueWords) {
-          const ipa = await runESpeak(word);
+          const ipaRaw = await runESpeak(word);
+          const ipa = canonicalizeIPA(ipaRaw);
           ipaMap.set(word, ipa);
         }
       } catch (e) {
@@ -151,8 +166,9 @@
       const markedInput = rawInput.replace(/\s+/g, '|');
 
       try {
-        const ipa = await runESpeak(markedInput);
-        outputElem.innerText = ipa.replace(/\|/g, ' ') || '[No output generated]';
+        const ipaRaw = await runESpeak(markedInput);
+        const ipa = canonicalizeIPA(ipaRaw.replace(/\|/g, ' '));
+        outputElem.innerText = ipa || '[No output generated]';
       } catch (e) {
         outputElem.innerText = 'Error during transcription: ' + e.message;
       }
