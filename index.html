@@ -24,7 +24,7 @@
     const outputElem = document.getElementById('output');
     const inputElem = document.getElementById('input');
 
-    let wasmReady = false;a
+    let wasmReady = false;
 
     window.addEventListener('load', async () => {
       try {
@@ -51,6 +51,16 @@
       console.error('eSpeak stderr:', err);
     }
 
+    // ✅ Function to replace specific sequences with lengthened forms
+    function replaceDoubleSegments(ipa) {
+      return ipa
+        .replace(/rɾ/g, 'rː')
+        .replace(/vv/g, 'vː')
+        .replace(/nn/g, 'nː')
+        .replace(/s‍s‍/g, 'sː')
+        .replace(/oo/g, 'oː');
+    }
+
     async function runESpeak(text) {
       let ipaOutput = '';
       await initESpeak({
@@ -60,7 +70,7 @@
         },
         printErr: printErrFiltered
       });
-      return ipaOutput.trim();
+      return replaceDoubleSegments(ipaOutput.trim()); // ✅ Apply replacements
     }
 
     document.getElementById('convertInline').addEventListener('click', async () => {
@@ -108,7 +118,6 @@
         const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
         const isPunct = !isWord && !isNumber;
 
-        // Determine whether to add space before current token
         if (i > 0) {
           const prev = tokens[i - 1];
           const isPrevPunct = /^[^\w\s]$/.test(prev);
@@ -124,8 +133,6 @@
         if (isWord) {
           const ipa = ipaMap.get(token) || '';
           result.push(`${token} (${ipa})`);
-        } else if (isNumber) {
-          result.push(token);
         } else {
           result.push(token);
         }
