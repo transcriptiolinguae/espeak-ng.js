@@ -61,8 +61,8 @@
     }
 
     button {
-      background: #2980b9;
-      color: #fff;
+      background: #bdc3c7; /* light grey */
+      color: #2c3e50; /* dark text for contrast */
       border: none;
       border-radius: 6px;
       padding: 0.65em 1.4em;
@@ -71,20 +71,20 @@
       font-weight: 600;
       transition: background-color 0.25s ease;
       margin-right: 1rem;
-      box-shadow: 0 2px 5px rgba(41, 128, 185, 0.3);
+      box-shadow: none; /* removed shadow */
     }
 
     button:hover,
     button:focus {
-      background: #1c5980;
+      background: #95a5a6; /* darker grey on hover/focus */
       outline: none;
-      box-shadow: 0 4px 10px rgba(28, 89, 128, 0.6);
+      box-shadow: none; /* ensure no shadow on hover */
     }
 
     button:disabled {
-      background: #95a5a6;
+      background: #ecf0f1; /* very light grey */
       cursor: not-allowed;
-      box-shadow: none;
+      box-shadow: none; /* no shadow */
     }
   </style>
 </head>
