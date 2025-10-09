@@ -13,11 +13,13 @@
       padding: 2rem 1rem;
       display: flex;
       justify-content: center;
+      align-items: center;
+      min-height: 100vh;
     }
 
     .container {
       width: 100%;
-      max-width: 520px;
+      max-width: 480px;
       text-align: center;
     }
 
@@ -39,7 +41,10 @@
     }
 
     textarea {
+      display: block;
+      margin: 0 auto;
       width: 100%;
+      max-width: 380px;
       padding: 0.75em 1em;
       font-size: 1rem;
       font-family: inherit;
@@ -48,6 +53,7 @@
       resize: vertical;
       transition: border-color 0.3s ease;
       box-sizing: border-box;
+      text-align: center;
     }
 
     textarea:focus {
@@ -57,7 +63,7 @@
     }
 
     .buttons {
-      margin-top: 1rem;
+      margin-top: 1.5rem;
     }
 
     button {
@@ -87,17 +93,19 @@
     }
 
     pre {
-      margin-top: 2rem;
-      padding: 1.25rem 1.5rem;
+      margin: 2rem auto 0 auto;
+      padding: 1rem;
       background: #f2f4f5;
       border-radius: 8px;
       font-family: "Fira Mono", monospace;
       font-size: 0.95rem;
       color: #2c3e50;
-      text-align: left;
       white-space: pre-wrap;
       word-break: break-word;
+      text-align: center;
       box-shadow: inset 0 0 5px #dfe6e9;
+      width: 100%;
+      max-width: 380px;
     }
   </style>
   </style>
