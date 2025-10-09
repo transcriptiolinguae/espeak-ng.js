@@ -19,10 +19,7 @@
   <pre id="output">[IPA transcription will appear here]</pre>
 
   <script>
-    window.prompt = function(message) {
-      console.warn("Suppressed prompt:", message);
-      return '';
-    };
+    window.prompt = () => '';
   </script>
 
   <script type="module">
