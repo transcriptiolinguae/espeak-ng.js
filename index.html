@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -18,17 +18,26 @@
   <button id="convertInline">Convert with Inline IPA</button>
   <pre id="output">[IPA transcription will appear here]</pre>
 
+  <!-- ✅ Prevent prompt() fallback -->
+  <script>
+    window.prompt = function(message) {
+      console.warn("Suppressed prompt:", message);
+      return '';
+    };
+  </script>
+
+  <!-- ✅ Main logic -->
   <script type="module">
     import initESpeak from './espeak-ng.js';
 
     const outputElem = document.getElementById('output');
     const inputElem = document.getElementById('input');
-
     let wasmReady = false;
+    let espeakModule;
 
     window.addEventListener('load', async () => {
       try {
-        await initESpeak({
+        espeakModule = await initESpeak({
           print: () => {},
           printErr: () => {}
         });
@@ -45,15 +54,13 @@
         err.includes('still waiting on run dependencies') ||
         err.includes('dependency: wasm-instantiate') ||
         err.includes('(end of list)')
-      ) {
-        return;
-      }
+      ) return;
       console.error('eSpeak stderr:', err);
     }
 
     async function runESpeak(text) {
       let ipaOutput = '';
-      await initESpeak({
+      espeakModule = await initESpeak({
         arguments: ['-v', 'it', '--ipa=3', text],
         print: (text) => {
           ipaOutput += text;
@@ -61,13 +68,12 @@
         printErr: printErrFiltered
       });
 
-      // Apply substitution rules
       return ipaOutput
         .replace(/rɾ/g, 'rː')
         .replace(/vv/g, 'vː')
         .replace(/ll/g, 'lː')
         .replace(/nn/g, 'nː')
-        .replace(/s\u200Ds/g, 'sː') // s‍s = s + zero-width joiner + s
+        .replace(/s\u200Ds/g, 'sː')
         .replace(/t\u200D/g, 't')
         .replace(/d\u200D/g, 'd')
         .replace(/ɾ/g, 'r')
@@ -77,31 +83,16 @@
 
     document.getElementById('convertInline').addEventListener('click', async () => {
       outputElem.innerText = '';
-
-      if (!wasmReady) {
-        alert('Please wait, WASM is still loading...');
-        return;
-      }
+      if (!wasmReady) return alert('Please wait, WASM is still loading...');
 
       const rawInput = inputElem.value.trim();
-      if (!rawInput) {
-        outputElem.innerText = '[Please enter some text]';
-        return;
-      }
+      if (!rawInput) return outputElem.innerText = '[Please enter some text]';
 
       const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-      if (!tokens) {
-        outputElem.innerText = '[No valid input]';
-        return;
-      }
+      if (!tokens) return outputElem.innerText = '[No valid input]';
 
       const ipaMap = new Map();
-
-      const uniqueWords = [...new Set(
-        tokens.filter(t =>
-          /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
-        )
-      )];
+      const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
 
       try {
         for (const word of uniqueWords) {
@@ -115,16 +106,11 @@
       const result = [];
       for (let i = 0; i < tokens.length; i++) {
         const token = tokens[i];
-
         const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
         const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
-        const isPunct = !isWord && !isNumber;
 
-        // Determine whether to add space before current token
         if (i > 0) {
           const prev = tokens[i - 1];
-          const isPrevPunct = /^[^\w\s]$/.test(prev);
-
           if (
             !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
             !(prev === '(')
@@ -136,8 +122,6 @@
         if (isWord) {
           const ipa = ipaMap.get(token) || '';
           result.push(`${token} (${ipa})`);
-        } else if (isNumber) {
-          result.push(token);
         } else {
           result.push(token);
         }
@@ -148,17 +132,10 @@
 
     document.getElementById('convert').addEventListener('click', async () => {
       outputElem.innerText = '';
-
-      if (!wasmReady) {
-        alert('Please wait, WASM is still loading...');
-        return;
-      }
+      if (!wasmReady) return alert('Please wait, WASM is still loading...');
 
       const rawInput = inputElem.value.trim();
-      if (!rawInput) {
-        outputElem.innerText = '[Please enter some text]';
-        return;
-      }
+      if (!rawInput) return outputElem.innerText = '[Please enter some text]';
 
       const markedInput = rawInput.replace(/\s+/g, '|');
 
