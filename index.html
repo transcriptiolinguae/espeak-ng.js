@@ -5,88 +5,100 @@
   <title>Transcriptio Linguae</title>
   <style>
   <style>
-body {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  max-width: 700px;
-  margin: 2rem auto;
-  padding: 0 1rem;
-  color: #2c3e50;
-  background: #ffffff;
-  line-height: 1.6;
-  font-size: 16px;
-}
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: #ffffff;
+      color: #2c3e50;
+      margin: 0;
+      padding: 2rem 1rem;
+      display: flex;
+      justify-content: center;
+    }
 
-h1, h3 {
-  text-align: center;
-  color: #34495e;
-  margin: 0 0 0.5rem 0;
-  font-weight: 700;
-}
+    .container {
+      width: 100%;
+      max-width: 520px;
+      text-align: center;
+    }
 
-h3 {
-  font-weight: 500;
-  color: #7f8c8d;
-  margin-bottom: 2rem;
-}
+    h1, h3 {
+      color: #34495e;
+      margin: 0 0 0.5rem 0;
+    }
 
-textarea {
-  font-size: 1rem;
-  width: 100%;
-  min-height: 6em;
-  padding: 0.75em 1em;
-  border: 1.5px solid #bdc3c7;
-  border-radius: 6px;
-  resize: vertical;
-  font-family: inherit;
-  box-sizing: border-box;
-  transition: border-color 0.3s ease;
-}
+    h1 {
+      font-weight: 700;
+      font-size: 2rem;
+    }
 
-textarea:focus {
-  border-color: #2980b9;
-  outline: none;
-  box-shadow: 0 0 5px rgba(41, 128, 185, 0.4);
-}
+    h3 {
+      font-weight: 500;
+      color: #7f8c8d;
+      margin-bottom: 2rem;
+      font-size: 1.1rem;
+    }
 
-pre {
-  background: #ecf0f1;
-  padding: 1.25rem 1.5rem;
-  border-radius: 8px;
-  font-family: "Fira Mono", monospace, monospace;
-  font-size: 0.95rem;
-  white-space: pre-wrap;
-  word-break: break-word;
-  color: #2c3e50;
-  margin-top: 2rem;
-  box-shadow: inset 0 0 5px #dfe6e9;
-}
+    textarea {
+      width: 100%;
+      padding: 0.75em 1em;
+      font-size: 1rem;
+      font-family: inherit;
+      border: 1.5px solid #bdc3c7;
+      border-radius: 6px;
+      resize: vertical;
+      transition: border-color 0.3s ease;
+      box-sizing: border-box;
+    }
 
-button {
-  background: #2980b9;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 0.65em 1.4em;
-  font-size: 1rem;
-  cursor: pointer;
-  font-weight: 600;
-  transition: background-color 0.25s ease;
-  margin-right: 1rem;
-  box-shadow: 0 2px 5px rgba(41, 128, 185, 0.3);
-}
+    textarea:focus {
+      border-color: #2980b9;
+      outline: none;
+      box-shadow: 0 0 5px rgba(41, 128, 185, 0.4);
+    }
 
-button:hover,
-button:focus {
-  background: #1c5980;
-  outline: none;
-  box-shadow: 0 4px 10px rgba(28, 89, 128, 0.6);
-}
+    .buttons {
+      margin-top: 1rem;
+    }
 
-button:disabled {
-  background: #95a5a6;
-  cursor: not-allowed;
-  box-shadow: none;
-}
+    button {
+      background: #2980b9;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 0.6em 1.4em;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 0.5rem;
+      transition: background-color 0.25s ease;
+      box-shadow: 0 2px 5px rgba(41, 128, 185, 0.3);
+    }
+
+    button:hover,
+    button:focus {
+      background: #1c5980;
+      outline: none;
+    }
+
+    button:disabled {
+      background: #95a5a6;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    pre {
+      margin-top: 2rem;
+      padding: 1.25rem 1.5rem;
+      background: #f2f4f5;
+      border-radius: 8px;
+      font-family: "Fira Mono", monospace;
+      font-size: 0.95rem;
+      color: #2c3e50;
+      text-align: left;
+      white-space: pre-wrap;
+      word-break: break-word;
+      box-shadow: inset 0 0 5px #dfe6e9;
+    }
   </style>
   </style>
 </head>
