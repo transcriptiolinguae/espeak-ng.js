@@ -1,16 +1,14 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Transcriptio Linguae</title>
   <style>
-    /* Ensure base font size across devices */
     html {
       font-size: 16px;
     }
 
-    /* Base page styles */
     body {
       font-family: Arial, sans-serif;
       max-width: 800px;
@@ -19,10 +17,9 @@
       color: #2c3e50;
       background: #ffffff;
       line-height: 1.6;
-      font-size: 1rem; /* Matches html base */
+      font-size: 1rem;
     }
 
-    /* h1 in Times New Roman */
     h1 {
       font-family: "Times New Roman", Times, serif;
       text-align: center;
@@ -31,7 +28,6 @@
       font-weight: 700;
     }
 
-    /* h3 styled as h2 in sans-serif */
     h3 {
       font-family: Arial, sans-serif;
       text-align: center;
@@ -40,7 +36,6 @@
       margin-bottom: 2rem;
     }
 
-    /* Input and Output font matching */
     textarea, pre {
       font-family: Arial, sans-serif;
       font-size: 1rem;
@@ -58,18 +53,32 @@
       transition: border-color 0.3s ease;
     }
 
+    textarea::placeholder {
+      color: grey;
+      user-select: none;
+    }
+
     pre {
       background: #ecf0f1;
       padding: 1.25rem 1.5rem;
       border-radius: 8px;
       white-space: pre-wrap;
       word-break: break-word;
-      color: #2c3e50;
       margin-top: 2rem;
       box-shadow: inset 0 0 5px #dfe6e9;
     }
 
-    /* Buttons with sans-serif */
+    /* Placeholder style for output field */
+    pre.placeholder {
+      color: grey;
+      user-select: none;
+    }
+
+    pre:not(.placeholder) {
+      color: #2c3e50;
+      user-select: text;
+    }
+
     button {
       font-family: Arial, sans-serif;
       background: #909599;
@@ -83,23 +92,19 @@
       transition: background-color 0.25s ease;
       margin-right: 1rem;
       margin-bottom: 2px;
-      box-shadow: none;
     }
 
     button:hover,
     button:focus {
       background: #abb1b4;
       outline: none;
-      box-shadow: none;
     }
 
     button:disabled {
       background: #ecf0f1;
       cursor: not-allowed;
-      box-shadow: none;
     }
 
-    /* Slightly larger font for small screens */
     @media (max-width: 600px) {
       textarea, pre {
         font-size: 1.1rem;
@@ -111,10 +116,10 @@
   <h1>Transcriptio Linguae</h1>
   <h3>Italiano → AFI Trascrizione</h3>
 
-  <textarea id="input" rows="6" cols="60">pericolosamente (lotte civili), all</textarea><br />
+  <textarea id="input" rows="6" cols="60" placeholder="Inserisci testo in italiano"></textarea><br />
   <button id="convert">AFI</button>
   <button id="convertInline">Testo e AFI</button>
-  <pre id="output">[La trascrizione IPA apparirà qui]</pre>
+  <pre id="output" class="placeholder">Trascrizione</pre>
 
   <script type="module">
     import initESpeak from './espeak-ng.js';
@@ -134,6 +139,7 @@
         console.log('eSpeak NG WASM loaded and ready');
       } catch (e) {
         console.error('Error loading WASM:', e);
+        outputElem.classList.remove('placeholder');
         outputElem.innerText = 'Error loading eSpeak WASM module.';
       }
     });
@@ -159,7 +165,6 @@
         printErr: printErrFiltered
       });
 
-      // Apply substitution rules
       return ipaOutput
         .replace(/rɾ/g, 'rː')
         .replace(/mm/g, 'mː')
@@ -167,7 +172,7 @@
         .replace(/vv/g, 'vː')
         .replace(/ll/g, 'lː')
         .replace(/nn/g, 'nː')
-        .replace(/s\u200Ds/g, 'sː') // s‍s = s + zero-width joiner + s
+        .replace(/s\u200Ds/g, 'sː')
         .replace(/t\u200D/g, 't')
         .replace(/d\u200D/g, 'd')
         .replace(/ɾ/g, 'r')
@@ -175,8 +180,18 @@
         .trim();
     }
 
+    function showPlaceholder() {
+      outputElem.classList.add('placeholder');
+      outputElem.innerText = 'Trascrizione';
+    }
+
+    function setOutput(text) {
+      outputElem.classList.remove('placeholder');
+      outputElem.innerText = text;
+    }
+
     document.getElementById('convertInline').addEventListener('click', async () => {
-      outputElem.innerText = '';
+      showPlaceholder();
 
       if (!wasmReady) {
         alert('Please wait, WASM is still loading...');
@@ -185,13 +200,13 @@
 
       const rawInput = inputElem.value.trim();
       if (!rawInput) {
-        outputElem.innerText = '[Please enter some text]';
+        showPlaceholder();
         return;
       }
 
       const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
       if (!tokens) {
-        outputElem.innerText = '[No valid input]';
+        setOutput('[No valid input]');
         return;
       }
 
@@ -220,7 +235,6 @@
         const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
         const isPunct = !isWord && !isNumber;
 
-        // Determine whether to add space before current token
         if (i > 0) {
           const prev = tokens[i - 1];
           const isPrevPunct = /^[^\w\s]$/.test(prev);
@@ -236,18 +250,16 @@
         if (isWord) {
           const ipa = ipaMap.get(token) || '';
           result.push(`${token} (${ipa})`);
-        } else if (isNumber) {
-          result.push(token);
         } else {
           result.push(token);
         }
       }
 
-      outputElem.innerText = result.join('');
+      setOutput(result.join(''));
     });
 
     document.getElementById('convert').addEventListener('click', async () => {
-      outputElem.innerText = '';
+      showPlaceholder();
 
       if (!wasmReady) {
         alert('Please wait, WASM is still loading...');
@@ -256,7 +268,7 @@
 
       const rawInput = inputElem.value.trim();
       if (!rawInput) {
-        outputElem.innerText = '[Please enter some text]';
+        showPlaceholder();
         return;
       }
 
@@ -264,9 +276,9 @@
 
       try {
         const ipa = await runESpeak(markedInput);
-        outputElem.innerText = ipa.replace(/\|/g, ' ') || '[No output generated]';
+        setOutput(ipa.replace(/\|/g, ' ') || '[No output generated]');
       } catch (e) {
-        outputElem.innerText = 'Error during transcription: ' + e.message;
+        setOutput('Error during transcription: ' + e.message);
       }
     });
   </script>
