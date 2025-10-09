@@ -1458,10 +1458,9 @@ function dbg(text) {
         if (typeof window != 'undefined' &&
           typeof window.prompt == 'function') {
           // Browser.
-            //result = window.prompt('Input: ');  // returns null on cancel
-          //if (result !== null) {
-          //  result += '\n';
-
+          result = window.prompt('Input: ');  // returns null on cancel
+          if (result !== null) {
+        //  result += '\n';
             // result = window.prompt('Input: ');  // Disabled
             result = null;  // Simulate no input / EOF
           }
