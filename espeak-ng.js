@@ -1462,6 +1462,7 @@ function dbg(text) {
 //        if (result !== null) {
 //          result += '\n';
 //        }
+
 // result = window.prompt('Input: ');  // Disabled
 result = null;  // Simulate no input / EOF
 
