@@ -304,6 +304,13 @@
 
 
 
+
+
+
+
+
+    
+
     function graphemeToPhoneme(word, ipa) {
   const mapping = [];
 
@@ -385,26 +392,197 @@
   if (!rawInput) {
     showPlaceholder();
     return;
-  }
+  }document.getElementById('convertG2P').addEventListener('click', async () => {
+  showProgressPlaceholder();
 
-  // Extract pairs like: parola (IPA)
-  const wordIpaPairs = [...rawInput.matchAll(/(\w+)\s*\(([^)]+)\)/g)];
-
-  if (wordIpaPairs.length === 0) {
-    setOutput('[No word–IPA pairs found]');
+  if (!wasmReady) {
+    alert('Please wait, WASM is still loading...');
     return;
   }
 
-  const outputWords = [];
-
-  for (const [_, word, ipa] of wordIpaPairs) {
-    const g2pResult = graphemeToPhoneme(word, ipa);
-    outputWords.push(g2pResult);
+  const rawInput = inputElem.value.trim();
+  if (!rawInput) {
+    showPlaceholder();
+    return;
   }
 
-  setOutput(outputWords.join(' '));
+  const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+  if (!tokens) {
+    setOutput('[No valid input]');
+    return;
+  }
+
+  const ipaMap = new Map();
+
+  const uniqueWords = [...new Set(
+    tokens.filter(t =>
+      /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
+    )
+  )];
+
+  try {
+    for (const word of uniqueWords) {
+      const ipa = await runESpeak(word);
+      ipaMap.set(word, ipa);
+    }
+  } catch (e) {
+    console.error('Error during IPA conversion:', e);
+    setOutput('Error during transcription: ' + e.message);
+    return;
+  }
+
+  const g2pResult = [];
+
+  for (const token of tokens) {
+    if (/^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/.test(token)) {
+      const ipa = ipaMap.get(token);
+      if (!ipa) {
+        g2pResult.push(token);
+        continue;
+      }
+      const graphemes = [...token];
+      let ipaIndex = 0;
+      let g2pWord = '';
+
+      for (let i = 0; i < graphemes.length; i++) {
+        const g = graphemes[i];
+        const next = graphemes[i + 1] || '';
+        const next2 = graphemes[i + 2] || '';
+        const restIPA = ipa.slice(ipaIndex);
+
+        let pair = g + next;
+        let triple = g + next + next2;
+
+        // === Special clusters ===
+        if (/^gli/.test(triple) && restIPA.startsWith('ʎi')) {
+          g2pWord += `gl(ʎ)i(i)`;
+          i += 2; ipaIndex += 2;
+          continue;
+        }
+
+        if (/^sci/.test(triple) && restIPA.startsWith('ʃ')) {
+          g2pWord += `s(ʃ)c(i)`;
+          i += 2; ipaIndex += 1;
+          continue;
+        }
+
+        if (/^cci/.test(triple) && restIPA.startsWith('tʃː')) {
+          g2pWord += `cc(tʃː)i(i)`;
+          i += 2; ipaIndex += 3;
+          continue;
+        }
+
+        if (/^ggi/.test(triple) && restIPA.startsWith('dʒː')) {
+          g2pWord += `gg(dʒː)i(i)`;
+          i += 2; ipaIndex += 3;
+          continue;
+        }
+
+        if (/^ci/.test(pair) && restIPA.startsWith('tʃ')) {
+          g2pWord += `c(tʃ)i(i)`;
+          i += 1; ipaIndex += 2;
+          continue;
+        }
+
+        if (/^gi/.test(pair) && restIPA.startsWith('dʒ')) {
+          g2pWord += `g(dʒ)i(i)`;
+          i += 1; ipaIndex += 2;
+          continue;
+        }
+
+        if (/^ch[ei]/.test(pair + next2)) {
+          g2pWord += `ch(k)` + `${next2}(${next2})`;
+          i += 2; ipaIndex += 1;
+          continue;
+        }
+
+        if (/^gh[ei]/.test(pair + next2)) {
+          g2pWord += `gh(g)` + `${next2}(${next2})`;
+          i += 2; ipaIndex += 1;
+          continue;
+        }
+
+        if (pair === 'sc' && restIPA.startsWith('ʃ')) {
+          g2pWord += `sc(ʃ)`;
+          i += 1; ipaIndex += 1;
+          continue;
+        }
+
+        if (pair === 'gn' && restIPA.startsWith('ɲ')) {
+          g2pWord += `gn(ɲ)`;
+          i += 1; ipaIndex += 1;
+          continue;
+        }
+
+        if (pair === 'zz' && restIPA.startsWith('tsː')) {
+          g2pWord += `zz(tsː)`;
+          i += 1; ipaIndex += 3;
+          continue;
+        }
+
+        if (pair === 'zz' && restIPA.startsWith('dzː')) {
+          g2pWord += `zz(dzː)`;
+          i += 1; ipaIndex += 3;
+          continue;
+        }
+
+        if (pair === 'gg' && restIPA.startsWith('dʒː')) {
+          g2pWord += `gg(dʒː)`;
+          i += 1; ipaIndex += 3;
+          continue;
+        }
+
+        if (pair === 'cc' && restIPA.startsWith('kː')) {
+          g2pWord += `cc(kː)`;
+          i += 1; ipaIndex += 2;
+          continue;
+        }
+
+        // === Single letter mappings ===
+        const mapping = {
+          b: 'b',
+          c: 'k',
+          d: 'd',
+          f: 'f',
+          g: 'ɡ',
+          h: '', // silent
+          l: 'l',
+          m: 'm',
+          n: 'n',
+          p: 'p',
+          q: 'k',
+          r: 'r',
+          s: restIPA.startsWith('z') ? 'z' : 's',
+          t: 't',
+          v: 'v',
+          z: restIPA.startsWith('ts') ? 'ts' : restIPA.startsWith('dz') ? 'dz' : 'z',
+          a: 'a',
+          e: 'ɛ',
+          o: 'ɔ',
+          i: 'i',
+          u: 'u',
+        };
+
+        const ipaChar = ipa[ipaIndex];
+        const phoneme = mapping[g.toLowerCase()] || ipaChar || '';
+
+        if (phoneme) {
+          g2pWord += `${g}(${phoneme})`;
+          ipaIndex += phoneme.length;
+        } else {
+          g2pWord += g;
+        }
+      }
+
+      g2pResult.push(g2pWord);
+    } else {
+      g2pResult.push(token);
+    }
+  }
+
+  setOutput(g2pResult.join(' '));
 });
- 
+
   </script>
 </body>
 </html>
