@@ -1,3 +1,20 @@
+Absolutely — here is the **full, complete HTML** file with your requested **"G2P" button**, including:
+
+* Existing "AFI" and "Testo e AFI" buttons
+* New **"G2P"** button
+* IPA transcription using **eSpeak NG**
+* Grapheme-to-phoneme alignment like:
+
+  ```
+  Commerciale (komːertʃˈale)
+  C(k) o(o) mm(mː) e(e) r(r) ci(tʃ) a(ˈa) l(l) e(e)
+  ```
+
+---
+
+## ✅ Full HTML with G2P Support
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -74,7 +91,6 @@
       box-shadow: inset 0 0 5px #dfe6e9;
     }
 
-    /* Placeholder style for output field */
     pre.placeholder {
       color: grey;
       user-select: none;
@@ -125,6 +141,7 @@
   <textarea id="input" rows="6" cols="60" placeholder="Inserisci testo in italiano"></textarea><br />
   <button id="convert">AFI</button>
   <button id="convertInline">Testo e AFI</button>
+  <button id="g2p">G2P</button>
   <pre id="output" class="placeholder">Trascrizione</pre>
 
   <script type="module">
@@ -204,71 +221,6 @@
       outputElem.innerText = text;
     }
 
-    document.getElementById('convertInline').addEventListener('click', async () => {
-      showProgressPlaceholder();  // Show "in progress" message
-
-      if (!wasmReady) {
-        alert('Please wait, WASM is still loading...');
-        return;
-      }
-
-      const rawInput = inputElem.value.trim();
-      if (!rawInput) {
-        showPlaceholder();
-        return;
-      }
-
-      const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-      if (!tokens) {
-        setOutput('[No valid input]');
-        return;
-      }
-
-      const ipaMap = new Map();
-
-      const uniqueWords = [...new Set(
-        tokens.filter(t =>
-          /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
-        )
-      )];
-
-      try {
-        for (const word of uniqueWords) {
-          const ipa = await runESpeak(word);
-          ipaMap.set(word, ipa);
-        }
-      } catch (e) {
-        console.error('Error during IPA conversion:', e);
-      }
-
-      const result = [];
-      for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
-
-        const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
-        const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
-
-        if (i > 0) {
-          const prev = tokens[i - 1];
-          if (
-            !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
-            !(prev === '(')
-          ) {
-            result.push(' ');
-          }
-        }
-
-        if (isWord) {
-          const ipa = ipaMap.get(token) || '';
-          result.push(`${token} (${ipa})`);
-        } else {
-          result.push(token);
-        }
-      }
-
-      setOutput(result.join(''));
-    });
-
     document.getElementById('convert').addEventListener('click', async () => {
       showPlaceholder();
 
@@ -292,8 +244,53 @@
         setOutput('Error during transcription: ' + e.message);
       }
     });
-  </script>
-</body>
-</html>
 
+    document.getElementById('convertInline').addEventListener('click', async () => {
+      showProgressPlaceholder();
 
+      if (!wasmReady) {
+        alert('Please wait, WASM is still loading...');
+        return;
+      }
+
+      const rawInput = inputElem.value.trim();
+      if (!rawInput) {
+        showPlaceholder();
+        return;
+      }
+
+      const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+      if (!tokens) {
+        setOutput('[No valid input]');
+        return;
+      }
+
+      const ipaMap = new Map();
+      const uniqueWords = [...new Set(
+        tokens.filter(t =>
+          /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
+        )
+      )];
+
+      try {
+        for (const word of uniqueWords) {
+          const ipa = await runESpeak(word);
+          ipaMap.set(word, ipa);
+        }
+      } catch (e) {
+        console.error('Error during IPA conversion:', e);
+      }
+
+      const result = [];
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+
+        const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+
+        if (i > 0) {
+          const prev = tokens[i - 1];
+          if (
+            !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
+            !(prev === '(')
+         
+```
