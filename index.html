@@ -1,94 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Transcriptio Linguae</title>
-  <style>
-    html {
-      font-size: 16px;
-    }
 
-    body {
-      font-family: Arial, sans-serif;
-      max-width: 800px;
-      margin: 2rem auto;
-      padding: 0 3rem;
-      color: #2c3e50;
-      background: #ffffff;
-      line-height: 1.6;
-      font-size: 1rem;
-    }
-
-    h1 {
-      font-family: "Times New Roman", Times, serif;
-      text-align: center;
-      color: #34495e;
-      margin: 0 0 0.5rem 0;
-      font-weight: 700;
-    }
-
-    h3 {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      font-weight: 500;
-      color: #7f8c8d;
-      margin-bottom: 2rem;
-    }
-
-    textarea, pre {
-      font-family: Arial, sans-serif;
-      font-size: 1rem;
-      line-height: 1.5;
-    }
-
-    textarea {
-      width: 100%;
-      min-height: 6em;
-      padding: 0.75em 1em;
-      border: 1.5px solid #ccc;
-      border-radius: 6px;
-      resize: vertical;
-      box-sizing: border-box;
-      transition: border-color 0.3s ease;
-    }
-
-    textarea:focus {
-      outline: none;
-      border: 1.5px solid #ccc;
-      box-shadow: none;
-    }
-
-    textarea::placeholder {
-      color: grey;
-      user-select: none;
-    }
-
-    pre {
-      background: #ecf0f1;
-      padding: 1.25rem 1.5rem;
-      border-radius: 8px;
-      white-space: pre-wrap;
-      word-break: break-word;
-      margin-top: 2rem;
-      box-shadow: inset 0 0 5px #dfe6e9;
-    }
-
-    pre.placeholder {
-      color: grey;
-      user-select: none;
-    }
-
-    pre:not(.placeholder) {
-      color: #2c3e50;
-      user-select: text;
-    }
-
-    button {
-      font-family: Arial, sans-serif;
-      background: #909599;
-      color: #ffffff;
-      border: none;
       border-radius: 6px;
       padding: 0.65em 1.4em;
       font-size: 1rem;
@@ -204,6 +114,71 @@
       outputElem.innerText = text;
     }
 
+    document.getElementById('convertInline').addEventListener('click', async () => {
+      showProgressPlaceholder();  // Show "in progress" message
+
+      if (!wasmReady) {
+        alert('Please wait, WASM is still loading...');
+        return;
+      }
+
+      const rawInput = inputElem.value.trim();
+      if (!rawInput) {
+        showPlaceholder();
+        return;
+      }
+
+      const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+      if (!tokens) {
+        setOutput('[No valid input]');
+        return;
+      }
+
+      const ipaMap = new Map();
+
+      const uniqueWords = [...new Set(
+        tokens.filter(t =>
+          /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
+        )
+      )];
+
+      try {
+        for (const word of uniqueWords) {
+          const ipa = await runESpeak(word);
+          ipaMap.set(word, ipa);
+        }
+      } catch (e) {
+        console.error('Error during IPA conversion:', e);
+      }
+
+      const result = [];
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+
+        const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+        const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
+
+        if (i > 0) {
+          const prev = tokens[i - 1];
+          if (
+            !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
+            !(prev === '(')
+          ) {
+            result.push(' ');
+          }
+        }
+
+        if (isWord) {
+          const ipa = ipaMap.get(token) || '';
+          result.push(`${token} (${ipa})`);
+        } else {
+          result.push(token);
+        }
+      }
+
+      setOutput(result.join(''));
+    });
+
     document.getElementById('convert').addEventListener('click', async () => {
       showPlaceholder();
 
@@ -228,53 +203,131 @@
       }
     });
 
-    document.getElementById('convertInline').addEventListener('click', async () => {
-      showProgressPlaceholder();
+document.getElementById('g2p').addEventListener('click', async () => {
+  showProgressPlaceholder();
 
-      if (!wasmReady) {
-        alert('Please wait, WASM is still loading...');
-        return;
+  if (!wasmReady) {
+    alert('Please wait, WASM is still loading...');
+    return;
+  }
+
+  const rawInput = inputElem.value.trim();
+  if (!rawInput) {
+    showPlaceholder();
+    return;
+  }
+
+  const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+  if (!tokens) {
+    setOutput('[No valid input]');
+    return;
+  }
+
+  const ipaMap = new Map();
+  const uniqueWords = [...new Set(
+    tokens.filter(t =>
+      /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
+    )
+  )];
+
+  try {
+    for (const word of uniqueWords) {
+      const ipa = await runESpeak(word);
+      ipaMap.set(word, ipa);
+    }
+  } catch (e) {
+    console.error('Error during IPA conversion:', e);
+  }
+
+  // Alignment helper function
+  function alignGraphemesToPhonemes(word, ipa) {
+    let result = [];
+    let w = word.toLowerCase();
+    let p = ipa;
+    let i = 0;
+    let j = 0;
+
+    const mappings = [];
+
+    // Simplistic alignment using a greedy approach with common Italian digraphs
+    const digraphs = {
+      'ch': 'k',
+      'gh': 'g',
+      'ci': 'tʃ',
+      'gi': 'dʒ',
+      'sc': 'ʃ',
+      'gn': 'ɲ',
+      'gl': 'ʎ'
+    };
+
+    while (i < w.length && j < p.length) {
+      const twoLetters = w.slice(i, i + 2);
+      const doubleLetters = w.slice(i, i + 2) === w[i] + w[i];
+
+      // Try digraph match
+      if (digraphs[twoLetters] && p.slice(j).startsWith(digraphs[twoLetters])) {
+        mappings.push(`${twoLetters}(${digraphs[twoLetters]})`);
+        i += 2;
+        j += digraphs[twoLetters].length;
+        continue;
       }
 
-      const rawInput = inputElem.value.trim();
-      if (!rawInput) {
-        showPlaceholder();
-        return;
+      // Try geminate match
+      if (doubleLetters) {
+        const phoneme = p[j] === w[i] ? `${p[j]}ː` : `${p[j]}`;
+        mappings.push(`${w[i] + w[i]}(${phoneme})`);
+        i += 2;
+        j += phoneme.length;
+        continue;
       }
 
-      const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-      if (!tokens) {
-        setOutput('[No valid input]');
-        return;
+      // Try stress marker
+      if (p[j] === 'ˈ') {
+        mappings.push(`${w[i]}(ˈ${p[j + 1]})`);
+        i += 1;
+        j += 2;
+        continue;
       }
 
-      const ipaMap = new Map();
-      const uniqueWords = [...new Set(
-        tokens.filter(t =>
-          /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
-        )
-      )];
+      // Fallback single character
+      mappings.push(`${w[i]}(${p[j]})`);
+      i += 1;
+      j += 1;
+    }
 
-      try {
-        for (const word of uniqueWords) {
-          const ipa = await runESpeak(word);
-          ipaMap.set(word, ipa);
-        }
-      } catch (e) {
-        console.error('Error during IPA conversion:', e);
+    return mappings.join(' ');
+  }
+
+  const result = [];
+
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+
+    const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+
+    if (i > 0) {
+      const prev = tokens[i - 1];
+      if (
+        !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
+        !(prev === '(')
+      ) {
+        result.push(' ');
       }
+    }
 
-      const result = [];
-      for (let i = 0; i < tokens.length; i++) {
-        const token = tokens[i];
+    if (isWord) {
+      const ipa = ipaMap.get(token) || '';
+      const aligned = alignGraphemesToPhonemes(token, ipa);
+      result.push(`${token} (${ipa})\n${aligned}`);
+    } else {
+      result.push(token);
+    }
+  }
 
-        const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+  setOutput(result.join(''));
+});
 
-        if (i > 0) {
-          const prev = tokens[i - 1];
-          if (
-            !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
-            !(prev === '(')
-         
-```
-
+    
+  </script>
+</body>
+</html>
