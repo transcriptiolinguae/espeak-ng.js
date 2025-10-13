@@ -125,6 +125,8 @@
   <textarea id="input" rows="6" cols="60" placeholder="Inserisci testo in italiano"></textarea><br />
   <button id="convert">AFI</button>
   <button id="convertInline">Testo e AFI</button>
+  <button id="convertG2P">G2P</button>
+
   <pre id="output" class="placeholder">Trascrizione</pre>
 
   <script type="module">
@@ -269,6 +271,8 @@
       setOutput(result.join(''));
     });
 
+
+    
     document.getElementById('convert').addEventListener('click', async () => {
       showPlaceholder();
 
@@ -292,6 +296,116 @@
         setOutput('Error during transcription: ' + e.message);
       }
     });
+
+
+
+
+
+
+
+
+    function graphemeToPhoneme(word, ipa) {
+  const mapping = [];
+
+  let i = 0;
+  let j = 0;
+  const graphemes = word.toLowerCase().split('');
+  const phonemes = ipa.normalize('NFC');
+
+  // Handle complex rules — longest match first
+  const rules = [
+    { g: 'sci', p: 'ʃ' },
+    { g: 'cci', p: 'tʃː' },
+    { g: 'ggi', p: 'dʒː' },
+    { g: 'ci', p: 'tʃ' },
+    { g: 'gi', p: 'dʒ' },
+    { g: 'sc', p: 'ʃ' },
+    { g: 'ch', p: 'k' },
+    { g: 'gh', p: 'g' },
+    { g: 'gn', p: 'ɲ' },
+    { g: 'gl', p: 'ʎ' },
+    { g: 'zz', p: 'dzː' },
+    { g: 'bb', p: 'bː' },
+    { g: 'cc', p: 'kː' },
+    { g: 'dd', p: 'dː' },
+    { g: 'ff', p: 'fː' },
+    { g: 'll', p: 'lː' },
+    { g: 'mm', p: 'mː' },
+    { g: 'nn', p: 'nː' },
+    { g: 'pp', p: 'pː' },
+    { g: 'rr', p: 'rː' },
+    { g: 'ss', p: 'sː' },
+    { g: 'tt', p: 'tː' },
+    { g: 'gg', p: 'dʒː' },
+    { g: 'zz', p: 'tsː' },
+    { g: 'z', p: 'dz' },
+    { g: 's', p: 'z' },  // default case
+    { g: 'i', p: 'j' },
+    { g: 'u', p: 'w' },
+    { g: 'e', p: 'ɛ' },
+    { g: 'o', p: 'ɔ' },
+  ];
+
+  let ipaCursor = 0;
+  for (let gCursor = 0; gCursor < graphemes.length; ) {
+    let matched = false;
+
+    for (const rule of rules) {
+      if (word.slice(gCursor).toLowerCase().startsWith(rule.g)) {
+        const len = rule.p.length;
+        const pPart = ipa.slice(ipaCursor, ipaCursor + len);
+        if (pPart.startsWith(rule.p)) {
+          for (let k = 0; k < rule.g.length; k++) {
+            mapping.push(`${graphemes[gCursor + k]}(${rule.p[k] || ''})`);
+          }
+          gCursor += rule.g.length;
+          ipaCursor += rule.p.length;
+          matched = true;
+          break;
+        }
+      }
+    }
+
+    if (!matched) {
+      const g = graphemes[gCursor];
+      const p = ipa[ipaCursor];
+      mapping.push(`${g}(${p || ''})`);
+      gCursor++;
+      ipaCursor++;
+    }
+  }
+
+  return mapping.join('');
+}
+
+
+    
+   document.getElementById('convertG2P').addEventListener('click', () => {
+  const rawInput = inputElem.value.trim();
+  if (!rawInput) {
+    showPlaceholder();
+    return;
+  }
+
+  // Extract pairs like: parola (IPA)
+  const wordIpaPairs = [...rawInput.matchAll(/(\w+)\s*\(([^)]+)\)/g)];
+
+  if (wordIpaPairs.length === 0) {
+    setOutput('[No word–IPA pairs found]');
+    return;
+  }
+
+  const outputWords = [];
+
+  for (const [_, word, ipa] of wordIpaPairs) {
+    const g2pResult = graphemeToPhoneme(word, ipa);
+    outputWords.push(g2pResult);
+  }
+
+  setOutput(outputWords.join(' '));
+});
+ 
   </script>
 </body>
 </html>
+
