@@ -129,7 +129,7 @@
 
   <pre id="output" class="placeholder">Trascrizione</pre>
 
-  <script type="module">
+<script type="module">
     import initESpeak from './espeak-ng.js';
 
     const outputElem = document.getElementById('output');
@@ -271,7 +271,31 @@
       setOutput(result.join(''));
     });
 
-   document.getElementById('convertG2P').addEventListener('click', async () => {
+    document.getElementById('convert').addEventListener('click', async () => {
+      showPlaceholder();
+
+      if (!wasmReady) {
+        alert('Please wait, WASM is still loading...');
+        return;
+      }
+
+      const rawInput = inputElem.value.trim();
+      if (!rawInput) {
+        showPlaceholder();
+        return;
+      }
+
+      const markedInput = rawInput.replace(/\s+/g, '|');
+
+      try {
+        const ipa = await runESpeak(markedInput);
+        setOutput(ipa.replace(/\|/g, ' ') || '[No output generated]');
+      } catch (e) {
+        setOutput('Error during transcription: ' + e.message);
+      }
+    });
+
+  document.getElementById('convertG2P').addEventListener('click', async () => {
   showProgressPlaceholder();
 
   if (!wasmReady) return alert('WASM not ready.');
@@ -304,8 +328,8 @@
   setOutput(result.join(' '));
 });
 
-    
   </script>
 </body>
 </html>
+
 
