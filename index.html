@@ -295,41 +295,70 @@
       }
     });
 
-  document.getElementById('convertG2P').addEventListener('click', async () => {
-  showProgressPlaceholder();
+   function alignG2P(graphemes, phonemes) {
+    const g2p = [];
+    let g = 0, p = 0;
 
-  if (!wasmReady) return alert('WASM not ready.');
-  const rawInput = inputElem.value.trim();
-  if (!rawInput) return showPlaceholder();
+    while (g < graphemes.length && p < phonemes.length) {
+      let currentG = graphemes.slice(g);
+      let currentP = phonemes.slice(p);
 
-  const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-  if (!tokens) return setOutput('[No valid input]');
+      if ((currentG.startsWith('ci') || currentG.startsWith('cie')) && currentP.startsWith('tʃ')) {
+        g2p.push(`c(tʃ)`);
+        g += 1;
+        p += 2;
+        continue;
+      }
 
-  const ipaMap = new Map();
-  const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+      // Add other special cases here...
 
-  for (const word of uniqueWords) {
-    const ipa = await runESpeak(word);
-    ipaMap.set(word, ipa);
+      g2p.push(`${graphemes[g]}(${phonemes[p]})`);
+      g++; p++;
+    }
+
+    while (g < graphemes.length) {
+      g2p.push(`${graphemes[g]}(?)`);
+      g++;
+    }
+
+    return g2p.join('');
   }
 
-  const result = tokens.map((token, i) => {
-    const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
-    if (isWord) {
-      const graphemes = token.toLowerCase();
-      const phonemes = ipaMap.get(token).replace(/[ˈˌ]/g, '');  // remove stress markers
-      const mapped = alignG2P(graphemes, phonemes);
-      return mapped;
-    } else {
-      return token;
-    }
-  });
+  document.getElementById('convertG2P').addEventListener('click', async () => {
+    showProgressPlaceholder();
 
-  setOutput(result.join(' '));
-});
+    if (!wasmReady) return alert('WASM not ready.');
+    const rawInput = inputElem.value.trim();
+    if (!rawInput) return showPlaceholder();
+
+    const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+    if (!tokens) return setOutput('[No valid input]');
+
+    const ipaMap = new Map();
+    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+
+    for (const word of uniqueWords) {
+      const ipa = await runESpeak(word);
+      ipaMap.set(word, ipa);
+    }
+
+    const result = tokens.map(token => {
+      const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+      if (isWord) {
+        const graphemes = token.toLowerCase();
+        const phonemes = ipaMap.get(token).replace(/[ˈˌ]/g, '');
+        return alignG2P(graphemes, phonemes);
+      } else {
+        return token;
+      }
+    });
+
+    setOutput(result.join(' '));
+  });
 
   </script>
 </body>
 </html>
+
 
 
