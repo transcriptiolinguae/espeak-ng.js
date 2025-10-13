@@ -1,4 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transcriptio Linguae</title>
+  <style>
+    html {
+      font-size: 16px;
+    }
 
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 3rem;
+      color: #2c3e50;
+      background: #ffffff;
+      line-height: 1.6;
+      font-size: 1rem;
+    }
+
+    h1 {
+      font-family: "Times New Roman", Times, serif;
+      text-align: center;
+      color: #34495e;
+      margin: 0 0 0.5rem 0;
+      font-weight: 700;
+    }
+
+    h3 {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      font-weight: 500;
+      color: #7f8c8d;
+      margin-bottom: 2rem;
+    }
+
+    textarea, pre {
+      font-family: Arial, sans-serif;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 6em;
+      padding: 0.75em 1em;
+      border: 1.5px solid #ccc;
+      border-radius: 6px;
+      resize: vertical;
+      box-sizing: border-box;
+      transition: border-color 0.3s ease;
+    }
+
+    textarea:focus {
+      outline: none;
+      border: 1.5px solid #ccc;
+      box-shadow: none;
+    }
+
+    textarea::placeholder {
+      color: grey;
+      user-select: none;
+    }
+
+    pre {
+      background: #ecf0f1;
+      padding: 1.25rem 1.5rem;
+      border-radius: 8px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      margin-top: 2rem;
+      box-shadow: inset 0 0 5px #dfe6e9;
+    }
+
+    /* Placeholder style for output field */
+    pre.placeholder {
+      color: grey;
+      user-select: none;
+    }
+
+    pre:not(.placeholder) {
+      color: #2c3e50;
+      user-select: text;
+    }
+
+    button {
+      font-family: Arial, sans-serif;
+      background: #909599;
       color: #ffffff;
       border: none;
       border-radius: 6px;
@@ -36,6 +125,8 @@
   <textarea id="input" rows="6" cols="60" placeholder="Inserisci testo in italiano"></textarea><br />
   <button id="convert">AFI</button>
   <button id="convertInline">Testo e AFI</button>
+  <button id="convertG2P">G2P Mapping</button>
+
   <pre id="output" class="placeholder">Trascrizione</pre>
 
   <script type="module">
@@ -203,6 +294,123 @@
         setOutput('Error during transcription: ' + e.message);
       }
     });
+
+    document.getElementById('convertG2P').addEventListener('click', async () => {
+  showProgressPlaceholder();
+
+  if (!wasmReady) {
+    alert('Please wait, WASM is still loading...');
+    return;
+  }
+
+  const rawInput = inputElem.value.trim();
+  if (!rawInput) {
+    showPlaceholder();
+    return;
+  }
+
+  const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+  if (!tokens) {
+    setOutput('[No valid input]');
+    return;
+  }
+
+  const ipaMap = new Map();
+
+  const uniqueWords = [...new Set(
+    tokens.filter(t =>
+      /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
+    )
+  )];
+
+  try {
+    for (const word of uniqueWords) {
+      const ipa = await runESpeak(word);
+      ipaMap.set(word, ipa);
+    }
+  } catch (e) {
+    console.error('Error during IPA conversion:', e);
+  }
+
+  // === G2P ALIGNMENT FUNCTION ===
+  function alignG2P(graphemes, phonemes) {
+    let g2p = [];
+    let gIndex = 0;
+    let pIndex = 0;
+
+    // Flatten characters into arrays for alignment
+    const gChars = Array.from(graphemes.normalize('NFC'));
+    const pChars = Array.from(phonemes.normalize('NFC'));
+
+    while (gIndex < gChars.length && pIndex < pChars.length) {
+      let g = gChars[gIndex];
+      let p = '';
+
+      // Capture stress/length marks at the start
+      while (['ˈ', 'ˌ', 'ː'].includes(pChars[pIndex])) {
+        p += pChars[pIndex++];
+      }
+
+      // Try matching digraphs
+      if (
+        gIndex + 1 < gChars.length &&
+        (
+          (g + gChars[gIndex + 1]).toLowerCase() === 'ch' ||
+          (g + gChars[gIndex + 1]).toLowerCase() === 'gh' ||
+          (g + gChars[gIndex + 1]).toLowerCase() === 'gl' ||
+          (g + gChars[gIndex + 1]).toLowerCase() === 'gn' ||
+          (g + gChars[gIndex + 1]).toLowerCase() === 'sc'
+        )
+      ) {
+        g += gChars[++gIndex]; // merge digraph
+      }
+
+      // Assign one or two phonemes if possible
+      if (pIndex < pChars.length) {
+        p += pChars[pIndex++];
+      }
+
+      // If next is a length mark, add that too
+      if (pIndex < pChars.length && pChars[pIndex] === 'ː') {
+        p += pChars[pIndex++];
+      }
+
+      g2p.push(`${g}(${p})`);
+      gIndex++;
+    }
+
+    return g2p.join('');
+  }
+
+  // === BUILD FINAL OUTPUT ===
+  const result = [];
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i];
+
+    if (i > 0) {
+      const prev = tokens[i - 1];
+      if (
+        !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
+        !(prev === '(')
+      ) {
+        result.push(' ');
+      }
+    }
+
+    const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+
+    if (isWord) {
+      const ipa = ipaMap.get(token) || '';
+      const g2p = alignG2P(token, ipa);
+      result.push(g2p);
+    } else {
+      result.push(token);
+    }
+  }
+
+  setOutput(result.join(''));
+});
+    
   </script>
 </body>
 </html>
