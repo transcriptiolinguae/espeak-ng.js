@@ -330,7 +330,7 @@ document.getElementById('g2p').addEventListener('click', async () => {
     console.error('Error during IPA conversion:', e);
   }
 
-  // Alignment helper function
+  // Alignment function: maps graphemes to phonemes (simplified with digraphs)
   function alignGraphemesToPhonemes(word, ipa) {
     let result = [];
     let w = word.toLowerCase();
@@ -340,7 +340,6 @@ document.getElementById('g2p').addEventListener('click', async () => {
 
     const mappings = [];
 
-    // Simplistic alignment using a greedy approach with common Italian digraphs
     const digraphs = {
       'ch': 'k',
       'gh': 'g',
@@ -353,9 +352,17 @@ document.getElementById('g2p').addEventListener('click', async () => {
 
     while (i < w.length && j < p.length) {
       const twoLetters = w.slice(i, i + 2);
-      const doubleLetters = w.slice(i, i + 2) === w[i] + w[i];
+      const doubleLetters = w[i] === w[i + 1];
 
-      // Try digraph match
+      // Handle stress
+      if (p[j] === 'ˈ' && p[j + 1]) {
+        mappings.push(`${w[i]}(ˈ${p[j + 1]})`);
+        i += 1;
+        j += 2;
+        continue;
+      }
+
+      // Digraphs
       if (digraphs[twoLetters] && p.slice(j).startsWith(digraphs[twoLetters])) {
         mappings.push(`${twoLetters}(${digraphs[twoLetters]})`);
         i += 2;
@@ -363,24 +370,15 @@ document.getElementById('g2p').addEventListener('click', async () => {
         continue;
       }
 
-      // Try geminate match
-      if (doubleLetters) {
-        const phoneme = p[j] === w[i] ? `${p[j]}ː` : `${p[j]}`;
-        mappings.push(`${w[i] + w[i]}(${phoneme})`);
+      // Geminates (double letters)
+      if (doubleLetters && p[j] === p[j + 1]) {
+        mappings.push(`${w[i] + w[i]}(${p[j]}ː)`);
         i += 2;
-        j += phoneme.length;
-        continue;
-      }
-
-      // Try stress marker
-      if (p[j] === 'ˈ') {
-        mappings.push(`${w[i]}(ˈ${p[j + 1]})`);
-        i += 1;
         j += 2;
         continue;
       }
 
-      // Fallback single character
+      // Fallback: single letter
       mappings.push(`${w[i]}(${p[j]})`);
       i += 1;
       j += 1;
@@ -393,7 +391,6 @@ document.getElementById('g2p').addEventListener('click', async () => {
 
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
-
     const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
 
     if (i > 0) {
@@ -409,7 +406,7 @@ document.getElementById('g2p').addEventListener('click', async () => {
     if (isWord) {
       const ipa = ipaMap.get(token) || '';
       const aligned = alignGraphemesToPhonemes(token, ipa);
-      result.push(`${token} (${ipa})\n${aligned}`);
+      result.push(aligned);
     } else {
       result.push(token);
     }
@@ -418,8 +415,10 @@ document.getElementById('g2p').addEventListener('click', async () => {
   setOutput(result.join(''));
 });
 
+
     
   </script>
 </body>
 </html>
+
 
