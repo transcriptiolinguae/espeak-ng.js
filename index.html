@@ -406,7 +406,14 @@ document.getElementById('g2p').addEventListener('click', async () => {
           resultLine += alignGraphemesToPhonemes(buffer, ipa);
           buffer = '';
         }
-        resultLine += char; // space, punctuation, etc.
+
+        if (char === ' ') {
+          resultLine += '  '; // double space
+        } else if (/[\.,;:!?]/.test(char)) {
+          resultLine += ` ${char}`; // space before punctuation
+        } else {
+          resultLine += char; // other characters like apostrophes
+        }
       }
     }
 
@@ -419,10 +426,12 @@ document.getElementById('g2p').addEventListener('click', async () => {
 
 
 
+
     
   </script>
 </body>
 </html>
+
 
 
 
