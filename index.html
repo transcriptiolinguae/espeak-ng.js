@@ -302,25 +302,26 @@ document.getElementById('g2p').addEventListener('click', async () => {
     return;
   }
 
-  const rawInput = inputElem.value.trim();
-  if (!rawInput) {
+  const rawInput = inputElem.value;
+  if (!rawInput.trim()) {
     showPlaceholder();
     return;
   }
 
-  const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-  if (!tokens) {
-    setOutput('[No valid input]');
-    return;
+  // Extract words for IPA generation
+  const wordRegex = /\p{L}+/gu;
+  const uniqueWords = new Set();
+
+  const lines = rawInput.split('\n'); // Preserve line breaks
+
+  for (const line of lines) {
+    const words = line.match(wordRegex);
+    if (words) {
+      words.forEach(word => uniqueWords.add(word));
+    }
   }
 
   const ipaMap = new Map();
-  const uniqueWords = [...new Set(
-    tokens.filter(t =>
-      /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
-    )
-  )];
-
   try {
     for (const word of uniqueWords) {
       const ipa = await runESpeak(word);
@@ -332,15 +333,12 @@ document.getElementById('g2p').addEventListener('click', async () => {
 
   // Alignment helper function
   function alignGraphemesToPhonemes(word, ipa) {
-    let result = [];
-    let w = word.toLowerCase();
+    let w = word;
     let p = ipa;
     let i = 0;
     let j = 0;
-
     const mappings = [];
 
-    // Simplistic alignment using a greedy approach with common Italian digraphs
     const digraphs = {
       'ch': 'k',
       'gh': 'g',
@@ -352,71 +350,72 @@ document.getElementById('g2p').addEventListener('click', async () => {
     };
 
     while (i < w.length && j < p.length) {
-      const twoLetters = w.slice(i, i + 2);
-      const doubleLetters = w.slice(i, i + 2) === w[i] + w[i];
+      const two = w.slice(i, i + 2).toLowerCase();
+      const c1 = w[i];
+      const c2 = w[i + 1];
+      const isDouble = c1 && c2 && c1.toLowerCase() === c2.toLowerCase();
 
-      // Try digraph match
-      if (digraphs[twoLetters] && p.slice(j).startsWith(digraphs[twoLetters])) {
-        mappings.push(`${twoLetters}(${digraphs[twoLetters]})`);
-        i += 2;
-        j += digraphs[twoLetters].length;
-        continue;
-      }
-
-      // Try geminate match
-      if (doubleLetters) {
-        const phoneme = p[j] === w[i] ? `${p[j]}ː` : `${p[j]}`;
-        mappings.push(`${w[i] + w[i]}(${phoneme})`);
-        i += 2;
-        j += phoneme.length;
-        continue;
-      }
-
-      // Try stress marker
-      if (p[j] === 'ˈ') {
-        mappings.push(`${w[i]}(ˈ${p[j + 1]})`);
-        i += 1;
+      // Stress marker
+      if (p[j] === 'ˈ' && p[j + 1]) {
+        mappings.push(`${c1}(ˈ${p[j + 1]})`);
+        i++;
         j += 2;
         continue;
       }
 
-      // Fallback single character
-      mappings.push(`${w[i]}(${p[j]})`);
-      i += 1;
-      j += 1;
+      // Digraphs
+      if (digraphs[two] && p.slice(j).startsWith(digraphs[two])) {
+        mappings.push(`${c1}${c2}(${digraphs[two]})`);
+        i += 2;
+        j += digraphs[two].length;
+        continue;
+      }
+
+      // Geminates
+      if (isDouble && p[j] === p[j + 1]) {
+        mappings.push(`${c1}${c2}(${p[j]}ː)`);
+        i += 2;
+        j += 2;
+        continue;
+      }
+
+      // Single match fallback
+      mappings.push(`${c1}(${p[j] || ''})`);
+      i++;
+      j++;
     }
 
     return mappings.join(' ');
   }
 
-  const result = [];
+  const outputLines = [];
 
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i];
+  for (const line of lines) {
+    let resultLine = '';
+    let buffer = '';
 
-    const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+    for (let i = 0; i <= line.length; i++) {
+      const char = line[i] || '';
+      const isLetter = /\p{L}/u.test(char);
 
-    if (i > 0) {
-      const prev = tokens[i - 1];
-      if (
-        !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
-        !(prev === '(')
-      ) {
-        result.push(' ');
+      if (isLetter) {
+        buffer += char;
+      } else {
+        if (buffer) {
+          const ipa = ipaMap.get(buffer) || '';
+          resultLine += alignGraphemesToPhonemes(buffer, ipa);
+          buffer = '';
+        }
+        resultLine += char; // space, punctuation, etc.
       }
     }
 
-    if (isWord) {
-      const ipa = ipaMap.get(token) || '';
-      const aligned = alignGraphemesToPhonemes(token, ipa);
-      result.push(`${token} (${ipa})\n${aligned}`);
-    } else {
-      result.push(token);
-    }
+    outputLines.push(resultLine);
   }
 
-  setOutput(result.join(''));
+  setOutput(outputLines.join('\n'));
 });
+
 
 
 
@@ -424,6 +423,7 @@ document.getElementById('g2p').addEventListener('click', async () => {
   </script>
 </body>
 </html>
+
 
 
 
