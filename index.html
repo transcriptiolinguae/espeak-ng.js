@@ -206,6 +206,82 @@ function setOutput(text) {
   outputElem.innerText = text;
 }
 
+/**
+ * Align graphemes and phonemes with special rules:
+ * - Handle ː length marker attached to previous phoneme
+ * - Map 'ss' after ː as ss(sː)
+ * - Map 'gg' after ː as gg(dʒː)i(i)
+ * - Map 'gi' as gi(dʒ)i(i)
+ */
+function alignG2P(graphemes, phonemes) {
+  const g2p = [];
+  let g = 0, p = 0;
+
+  while (g < graphemes.length && p < phonemes.length) {
+    const currG = graphemes.slice(g);
+    const currP = phonemes.slice(p);
+
+    // Handle 'gi' → dʒi (two graphemes, two phonemes)
+    if (currG.startsWith('gi') && currP.startsWith('dʒi')) {
+      g2p.push(`gi(dʒ)i(i)`);
+      g += 2;
+      p += 2;
+      continue;
+    }
+
+    // Handle 'gg' → dʒːi (two graphemes, three phonemes: d ʒ ː i)
+    // In your example, 'gg' corresponds to dʒːi → dʒ + ː + i (3 phonemes)
+    if (currG.startsWith('gg') && currP.startsWith('dʒːi')) {
+      g2p.push(`gg(dʒː)i(i)`);
+      g += 2;
+      p += 3;
+      continue;
+    }
+
+    // Handle 'ss' → sː (two graphemes, one phoneme sː)
+    if (currG.startsWith('ss') && currP.startsWith('sː')) {
+      g2p.push(`ss(sː)`);
+      g += 2;
+      p += 1;
+      continue;
+    }
+
+    // Handle letter(s) after ː
+    if (phonemes[p] === 'ː' && g + 1 < graphemes.length) {
+      const nextG = graphemes[g + 1];
+
+      // If next grapheme is 's' and phoneme after ː is 'sː' (already handled ss)
+      // So here map single 's' after ː as s(sː) or just normal (covered above)
+
+      // If next grapheme is 'g' after ː, but this should be handled by 'gg' case above
+
+      // Default fallback: map current grapheme to previous phoneme + ː
+      // So combine previous phoneme + ː with grapheme[g], then move grapheme pointer +1 and phoneme pointer +1
+      // Actually the ː belongs to previous phoneme so just include it with previous phoneme
+
+      // But since we handled special 'ss' and 'gg' above, just skip here
+
+      // If here, just map normally
+
+      // fallback normal mapping (do nothing special)
+    }
+
+    // Default: one grapheme to one phoneme
+    g2p.push(`${graphemes[g]}(${phonemes[p]})`);
+    g++;
+    p++;
+  }
+
+  // If graphemes remain but phonemes ended
+  while (g < graphemes.length) {
+    g2p.push(`${graphemes[g]}(?)`);
+    g++;
+  }
+
+  // If phonemes remain but graphemes ended, ignore or handle as needed (not expected)
+  return g2p.join('');
+}
+
 document.getElementById('convertInline').addEventListener('click', async () => {
   showProgressPlaceholder();
 
@@ -248,7 +324,6 @@ document.getElementById('convertInline').addEventListener('click', async () => {
     const token = tokens[i];
 
     const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
-    const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
 
     if (i > 0) {
       const prev = tokens[i - 1];
@@ -295,59 +370,6 @@ document.getElementById('convert').addEventListener('click', async () => {
   }
 });
 
-function alignG2P(graphemes, phonemes) {
-  const g2p = [];
-  let g = 0, p = 0;
-
-  while (g < graphemes.length && p < phonemes.length) {
-    const currentG = graphemes.slice(g);
-    const currentP = phonemes.slice(p);
-
-    if ((currentG.startsWith('ci') || currentG.startsWith('cie')) && currentP.startsWith('tʃ')) {
-      g2p.push(`c(tʃ)`);
-      g += 1;
-      p += 2;
-      continue;
-    }
-
-    // Handle letter after ː special cases
-    if (phonemes[p] === 'ː' && g + 1 < graphemes.length) {
-      const nextG = graphemes[g + 1];
-      // Look ahead phonemes after ː
-      const nextP1 = phonemes[p + 1] || '';
-      const nextP2 = phonemes[p + 2] || '';
-
-      if (nextG === 's') {
-        // Map as ss(s:)
-        g2p.push(`ss(s:)`);
-        g += 2;  // consume current and next grapheme
-        p += 2;  // consume ː and next phoneme (assuming s)
-        continue;
-      } else if (nextG === 'g') {
-        // Map as gg(dʒː)i(i)
-        // Assuming phonemes at p..p+2 correspond to dʒːi
-        g2p.push(`gg(dʒː)i(i)`);
-        g += 2;
-        p += 3;
-        continue;
-      }
-    }
-
-    // Default mapping one grapheme to one phoneme
-    g2p.push(`${graphemes[g]}(${phonemes[p]})`);
-    g++;
-    p++;
-  }
-
-  // Add leftover graphemes if any
-  while (g < graphemes.length) {
-    g2p.push(`${graphemes[g]}(?)`);
-    g++;
-  }
-
-  return g2p.join('');
-}
-
 document.getElementById('convertG2P').addEventListener('click', async () => {
   showProgressPlaceholder();
 
@@ -370,6 +392,7 @@ document.getElementById('convertG2P').addEventListener('click', async () => {
     const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
     if (isWord) {
       const graphemes = token.toLowerCase();
+      // Remove stress marks from IPA but keep length mark ː
       const phonemes = ipaMap.get(token).replace(/[ˈˌ]/g, '');
       return alignG2P(graphemes, phonemes);
     } else {
@@ -381,9 +404,11 @@ document.getElementById('convertG2P').addEventListener('click', async () => {
 });
 
 
+
   </script>
 </body>
 </html>
+
 
 
 
