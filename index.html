@@ -126,220 +126,321 @@
   <button id="convert">AFI</button>
   <button id="convertInline">Testo e AFI</button>
   <button id="convertG2P">G2P</button>
-
   <pre id="output" class="placeholder">Trascrizione</pre>
 
-<script type="module">
-  import initESpeak from './espeak-ng.js';
+  <script type="module">
+    import initESpeak from './espeak-ng.js';
 
-  const outputElem = document.getElementById('output');
-  const inputElem = document.getElementById('input');
-  let wasmReady = false;
+    const outputElem = document.getElementById('output');
+    const inputElem = document.getElementById('input');
 
-  window.addEventListener('load', async () => {
-    try {
-      await initESpeak({ print: () => {}, printErr: () => {} });
-      wasmReady = true;
-    } catch (e) {
-      console.error('Error loading WASM:', e);
-      outputElem.classList.remove('placeholder');
-      outputElem.innerText = 'Error loading eSpeak WASM module.';
-    }
-  });
+    let wasmReady = false;
 
-  function printErrFiltered(err) {
-    if (
-      err.includes('still waiting on run dependencies') ||
-      err.includes('dependency: wasm-instantiate') ||
-      err.includes('(end of list)')
-    ) return;
-    console.error('eSpeak stderr:', err);
-  }
-
-  async function runESpeak(text) {
-    let ipaOutput = '';
-    await initESpeak({
-      arguments: ['-v', 'it', '--ipa=3', text],
-      print: (text) => { ipaOutput += text; },
-      printErr: printErrFiltered
+    window.addEventListener('load', async () => {
+      try {
+        await initESpeak({
+          print: () => {},
+          printErr: () => {}
+        });
+        wasmReady = true;
+        console.log('eSpeak NG WASM loaded and ready');
+      } catch (e) {
+        console.error('Error loading WASM:', e);
+        outputElem.classList.remove('placeholder');
+        outputElem.innerText = 'Error loading eSpeak WASM module.';
+      }
     });
 
-    return ipaOutput
-      .replace(/rɾ/g, 'rː')
-      .replace(/mm/g, 'mː')
-      .replace(/ff/g, 'fː')
-      .replace(/vv/g, 'vː')
-      .replace(/ll/g, 'lː')
-      .replace(/kk/g, 'kː')
-      .replace(/nn/g, 'nː')
-      .replace(/ɲɲ/g, 'ɲː')
-      .replace(/s\u200Ds/g, 'sː')
-      .replace(/ss/g, 'sː')
-      .replace(/t\u200D/g, 't')
-      .replace(/d\u200D/g, 'd')
-      .replace(/ɾ/g, 'r')
-      .replace(/oo/g, 'oː')
-      .trim();
-  }
-
-  function showPlaceholder() {
-    outputElem.className = 'placeholder';
-    outputElem.innerText = 'Trascrizione';
-  }
-
-  function showProgressPlaceholder() {
-    outputElem.className = 'placeholder';
-    outputElem.innerText = 'Trascrizione in corso...';
-  }
-
-  function setOutput(text) {
-    outputElem.classList.remove('placeholder');
-    outputElem.innerText = text;
-  }
-
-  document.getElementById('convert').addEventListener('click', async () => {
-    showPlaceholder();
-
-    if (!wasmReady) {
-      alert('Please wait, WASM is still loading...');
-      return;
-    }
-
-    const rawInput = inputElem.value.trim();
-    if (!rawInput) {
-      showPlaceholder();
-      return;
-    }
-
-    const markedInput = rawInput.replace(/\s+/g, '|');
-
-    try {
-      const ipa = await runESpeak(markedInput);
-      setOutput(ipa.replace(/\|/g, ' ') || '[No output generated]');
-    } catch (e) {
-      setOutput('Error during transcription: ' + e.message);
-    }
-  });
-
-  document.getElementById('convertInline').addEventListener('click', async () => {
-    showProgressPlaceholder();
-
-    if (!wasmReady) {
-      alert('Please wait, WASM is still loading...');
-      return;
-    }
-
-    const rawInput = inputElem.value.trim();
-    if (!rawInput) {
-      showPlaceholder();
-      return;
-    }
-
-    const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-    if (!tokens) {
-      setOutput('[No valid input]');
-      return;
-    }
-
-    const ipaMap = new Map();
-    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
-
-    try {
-      for (const word of uniqueWords) {
-        const ipa = await runESpeak(word);
-        ipaMap.set(word, ipa);
+    function printErrFiltered(err) {
+      if (
+        err.includes('still waiting on run dependencies') ||
+        err.includes('dependency: wasm-instantiate') ||
+        err.includes('(end of list)')
+      ) {
+        return;
       }
-    } catch (e) {
-      console.error('Error during IPA conversion:', e);
+      console.error('eSpeak stderr:', err);
     }
 
-    const result = [];
-    for (let i = 0; i < tokens.length; i++) {
-      const token = tokens[i];
-      const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+    async function runESpeak(text) {
+      let ipaOutput = '';
+      await initESpeak({
+        arguments: ['-v', 'it', '--ipa=3', text],
+        print: (text) => {
+          ipaOutput += text;
+        },
+        printErr: printErrFiltered
+      });
 
-      if (i > 0) {
-        const prev = tokens[i - 1];
-        if (![')', ',', '.', ';', ':', '!', '?'].includes(token) && prev !== '(') {
-          result.push(' ');
-        }
-      }
-
-      if (isWord) {
-        const ipa = ipaMap.get(token) || '';
-        result.push(`${token} (${ipa})`);
-      } else {
-        result.push(token);
-      }
+      return ipaOutput
+        .replace(/rɾ/g, 'rː')
+        .replace(/mm/g, 'mː')
+        .replace(/ff/g, 'fː')
+        .replace(/vv/g, 'vː')
+        .replace(/ll/g, 'lː')
+        .replace(/kk/g, 'kː')
+        .replace(/nn/g, 'nː')
+        .replace(/ɲɲ/g, 'ɲː')
+        .replace(/s\u200Ds/g, 'sː')
+        .replace(/ss/g, 'sː')
+        .replace(/t\u200D/g, 't')
+        .replace(/d\u200D/g, 'd')
+        .replace(/ɾ/g, 'r')
+        .replace(/oo/g, 'oː')
+        .trim();
     }
 
-    setOutput(result.join(''));
-  });
-
-  // G2P button logic
-  document.getElementById('g2pButton').addEventListener('click', async () => {
-    showProgressPlaceholder();
-
-    if (!wasmReady) {
-      alert('Please wait, WASM is still loading...');
-      return;
+    function showPlaceholder() {
+      outputElem.className = 'placeholder';
+      outputElem.innerText = 'Trascrizione';
     }
 
-    const inputText = inputElem.value.trim();
-    if (!inputText) {
-      showPlaceholder();
-      return;
+    function showProgressPlaceholder() {
+      outputElem.className = 'placeholder';
+      outputElem.innerText = 'Trascrizione in corso...';
     }
 
-    const words = inputText.split(/\s+/);
-    const resultLines = [];
+    function setOutput(text) {
+      outputElem.classList.remove('placeholder');
+      outputElem.innerText = text;
+    }
 
-    for (const word of words) {
-      const ipa = await runESpeak(word);
-      let g2pParts = [];
+    // Helper for G2P for the rule you specified
+    // Input: original word, ipa transcription of that word
+    // Output: G2P string with mapping for C + tʃ
+    function mapG2P(word, ipa) {
+      let result = '';
 
-      // Basic implementation of your rule
-      const lowerWord = word.toLowerCase();
-      const ipaLower = ipa.toLowerCase();
+      // We iterate through the word letters and ipa characters in parallel with some heuristics
+      // Because IPA and original text don't have 1:1 mapping, we'll do a simplified approach here.
 
-      if (ipaLower.startsWith('tʃ')) {
-        const ipaNextChar = ipaLower[2];
-        const origNextChar = lowerWord[1];
+      // For this example, handle only the "C" + tʃ + "i" rule you specified.
+      // We'll scan word chars and ipa chars, keep indices.
+      // When we see "C" in original and "tʃ" in ipa, check if 'i' after 'tʃ' in ipa, and if 'i' after 'C' in original.
 
-        if (ipaNextChar === 'i') {
-          g2pParts.push(`${word[0]}(tʃ)`);
-        } else if (origNextChar === 'i') {
-          g2pParts.push(`${word[0]}i(tʃ)`);
+      let i = 0; // index for original word
+      let j = 0; // index for ipa string
+
+      while (i < word.length && j < ipa.length) {
+        // Check if original at i is 'C' or 'c' (case sensitive - your example is uppercase C)
+        if (word[i] === 'C') {
+          // Check if ipa at j starts with tʃ (which is two characters: t and ʃ)
+          if (ipa.slice(j, j + 2) === 'tʃ') {
+            // Now check if there is 'i' after tʃ in ipa
+            const ipaNextChar = ipa[j + 2] || '';
+            const wordNextChar = word[i + 1] || '';
+
+            if (ipaNextChar === 'i') {
+              // IPA has i after tʃ: map C to C(tʃ)
+              result += 'C(tʃ)';
+              i += 1; // consume C
+              j += 2; // consume tʃ
+            } else if (wordNextChar === 'i') {
+              // IPA has no i after tʃ, but original word has i after C
+              result += 'Ci(tʃ)';
+              i += 2; // consume C and i in original
+              j += 2; // consume tʃ in ipa
+            } else {
+              // Default mapping: C(tʃ)
+              result += 'C(tʃ)';
+              i += 1;
+              j += 2;
+            }
+          } else {
+            // No tʃ after C in IPA, just add C with its phoneme (fallback)
+            result += word[i] + '(' + (ipa[j] || '') + ')';
+            i++;
+            j++;
+          }
         } else {
-          g2pParts.push(`${word[0]}(tʃ)`);
-        }
+          // For other chars, map each original letter to ipa char or cluster (for vowels usually one-to-one)
+          // We try to map one IPA character to each letter or handle some diphthongs if needed
+          // For simplicity, map single char
 
-        // Add remaining letters and phonemes
-        const remainingWord = word.slice(1);
-        const remainingIPA = ipa.slice(ipaLower.startsWith('tʃi') ? 3 : 2);
+          // Check if next ipa two chars are affricate or cluster and handle carefully - for now, simple
 
-        for (let i = 1; i < word.length; i++) {
-          const letter = word[i];
-          const sound = remainingIPA[i - 1] || '?';
-          g2pParts.push(`${letter}(${sound})`);
-        }
-      } else {
-        // Default G2P for non-tʃ-starting words
-        for (let i = 0; i < word.length; i++) {
-          const letter = word[i];
-          const sound = ipa[i] || '?';
-          g2pParts.push(`${letter}(${sound})`);
+          // Special case: check if next two ipa chars are tʃ but letter not C (then print letter + ipa cluster)
+          if (ipa.slice(j, j + 2) === 'tʃ') {
+            result += word[i] + '(' + 'tʃ' + ')';
+            i++;
+            j += 2;
+          } else {
+            result += word[i] + '(' + (ipa[j] || '') + ')';
+            i++;
+            j++;
+          }
         }
       }
 
-      resultLines.push(`${word} (${ipa})\nG2P: ${g2pParts.join('')}\n`);
+      // If leftover letters in word, add them with empty ipa ()
+      while (i < word.length) {
+        result += word[i] + '()';
+        i++;
+      }
+
+      // If leftover ipa chars, append them in parentheses without letter (rare)
+      while (j < ipa.length) {
+        result += '(' + ipa[j] + ')';
+        j++;
+      }
+
+      return result;
     }
 
-    setOutput(resultLines.join('\n'));
-  });
-</script>
+    document.getElementById('convertInline').addEventListener('click', async () => {
+      showProgressPlaceholder();  // Show "in progress" message
 
+      if (!wasmReady) {
+        alert('Please wait, WASM is still loading...');
+        return;
+      }
+
+      const rawInput = inputElem.value.trim();
+      if (!rawInput) {
+        showPlaceholder();
+        return;
+      }
+
+      const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+      if (!tokens) {
+        setOutput('[No valid input]');
+        return;
+      }
+
+      const ipaMap = new Map();
+
+      const uniqueWords = [...new Set(
+        tokens.filter(t =>
+          /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
+        )
+      )];
+
+      try {
+        for (const word of uniqueWords) {
+          const ipa = await runESpeak(word);
+          ipaMap.set(word, ipa);
+        }
+      } catch (e) {
+        console.error('Error during IPA conversion:', e);
+      }
+
+      const result = [];
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+
+        const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+        const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
+
+        if (i > 0) {
+          const prev = tokens[i - 1];
+          if (
+            !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
+            !(prev === '(')
+          ) {
+            result.push(' ');
+          }
+        }
+
+        if (isWord) {
+          const ipa = ipaMap.get(token) || '';
+          result.push(`${token} (${ipa})`);
+        } else {
+          result.push(token);
+        }
+      }
+
+      setOutput(result.join(''));
+    });
+
+    document.getElementById('convert').addEventListener('click', async () => {
+      showPlaceholder();
+
+      if (!wasmReady) {
+        alert('Please wait, WASM is still loading...');
+        return;
+      }
+
+      const rawInput = inputElem.value.trim();
+      if (!rawInput) {
+        showPlaceholder();
+        return;
+      }
+
+      const markedInput = rawInput.replace(/\s+/g, '|');
+
+      try {
+        const ipa = await runESpeak(markedInput);
+        setOutput(ipa.replace(/\|/g, ' ') || '[No output generated]');
+      } catch (e) {
+        setOutput('Error during transcription: ' + e.message);
+      }
+    });
+
+    document.getElementById('convertG2P').addEventListener('click', async () => {
+      showProgressPlaceholder();
+
+      if (!wasmReady) {
+        alert('Please wait, WASM is still loading...');
+        return;
+      }
+
+      const rawInput = inputElem.value.trim();
+      if (!rawInput) {
+        showPlaceholder();
+        return;
+      }
+
+      // Tokenize input like convertInline (words, punctuation, numbers)
+      const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+      if (!tokens) {
+        setOutput('[No valid input]');
+        return;
+      }
+
+      const ipaMap = new Map();
+
+      // Get unique words for IPA lookup
+      const uniqueWords = [...new Set(
+        tokens.filter(t =>
+          /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
+        )
+      )];
+
+      try {
+        for (const word of uniqueWords) {
+          const ipa = await runESpeak(word);
+          ipaMap.set(word, ipa);
+        }
+      } catch (e) {
+        console.error('Error during IPA conversion:', e);
+      }
+
+      const result = [];
+      for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+        const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+
+        if (i > 0) {
+          const prev = tokens[i - 1];
+          if (
+            !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
+            !(prev === '(')
+          ) {
+            result.push(' ');
+          }
+        }
+
+        if (isWord) {
+          const ipa = ipaMap.get(token) || '';
+          const g2p = mapG2P(token, ipa);
+          result.push(g2p);
+        } else {
+          result.push(token);
+        }
+      }
+
+      setOutput(result.join(''));
+    });
+  </script>
 </body>
 </html>
-
-
