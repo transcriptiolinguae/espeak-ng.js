@@ -2,135 +2,340 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>G2P Mapping Tool</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transcriptio Linguae</title>
   <style>
+    html {
+      font-size: 16px;
+    }
+
     body {
       font-family: Arial, sans-serif;
-      padding: 20px;
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 3rem;
+      color: #2c3e50;
+      background: #ffffff;
+      line-height: 1.6;
+      font-size: 1rem;
     }
+
+    h1 {
+      font-family: "Times New Roman", Times, serif;
+      text-align: center;
+      color: #34495e;
+      margin: 0 0 0.5rem 0;
+      font-weight: 700;
+    }
+
+    h3 {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      font-weight: 500;
+      color: #7f8c8d;
+      margin-bottom: 2rem;
+    }
+
+    textarea, pre {
+      font-family: Arial, sans-serif;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
     textarea {
       width: 100%;
-      height: 100px;
+      min-height: 6em;
+      padding: 0.75em 1em;
+      border: 1.5px solid #ccc;
+      border-radius: 6px;
+      resize: vertical;
+      box-sizing: border-box;
+      transition: border-color 0.3s ease;
     }
-    button {
-      margin-top: 10px;
-      margin-right: 10px;
-      padding: 10px 20px;
+
+    textarea:focus {
+      outline: none;
+      border: 1.5px solid #ccc;
+      box-shadow: none;
     }
-    #output {
-      margin-top: 20px;
+
+    textarea::placeholder {
+      color: grey;
+      user-select: none;
+    }
+
+    pre {
+      background: #ecf0f1;
+      padding: 1.25rem 1.5rem;
+      border-radius: 8px;
       white-space: pre-wrap;
-      background: #f0f0f0;
-      padding: 10px;
-      border: 1px solid #ccc;
+      word-break: break-word;
+      margin-top: 2rem;
+      box-shadow: inset 0 0 5px #dfe6e9;
+    }
+
+    /* Placeholder style for output field */
+    pre.placeholder {
+      color: grey;
+      user-select: none;
+    }
+
+    pre:not(.placeholder) {
+      color: #2c3e50;
+      user-select: text;
+    }
+
+    button {
+      font-family: Arial, sans-serif;
+      background: #909599;
+      color: #ffffff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.65em 1.4em;
+      font-size: 1rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.25s ease;
+      margin-right: 1rem;
+      margin-bottom: 2px;
+    }
+
+    button:hover,
+    button:focus {
+      background: #abb1b4;
+      outline: none;
+    }
+
+    button:disabled {
+      background: #ecf0f1;
+      cursor: not-allowed;
+    }
+
+    @media (max-width: 600px) {
+      textarea, pre {
+        font-size: 1.1rem;
+      }
     }
   </style>
 </head>
 <body>
-  <h1>G2P Mapping Tool</h1>
+  <h1>Transcriptio Linguae</h1>
+  <h3>Italiano → AFI Trascrizione</h3>
 
-  <label for="input">Original Text:</label><br />
-  <textarea id="input" placeholder="Enter text here..."></textarea><br />
+  <textarea id="input" rows="6" cols="60" placeholder="Inserisci testo in italiano"></textarea><br />
+  <button id="convert">AFI</button>
+  <button id="convertInline">Testo e AFI</button>
+  <pre id="output" class="placeholder">Trascrizione</pre>
 
-  <button id="convert">Convert to IPA</button>
-  <button id="g2p">G2P</button>
+<script type="module">
+  import initESpeak from './espeak-ng.js';
 
-  <div id="output">Output will appear here...</div>
+  const outputElem = document.getElementById('output');
+  const inputElem = document.getElementById('input');
+  let wasmReady = false;
 
-  <script>
-    const inputElem = document.getElementById('input');
-    const outputElem = document.getElementById('output');
+  window.addEventListener('load', async () => {
+    try {
+      await initESpeak({ print: () => {}, printErr: () => {} });
+      wasmReady = true;
+    } catch (e) {
+      console.error('Error loading WASM:', e);
+      outputElem.classList.remove('placeholder');
+      outputElem.innerText = 'Error loading eSpeak WASM module.';
+    }
+  });
 
-    let wasmReady = true; // Simulate WASM ready
-    function showPlaceholder() {
-      outputElem.textContent = 'Processing...';
+  function printErrFiltered(err) {
+    if (
+      err.includes('still waiting on run dependencies') ||
+      err.includes('dependency: wasm-instantiate') ||
+      err.includes('(end of list)')
+    ) return;
+    console.error('eSpeak stderr:', err);
+  }
+
+  async function runESpeak(text) {
+    let ipaOutput = '';
+    await initESpeak({
+      arguments: ['-v', 'it', '--ipa=3', text],
+      print: (text) => { ipaOutput += text; },
+      printErr: printErrFiltered
+    });
+
+    return ipaOutput
+      .replace(/rɾ/g, 'rː')
+      .replace(/mm/g, 'mː')
+      .replace(/ff/g, 'fː')
+      .replace(/vv/g, 'vː')
+      .replace(/ll/g, 'lː')
+      .replace(/kk/g, 'kː')
+      .replace(/nn/g, 'nː')
+      .replace(/ɲɲ/g, 'ɲː')
+      .replace(/s\u200Ds/g, 'sː')
+      .replace(/ss/g, 'sː')
+      .replace(/t\u200D/g, 't')
+      .replace(/d\u200D/g, 'd')
+      .replace(/ɾ/g, 'r')
+      .replace(/oo/g, 'oː')
+      .trim();
+  }
+
+  function showPlaceholder() {
+    outputElem.className = 'placeholder';
+    outputElem.innerText = 'Trascrizione';
+  }
+
+  function showProgressPlaceholder() {
+    outputElem.className = 'placeholder';
+    outputElem.innerText = 'Trascrizione in corso...';
+  }
+
+  function setOutput(text) {
+    outputElem.classList.remove('placeholder');
+    outputElem.innerText = text;
+  }
+
+  document.getElementById('convert').addEventListener('click', async () => {
+    showPlaceholder();
+
+    if (!wasmReady) {
+      alert('Please wait, WASM is still loading...');
+      return;
     }
 
-    function setOutput(text) {
-      outputElem.textContent = text;
-    }
-
-    // Dummy runESpeak function - Replace this with real eSpeak integration
-    async function runESpeak(text) {
-      // Simulate IPA output for demo purposes
-      if (text.toLowerCase().includes('ciao')) {
-        return 'tʃˈao';
-      }
-      return '[Simulated IPA output]';
-    }
-
-    // G2P Button Handler
-    document.getElementById('g2p').addEventListener('click', async () => {
+    const rawInput = inputElem.value.trim();
+    if (!rawInput) {
       showPlaceholder();
+      return;
+    }
 
-      const originalText = inputElem.value.trim();
-      if (!originalText) {
-        setOutput('[Please enter some text]');
-        return;
+    const markedInput = rawInput.replace(/\s+/g, '|');
+
+    try {
+      const ipa = await runESpeak(markedInput);
+      setOutput(ipa.replace(/\|/g, ' ') || '[No output generated]');
+    } catch (e) {
+      setOutput('Error during transcription: ' + e.message);
+    }
+  });
+
+  document.getElementById('convertInline').addEventListener('click', async () => {
+    showProgressPlaceholder();
+
+    if (!wasmReady) {
+      alert('Please wait, WASM is still loading...');
+      return;
+    }
+
+    const rawInput = inputElem.value.trim();
+    if (!rawInput) {
+      showPlaceholder();
+      return;
+    }
+
+    const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+    if (!tokens) {
+      setOutput('[No valid input]');
+      return;
+    }
+
+    const ipaMap = new Map();
+    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+
+    try {
+      for (const word of uniqueWords) {
+        const ipa = await runESpeak(word);
+        ipaMap.set(word, ipa);
       }
+    } catch (e) {
+      console.error('Error during IPA conversion:', e);
+    }
 
-      // Replace spaces with pipes to simulate eSpeak handling
-      const markedInput = originalText.replace(/\s+/g, '|');
+    const result = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
 
-      let ipa;
-      try {
-        ipa = await runESpeak(markedInput);
-      } catch (e) {
-        setOutput('Error during transcription: ' + e.message);
-        return;
-      }
-
-      // Apply basic G2P mapping based on rule
-      let g2pOutput = '';
-      const lowerText = originalText.toLowerCase();
-      const lowerIpa = ipa.toLowerCase();
-
-      if (lowerText.startsWith('ci') || lowerText.startsWith('c')) {
-        const cIndex = lowerText.indexOf('c');
-        const iAfterC = lowerText[cIndex + 1] === 'i';
-        const iAfterTʃ = lowerIpa[lowerIpa.indexOf('tʃ') + 2] === 'i';
-
-        if (iAfterTʃ) {
-          g2pOutput = 'C(tʃ)';
-        } else if (!iAfterTʃ && iAfterC) {
-          g2pOutput = 'Ci(tʃ)';
-        } else {
-          g2pOutput = 'C(tʃ)';
+      if (i > 0) {
+        const prev = tokens[i - 1];
+        if (![')', ',', '.', ';', ':', '!', '?'].includes(token) && prev !== '(') {
+          result.push(' ');
         }
       }
 
-      // Display results
-      const result = `Original: ${originalText}
-Testo e AFI: ${originalText} (${ipa})
-G2P: ${g2pOutput}`;
+      if (isWord) {
+        const ipa = ipaMap.get(token) || '';
+        result.push(`${token} (${ipa})`);
+      } else {
+        result.push(token);
+      }
+    }
 
-      setOutput(result);
-    });
+    setOutput(result.join(''));
+  });
 
-    // Convert to IPA Button Handler
-    document.getElementById('convert').addEventListener('click', async () => {
+  // G2P button logic
+  document.getElementById('g2pButton').addEventListener('click', async () => {
+    showProgressPlaceholder();
+
+    if (!wasmReady) {
+      alert('Please wait, WASM is still loading...');
+      return;
+    }
+
+    const inputText = inputElem.value.trim();
+    if (!inputText) {
       showPlaceholder();
+      return;
+    }
 
-      if (!wasmReady) {
-        alert('Please wait, WASM is still loading...');
-        return;
+    const words = inputText.split(/\s+/);
+    const resultLines = [];
+
+    for (const word of words) {
+      const ipa = await runESpeak(word);
+      let g2pParts = [];
+
+      // Basic implementation of your rule
+      const lowerWord = word.toLowerCase();
+      const ipaLower = ipa.toLowerCase();
+
+      if (ipaLower.startsWith('tʃ')) {
+        const ipaNextChar = ipaLower[2];
+        const origNextChar = lowerWord[1];
+
+        if (ipaNextChar === 'i') {
+          g2pParts.push(`${word[0]}(tʃ)`);
+        } else if (origNextChar === 'i') {
+          g2pParts.push(`${word[0]}i(tʃ)`);
+        } else {
+          g2pParts.push(`${word[0]}(tʃ)`);
+        }
+
+        // Add remaining letters and phonemes
+        const remainingWord = word.slice(1);
+        const remainingIPA = ipa.slice(ipaLower.startsWith('tʃi') ? 3 : 2);
+
+        for (let i = 1; i < word.length; i++) {
+          const letter = word[i];
+          const sound = remainingIPA[i - 1] || '?';
+          g2pParts.push(`${letter}(${sound})`);
+        }
+      } else {
+        // Default G2P for non-tʃ-starting words
+        for (let i = 0; i < word.length; i++) {
+          const letter = word[i];
+          const sound = ipa[i] || '?';
+          g2pParts.push(`${letter}(${sound})`);
+        }
       }
 
-      const rawInput = inputElem.value.trim();
-      if (!rawInput) {
-        showPlaceholder();
-        return;
-      }
+      resultLines.push(`${word} (${ipa})\nG2P: ${g2pParts.join('')}\n`);
+    }
 
-      const markedInput = rawInput.replace(/\s+/g, '|');
+    setOutput(resultLines.join('\n'));
+  });
+</script>
 
-      try {
-        const ipa = await runESpeak(markedInput);
-        setOutput(`${rawInput} (${ipa})`);
-      } catch (e) {
-        setOutput('Error during transcription: ' + e.message);
-      }
-    });
-  </script>
 </body>
 </html>
