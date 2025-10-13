@@ -271,146 +271,41 @@
       setOutput(result.join(''));
     });
 
-    document.getElementById('convert').addEventListener('click', async () => {
-      showPlaceholder();
-
-      if (!wasmReady) {
-        alert('Please wait, WASM is still loading...');
-        return;
-      }
-
-      const rawInput = inputElem.value.trim();
-      if (!rawInput) {
-        showPlaceholder();
-        return;
-      }
-
-      const markedInput = rawInput.replace(/\s+/g, '|');
-
-      try {
-        const ipa = await runESpeak(markedInput);
-        setOutput(ipa.replace(/\|/g, ' ') || '[No output generated]');
-      } catch (e) {
-        setOutput('Error during transcription: ' + e.message);
-      }
-    });
-
-    document.getElementById('convertG2P').addEventListener('click', async () => {
+   document.getElementById('convertG2P').addEventListener('click', async () => {
   showProgressPlaceholder();
 
-  if (!wasmReady) {
-    alert('Please wait, WASM is still loading...');
-    return;
-  }
-
+  if (!wasmReady) return alert('WASM not ready.');
   const rawInput = inputElem.value.trim();
-  if (!rawInput) {
-    showPlaceholder();
-    return;
-  }
+  if (!rawInput) return showPlaceholder();
 
   const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-  if (!tokens) {
-    setOutput('[No valid input]');
-    return;
-  }
+  if (!tokens) return setOutput('[No valid input]');
 
   const ipaMap = new Map();
+  const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
 
-  const uniqueWords = [...new Set(
-    tokens.filter(t =>
-      /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)
-    )
-  )];
-
-  try {
-    for (const word of uniqueWords) {
-      const ipa = await runESpeak(word);
-      ipaMap.set(word, ipa);
-    }
-  } catch (e) {
-    console.error('Error during IPA conversion:', e);
+  for (const word of uniqueWords) {
+    const ipa = await runESpeak(word);
+    ipaMap.set(word, ipa);
   }
 
-  // === G2P ALIGNMENT FUNCTION ===
-  function alignG2P(graphemes, phonemes) {
-    let g2p = [];
-    let gIndex = 0;
-    let pIndex = 0;
-
-    // Flatten characters into arrays for alignment
-    const gChars = Array.from(graphemes.normalize('NFC'));
-    const pChars = Array.from(phonemes.normalize('NFC'));
-
-    while (gIndex < gChars.length && pIndex < pChars.length) {
-      let g = gChars[gIndex];
-      let p = '';
-
-      // Capture stress/length marks at the start
-      while (['ˈ', 'ˌ', 'ː'].includes(pChars[pIndex])) {
-        p += pChars[pIndex++];
-      }
-
-      // Try matching digraphs
-      if (
-        gIndex + 1 < gChars.length &&
-        (
-          (g + gChars[gIndex + 1]).toLowerCase() === 'ch' ||
-          (g + gChars[gIndex + 1]).toLowerCase() === 'gh' ||
-          (g + gChars[gIndex + 1]).toLowerCase() === 'gl' ||
-          (g + gChars[gIndex + 1]).toLowerCase() === 'gn' ||
-          (g + gChars[gIndex + 1]).toLowerCase() === 'sc'
-        )
-      ) {
-        g += gChars[++gIndex]; // merge digraph
-      }
-
-      // Assign one or two phonemes if possible
-      if (pIndex < pChars.length) {
-        p += pChars[pIndex++];
-      }
-
-      // If next is a length mark, add that too
-      if (pIndex < pChars.length && pChars[pIndex] === 'ː') {
-        p += pChars[pIndex++];
-      }
-
-      g2p.push(`${g}(${p})`);
-      gIndex++;
-    }
-
-    return g2p.join('');
-  }
-
-  // === BUILD FINAL OUTPUT ===
-  const result = [];
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i];
-
-    if (i > 0) {
-      const prev = tokens[i - 1];
-      if (
-        !(token === ')' || token === ',' || token === '.' || token === ';' || token === ':' || token === '!' || token === '?') &&
-        !(prev === '(')
-      ) {
-        result.push(' ');
-      }
-    }
-
+  const result = tokens.map((token, i) => {
     const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
-
     if (isWord) {
-      const ipa = ipaMap.get(token) || '';
-      const g2p = alignG2P(token, ipa);
-      result.push(g2p);
+      const graphemes = token.toLowerCase();
+      const phonemes = ipaMap.get(token).replace(/[ˈˌ]/g, '');  // remove stress markers
+      const mapped = alignG2P(graphemes, phonemes);
+      return mapped;
     } else {
-      result.push(token);
+      return token;
     }
-  }
+  });
 
-  setOutput(result.join(''));
+  setOutput(result.join(' '));
 });
+
     
   </script>
 </body>
 </html>
+
