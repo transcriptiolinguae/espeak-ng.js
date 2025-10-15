@@ -337,8 +337,9 @@
 
 function applyG2PMapping(text, ipa) {
   const result = [];
-  let ipaIndex = 0;
   let i = 0;
+  let ipaIndex = 0;
+
   const lowerText = text.toLowerCase();
 
   while (i < text.length && ipaIndex < ipa.length) {
@@ -348,76 +349,70 @@ function applyG2PMapping(text, ipa) {
     const nextOrigLetter = text[i + 1] || '';
     const remainingIPA = ipa.slice(ipaIndex);
 
-    // --- Handle "ci" → tʃ or tʃi ---
-    if (
-      letter === 'c' && nextLetter === 'i' &&
-      (remainingIPA.startsWith('ˈtʃ') || remainingIPA.startsWith('tʃ'))
-    ) {
-      const match = remainingIPA.startsWith('ˈtʃ') ? 'ˈtʃ' : 'tʃ';
-      const ipaAfterAffricate = ipa[ipaIndex + match.length];
-
-      if (ipaAfterAffricate === 'i') {
-        // i is pronounced → map separately
-        result.push(`${origLetter}(${match})`);
-        result.push(`${nextOrigLetter}(i)`);
-        ipaIndex += match.length + 1;
-      } else {
-        // i is not pronounced → it's part of affricate
-        result.push(`${origLetter}${nextOrigLetter}(${match})`);
-        ipaIndex += match.length;
-      }
-      i += 2;
-      continue;
-    }
-
-    // --- Handle "gi" → dʒ or dʒi ---
-    if (
-      letter === 'g' && nextLetter === 'i' &&
-      (remainingIPA.startsWith('ˈdʒ') || remainingIPA.startsWith('dʒ'))
-    ) {
-      const match = remainingIPA.startsWith('ˈdʒ') ? 'ˈdʒ' : 'dʒ';
-      const ipaAfterAffricate = ipa[ipaIndex + match.length];
-
-      if (ipaAfterAffricate === 'i') {
-        // i is pronounced → map separately
-        result.push(`${origLetter}(${match})`);
-        result.push(`${nextOrigLetter}(i)`);
-        ipaIndex += match.length + 1;
-      } else {
-        // i is not pronounced → it's part of affricate
-        result.push(`${origLetter}${nextOrigLetter}(${match})`);
-        ipaIndex += match.length;
-      }
-      i += 2;
-      continue;
-    }
-
-    // --- Handle "g" not followed by "i" → dʒ ---
-    if (
-      letter === 'g' && nextLetter !== 'i' &&
-      (remainingIPA.startsWith('ˈdʒ') || remainingIPA.startsWith('dʒ'))
-    ) {
-      const match = remainingIPA.startsWith('ˈdʒ') ? 'ˈdʒ' : 'dʒ';
-      result.push(`${origLetter}(${match})`);
-      ipaIndex += match.length;
-      i += 1;
-      continue;
-    }
-
-    // --- Default letter-to-IPA mapping ---
-    // Skip stress markers
+    // Skip stress markers in IPA
     while (ipa[ipaIndex] === 'ˈ' || ipa[ipaIndex] === 'ˌ') {
       ipaIndex++;
     }
 
-    const ipaChar = ipa[ipaIndex] || '';
-    result.push(`${origLetter}(${ipaChar})`);
+    // --- Special case: "ci" → tʃ or tʃi ---
+    if (
+      letter === 'c' && nextLetter === 'i' &&
+      (remainingIPA.startsWith('tʃ'))
+    ) {
+      const nextIPAChar = ipa[ipaIndex + 2]; // after tʃ
+
+      if (nextIPAChar === 'i') {
+        result.push(`c(tʃ)`);
+        result.push(`i(i)`);
+        ipaIndex += 3; // tʃ + i
+      } else {
+        result.push(`ci(tʃ)`);
+        ipaIndex += 2; // tʃ only
+      }
+      i += 2;
+      continue;
+    }
+
+    // --- Special case: "gi" → dʒ or dʒi ---
+    if (
+      letter === 'g' && nextLetter === 'i' &&
+      remainingIPA.startsWith('dʒ')
+    ) {
+      const nextIPAChar = ipa[ipaIndex + 2]; // after dʒ
+
+      if (nextIPAChar === 'i') {
+        result.push(`g(dʒ)`);
+        result.push(`i(i)`);
+        ipaIndex += 3; // dʒ + i
+      } else {
+        result.push(`gi(dʒ)`);
+        ipaIndex += 2; // dʒ only
+      }
+      i += 2;
+      continue;
+    }
+
+    // --- Handle single "g" before a/o/u → dʒ or g ---
+    if (
+      letter === 'g' && nextLetter !== 'i' &&
+      remainingIPA.startsWith('dʒ')
+    ) {
+      result.push(`${origLetter}(dʒ)`);
+      ipaIndex += 2;
+      i += 1;
+      continue;
+    }
+
+    // --- Default 1:1 mapping ---
+    const currentIPAChar = ipa[ipaIndex] || '';
+    result.push(`${text[i]}(${currentIPAChar})`);
     ipaIndex++;
     i++;
   }
 
-  return result.join('');
+  return result.join(' ');
 }
+
 
 </script>
 
@@ -426,6 +421,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
