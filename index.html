@@ -335,56 +335,65 @@
     setOutput(g2pOutput.join(' '));
   });
 
-  function applyG2PMapping(text, ipa) {
-    const result = [];
-    let ipaIndex = 0;
-    let i = 0;
+function applyG2PMapping(text, ipa) {
+  const result = [];
+  let ipaIndex = 0;
+  let i = 0;
+  const lowerText = text.toLowerCase();
 
-    // Special case: Ci → tʃ / t‍ʃ / ʃ
-    const startsWithCi = text.slice(0, 2).toLowerCase() === 'ci';
-    const ipaStart = ipa.slice(0, 3);
-    if (startsWithCi && (ipaStart === 'tʃ' || ipaStart === 't‍ʃ' || ipaStart === 'ʃ')) {
-      result.push(`Ci(${ipaStart})`);
-      i += 2;
-      ipaIndex += ipaStart.length;
+  // Handle Ci -> ʃ/tʃ/t‍ʃ
+  if (
+    lowerText.startsWith("ci") &&
+    (ipa.startsWith("tʃ") || ipa.startsWith("t‍ʃ") || ipa.startsWith("ʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈʃ"))
+  ) {
+    let match = "";
+    if (ipa.startsWith("ˈt‍ʃ")) {
+      match = "ʃ";
+      ipaIndex += 3; // skip ˈt‍ʃ
+    } else if (ipa.startsWith("ˈtʃ")) {
+      match = "ʃ";
+      ipaIndex += 3;
+    } else if (ipa.startsWith("ˈʃ")) {
+      match = "ʃ";
+      ipaIndex += 2;
+    } else if (ipa.startsWith("t‍ʃ") || ipa.startsWith("tʃ") || ipa.startsWith("ʃ")) {
+      match = "ʃ";
+      ipaIndex += (ipa.startsWith("t‍ʃ") ? 2 : ipa.startsWith("tʃ") ? 2 : 1);
     }
 
-    while (i < text.length && ipaIndex < ipa.length) {
-      const letter = text[i];
-      const ipaChar = nextIPAChar(ipa, ipaIndex);
-      if (!ipaChar) break;
-
-      result.push(`${letter}(${ipaChar.chunk})`);
-      ipaIndex = ipaChar.nextIndex;
-      i++;
-    }
-
-    return result.join('');
+    result.push(`Ci(${match})`);
+    i += 2;
   }
 
-  function nextIPAChar(ipa, startIndex) {
-    const multiCharUnits = [
-      't‍ʃ', 'tʃ', 'dʒ', 'ʃ', 'ʎ', 'ɲ',
-      'ts', 'dz', 'ɛː', 'oː', 'aː', 'eː', 'iː', 'uː',
-      'ː', 'ˈ', 'ˌ'
-    ];
+  // Now map remaining letters
+  while (i < text.length && ipaIndex < ipa.length) {
+    const letter = text[i];
+    let ipaChar = ipa[ipaIndex];
 
-    for (let len = 3; len >= 1; len--) {
-      const chunk = ipa.slice(startIndex, startIndex + len);
-      if (multiCharUnits.includes(chunk)) {
-        return { chunk, nextIndex: startIndex + len };
-      }
+    // Check for stress marker before vowel
+    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
+      const stress = ipaChar;
+      ipaIndex++;
+      ipaChar = ipa[ipaIndex];
+      result.push(`${letter}('${ipaChar})`);
+    } else {
+      result.push(`${letter}(${ipaChar})`);
     }
 
-    const char = ipa[startIndex];
-    return char ? { chunk: char, nextIndex: startIndex + 1 } : null;
+    ipaIndex++;
+    i++;
   }
+
+  return result.join('');
+}
+
 </script>
 
 
 
 </body>
 </html>
+
 
 
 
