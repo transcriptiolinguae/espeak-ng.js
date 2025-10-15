@@ -127,10 +127,7 @@
   <button id="g2p">G2P</button>
   <pre id="output" class="placeholder">Trascrizione</pre>
 
-
-
-
-  <script type="module">
+<script type="module">
   import initESpeak from './espeak-ng.js';
 
   const outputElem = document.getElementById('output');
@@ -207,6 +204,7 @@
     outputElem.innerText = text;
   }
 
+  // AFI button
   document.getElementById('convert').addEventListener('click', async () => {
     showPlaceholder();
 
@@ -231,6 +229,7 @@
     }
   });
 
+  // Testo e AFI button
   document.getElementById('convertInline').addEventListener('click', async () => {
     showProgressPlaceholder();
 
@@ -286,6 +285,7 @@
     setOutput(result.join(''));
   });
 
+  // G2P button
   document.getElementById('g2p').addEventListener('click', async () => {
     showProgressPlaceholder();
 
@@ -335,60 +335,73 @@
     setOutput(g2pOutput.join(' '));
   });
 
-  // Apply your specific mapping rules here
 function applyG2PMapping(text, ipa) {
   const result = [];
+  let ipaIndex = 0;
+  let i = 0;
   const lowerText = text.toLowerCase();
 
-  let i = 0;       // text index
-  let ipaIndex = 0; // IPA index
-
-  while (i < text.length) {
-    const letter = lowerText[i];
-    const origLetter = text[i];
-
-    // Skip stress markers in IPA
-    while (ipa[ipaIndex] === 'ˈ' || ipa[ipaIndex] === 'ˌ') {
-      ipaIndex++;
-    }
-
-    if (ipaIndex >= ipa.length) {
-      // No more IPA left, just add letter without IPA
-      result.push(`${origLetter}()`);
-      i++;
-      continue;
-    }
-
-    const ipaTwoChars = ipa.slice(ipaIndex, ipaIndex + 2);
-
-    if ((letter === 'c' || letter === 'g') && ipaTwoChars === 'tʃ') {
-      // Map c -> tʃ
-      result.push(`${origLetter}(tʃ)`);
+  // Special case for "ci" → tʃ
+  if (
+    lowerText.startsWith("ci") &&
+    (ipa.startsWith("tʃ") || ipa.startsWith("t‍ʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈt‍ʃ"))
+  ) {
+    let match = "";
+    if (ipa.startsWith("ˈt‍ʃ")) {
+      match = "t‍ʃ";
+      ipaIndex += 4;
+    } else if (ipa.startsWith("ˈtʃ")) {
+      match = "tʃ";
+      ipaIndex += 3;
+    } else if (ipa.startsWith("t‍ʃ")) {
+      match = "t‍ʃ";
+      ipaIndex += 3;
+    } else if (ipa.startsWith("tʃ")) {
+      match = "tʃ";
       ipaIndex += 2;
-      i++;
-      continue;
     }
 
-    if (letter === 'g' && ipaTwoChars === 'dʒ') {
-      // Map g -> dʒ
-      result.push(`${origLetter}(dʒ)`);
+    result.push(`${text.slice(0, 2)}(${match})`);
+    i += 2;
+  }
+  // Special case for "gi" → dʒ
+  else if (
+    lowerText.startsWith("gi") &&
+    (ipa.startsWith("dʒ") || ipa.startsWith("d\u200Dj") || ipa.startsWith("ˈdʒ") || ipa.startsWith("ˈd\u200Dj"))
+  ) {
+    let match = "";
+    if (ipa.startsWith("ˈd\u200Dj")) {
+      match = "d\u200Dj";
+      ipaIndex += 4;
+    } else if (ipa.startsWith("ˈdʒ")) {
+      match = "dʒ";
+      ipaIndex += 3;
+    } else if (ipa.startsWith("d\u200Dj")) {
+      match = "d\u200Dj";
+      ipaIndex += 3;
+    } else if (ipa.startsWith("dʒ")) {
+      match = "dʒ";
       ipaIndex += 2;
-      i++;
-      continue;
     }
 
-    // For other letters, map one IPA char
-    const ipaChar = ipa[ipaIndex];
+    result.push(`${text.slice(0, 2)}(${match})`);
+    i += 2;
+  }
 
-    // Defensive: if ipaChar is undefined or empty string, avoid output like a()
-    if (ipaChar) {
-      result.push(`${origLetter}(${ipaChar})`);
+  // Process remaining letters
+  while (i < text.length && ipaIndex < ipa.length) {
+    const letter = text[i];
+    let ipaChar = ipa[ipaIndex];
+
+    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
       ipaIndex++;
+      ipaChar = ipa[ipaIndex];
+      result.push(`${letter}('${ipaChar})`);
     } else {
-      // No IPA char left, map letter with empty parentheses
-      result.push(`${origLetter}()`);
+      result.push(`${letter}(${ipaChar})`);
     }
 
+    ipaIndex++;
     i++;
   }
 
@@ -400,17 +413,8 @@ function applyG2PMapping(text, ipa) {
 
 
 
-
 </body>
 </html>
-
-
-
-
-
-
-
-
 
 
 
