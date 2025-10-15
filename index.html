@@ -341,28 +341,40 @@ function applyG2PMapping(text, ipa) {
   let i = 0;
   const lowerText = text.toLowerCase();
 
+  // Helper to check if IPA has 'i' immediately after tʃ or dʒ
+  function hasFollowingI(ipaStr, startIdx) {
+    return ipaStr[startIdx] === 'i';
+  }
+
   // Special case for "ci" → tʃ
   if (
     lowerText.startsWith("ci") &&
-    (ipa.startsWith("tʃ") || ipa.startsWith("t‍ʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈt‍ʃ"))
+    (ipa.startsWith("tʃ") || ipa.startsWith("t\u200Dʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈt\u200Dʃ"))
   ) {
+    // Determine where 'tʃ' ends in IPA
     let match = "";
-    if (ipa.startsWith("ˈt‍ʃ")) {
-      match = "t‍ʃ";
-      ipaIndex += 4;
+    let endIdx = 0;
+
+    if (ipa.startsWith("ˈt\u200Dʃ")) {
+      match = "t\u200Dʃ";
+      endIdx = 4;
     } else if (ipa.startsWith("ˈtʃ")) {
       match = "tʃ";
-      ipaIndex += 3;
-    } else if (ipa.startsWith("t‍ʃ")) {
-      match = "t‍ʃ";
-      ipaIndex += 3;
+      endIdx = 3;
+    } else if (ipa.startsWith("t\u200Dʃ")) {
+      match = "t\u200Dʃ";
+      endIdx = 3;
     } else if (ipa.startsWith("tʃ")) {
       match = "tʃ";
-      ipaIndex += 2;
+      endIdx = 2;
     }
 
-    result.push(`${text.slice(0, 2)}(${match})`);
-    i += 2;
+    // Only output if NOT followed by 'i'
+    if (!hasFollowingI(ipa, endIdx)) {
+      result.push(`${text.slice(0, 2)}(${match})`);
+      i += 2;
+      ipaIndex += endIdx;
+    }
   }
   // Special case for "gi" → dʒ
   else if (
@@ -370,22 +382,27 @@ function applyG2PMapping(text, ipa) {
     (ipa.startsWith("dʒ") || ipa.startsWith("d\u200Dj") || ipa.startsWith("ˈdʒ") || ipa.startsWith("ˈd\u200Dj"))
   ) {
     let match = "";
+    let endIdx = 0;
+
     if (ipa.startsWith("ˈd\u200Dj")) {
       match = "d\u200Dj";
-      ipaIndex += 4;
+      endIdx = 4;
     } else if (ipa.startsWith("ˈdʒ")) {
       match = "dʒ";
-      ipaIndex += 3;
+      endIdx = 3;
     } else if (ipa.startsWith("d\u200Dj")) {
       match = "d\u200Dj";
-      ipaIndex += 3;
+      endIdx = 3;
     } else if (ipa.startsWith("dʒ")) {
       match = "dʒ";
-      ipaIndex += 2;
+      endIdx = 2;
     }
 
-    result.push(`${text.slice(0, 2)}(${match})`);
-    i += 2;
+    if (!hasFollowingI(ipa, endIdx)) {
+      result.push(`${text.slice(0, 2)}(${match})`);
+      i += 2;
+      ipaIndex += endIdx;
+    }
   }
 
   // Process remaining letters
@@ -415,6 +432,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
