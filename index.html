@@ -137,7 +137,10 @@
 
   window.addEventListener('load', async () => {
     try {
-      await initESpeak({ print: () => {}, printErr: () => {} });
+      await initESpeak({
+        print: () => {},
+        printErr: () => {}
+      });
       wasmReady = true;
       console.log('eSpeak NG WASM loaded and ready');
     } catch (e) {
@@ -248,16 +251,10 @@
     }
 
     const ipaMap = new Map();
-    const wordSet = new Set();
-
-    tokens.forEach(t => {
-      if (/^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)) {
-        wordSet.add(t.toLowerCase());
-      }
-    });
+    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
 
     try {
-      for (const word of wordSet) {
+      for (const word of uniqueWords) {
         const ipa = await runESpeak(word);
         ipaMap.set(word, ipa);
       }
@@ -278,7 +275,7 @@
       }
 
       if (isWord) {
-        const ipa = ipaMap.get(token.toLowerCase()) || '';
+        const ipa = ipaMap.get(token) || '';
         result.push(`${token} (${ipa})`);
       } else {
         result.push(token);
@@ -288,62 +285,55 @@
     setOutput(result.join(''));
   });
 
-// G2P button
-document.getElementById('g2p').addEventListener('click', async () => {
-  showProgressPlaceholder();
+  // G2P button (you need to add it in HTML as <button id="g2p">G2P</button>)
+  document.getElementById('g2p').addEventListener('click', async () => {
+    showProgressPlaceholder();
 
-  if (!wasmReady) {
-    alert('Please wait, WASM is still loading...');
-    return;
-  }
-
-  const rawInput = inputElem.value.trim();
-  if (!rawInput) {
-    showPlaceholder();
-    return;
-  }
-
-  const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-  if (!tokens) {
-    setOutput('[No valid input]');
-    return;
-  }
-
-  const ipaMap = new Map();
-  const lowercaseToIPA = new Map();
-
-  const uniqueLowercaseWords = [...new Set(
-    tokens
-      .filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t))
-      .map(t => t.toLowerCase())
-  )];
-
-  try {
-    for (const word of uniqueLowercaseWords) {
-      const ipa = await runESpeak(word);
-      lowercaseToIPA.set(word, ipa);
+    if (!wasmReady) {
+      alert('Please wait, WASM is still loading...');
+      return;
     }
-  } catch (e) {
-    console.error('Error during IPA conversion:', e);
-  }
 
-  const g2pOutput = [];
-
-  for (const token of tokens) {
-    const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
-
-    if (isWord) {
-      const ipa = lowercaseToIPA.get(token.toLowerCase()) || '';
-      const g2pMapped = applyG2PMapping(token, ipa); // token = original casing
-      g2pOutput.push(g2pMapped);
-    } else {
-      g2pOutput.push(token);
+    const rawInput = inputElem.value.trim();
+    if (!rawInput) {
+      showPlaceholder();
+      return;
     }
-  }
 
-  setOutput(g2pOutput.join(' '));
-});
+    const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+    if (!tokens) {
+      setOutput('[No valid input]');
+      return;
+    }
 
+    const ipaMap = new Map();
+    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+
+    try {
+      for (const word of uniqueWords) {
+        const ipa = await runESpeak(word);
+        ipaMap.set(word, ipa);
+      }
+    } catch (e) {
+      console.error('Error during IPA conversion:', e);
+    }
+
+    const g2pOutput = [];
+
+    for (const token of tokens) {
+      const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+
+      if (isWord) {
+        const ipa = ipaMap.get(token) || '';
+        const g2pMapped = applyG2PMapping(token, ipa);
+        g2pOutput.push(g2pMapped);
+      } else {
+        g2pOutput.push(token);
+      }
+    }
+
+    setOutput(g2pOutput.join(' '));
+  });
 
 function applyG2PMapping(text, ipa) {
   const result = [];
@@ -351,18 +341,19 @@ function applyG2PMapping(text, ipa) {
   let i = 0;
   const lowerText = text.toLowerCase();
 
-  // Special case: Ci -> tʃ
+  // Handle "Ci" + tʃ / t‍ʃ specially
   if (
     lowerText.startsWith("ci") &&
     (ipa.startsWith("tʃ") || ipa.startsWith("t‍ʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈt‍ʃ"))
   ) {
+    // Detect exact tʃ variant and possible preceding stress ˈ
     let match = "";
     if (ipa.startsWith("ˈt‍ʃ")) {
       match = "t‍ʃ";
-      ipaIndex += 4;
+      ipaIndex += 4; // ˈ + t‍ʃ (note: t‍ʃ is 3 chars because of zero-width joiner)
     } else if (ipa.startsWith("ˈtʃ")) {
       match = "tʃ";
-      ipaIndex += 3;
+      ipaIndex += 3; // ˈ + tʃ
     } else if (ipa.startsWith("t‍ʃ")) {
       match = "t‍ʃ";
       ipaIndex += 3;
@@ -375,11 +366,14 @@ function applyG2PMapping(text, ipa) {
     i += 2;
   }
 
+  // Map remaining letters
   while (i < text.length && ipaIndex < ipa.length) {
-    const letter = text[i]; // PRESERVES ORIGINAL CASE
+    const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
+    // Handle stress marks ˈ or ˌ before vowels
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
+      const stress = ipaChar;
       ipaIndex++;
       ipaChar = ipa[ipaIndex];
       result.push(`${letter}('${ipaChar})`);
@@ -394,16 +388,13 @@ function applyG2PMapping(text, ipa) {
   return result.join('');
 }
 
-</script>
 
+</script>
 
 
 
 </body>
 </html>
-
-
-
 
 
 
