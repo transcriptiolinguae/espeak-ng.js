@@ -341,78 +341,63 @@ function applyG2PMapping(text, ipa) {
   let i = 0;
   const lowerText = text.toLowerCase();
 
-  function hasFollowingI(ipaStr, index) {
-    return ipaStr[index] === 'i';
+  // Helper to strip leading stress or ZWJ and return core + offset
+  function startsWithIpa(ipa, pattern) {
+    const variations = [`${pattern}`, `ˈ${pattern}`, `ˌ${pattern}`, `\u200D${pattern}`, `ˈ\u200D${pattern}`, `\u200Dˈ${pattern}`];
+    for (const variant of variations) {
+      if (ipa.startsWith(variant)) return { match: variant, len: variant.length };
+    }
+    return null;
   }
 
-  // --- CI → tʃ if no i in IPA after tʃ, but 'i' exists in text after 'c'
-  if (
-    lowerText.length >= 2 &&
-    lowerText[0] === 'c' &&
-    lowerText[1] === 'i' &&
-    (
-      ipa.startsWith("ˈtʃ") || ipa.startsWith("tʃ") ||
-      ipa.startsWith("ˈt\u200Dʃ") || ipa.startsWith("t\u200Dʃ")
-    )
-  ) {
-    let match = "tʃ";
-    let endIdx = ipa.startsWith("ˈ") ? 3 : 2;
-    if (ipa.startsWith("ˈt\u200Dʃ") || ipa.startsWith("t\u200Dʃ")) {
-      match = "tʃ"; // normalize output
-      endIdx = ipa.startsWith("ˈ") ? 4 : 3;
-    }
-
-    // Only map if 'i' is not pronounced in IPA
-    if (!hasFollowingI(ipa, endIdx)) {
-      result.push(`ci(${match})`);
-      i = 2;
-      ipaIndex = endIdx;
+  // --- ci → tʃ ---
+  if (lowerText.startsWith("ci")) {
+    const matchInfo = startsWithIpa(ipa, "tʃ");
+    if (matchInfo) {
+      const afterAffricate = ipa[matchInfo.len];
+      if (afterAffricate !== 'i') {
+        // All conditions met: ci + starts with tʃ + no 'i' after in IPA
+        result.push(`ci(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
+        i += 2;
+        ipaIndex += matchInfo.len;
+      }
     }
   }
 
-  // --- GI → dʒ if no i in IPA after dʒ, but 'i' exists in text after 'g'
-  else if (
-    lowerText.length >= 2 &&
-    lowerText[0] === 'g' &&
-    lowerText[1] === 'i' &&
-    (
-      ipa.startsWith("ˈdʒ") || ipa.startsWith("dʒ") ||
-      ipa.startsWith("ˈd\u200Dj") || ipa.startsWith("d\u200Dj")
-    )
-  ) {
-    let match = "dʒ";
-    let endIdx = ipa.startsWith("ˈ") ? 3 : 2;
-    if (ipa.startsWith("ˈd\u200Dj") || ipa.startsWith("d\u200Dj")) {
-      match = "dʒ";
-      endIdx = ipa.startsWith("ˈ") ? 4 : 3;
-    }
-
-    if (!hasFollowingI(ipa, endIdx)) {
-      result.push(`gi(${match})`);
-      i = 2;
-      ipaIndex = endIdx;
+  // --- gi → dʒ ---
+  if (i === 0 && lowerText.startsWith("gi")) {
+    const matchInfo = startsWithIpa(ipa, "dʒ");
+    if (matchInfo) {
+      const afterAffricate = ipa[matchInfo.len];
+      if (afterAffricate !== 'i') {
+        // All conditions met: gi + starts with dʒ + no 'i' after in IPA
+        result.push(`gi(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
+        i += 2;
+        ipaIndex += matchInfo.len;
+      }
     }
   }
 
-  // Continue mapping remaining letters
+  // --- Default fallback for other characters ---
   while (i < text.length && ipaIndex < ipa.length) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
       ipaIndex++;
-      ipaChar = ipa[ipaIndex] || '';
+      ipaChar = ipa[ipaIndex];
       result.push(`${letter}('${ipaChar})`);
     } else {
       result.push(`${letter}(${ipaChar})`);
     }
 
-    i++;
     ipaIndex++;
+    i++;
   }
 
   return result.join('');
 }
+
 
 
 </script>
@@ -422,6 +407,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
