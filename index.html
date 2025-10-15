@@ -341,36 +341,37 @@ function applyG2PMapping(text, ipa) {
   let i = 0;
   const lowerText = text.toLowerCase();
 
-  // Handle Ci -> ʃ/tʃ/t‍ʃ
+  // Handle "Ci" + tʃ / t‍ʃ specially
   if (
     lowerText.startsWith("ci") &&
-    (ipa.startsWith("tʃ") || ipa.startsWith("t‍ʃ") || ipa.startsWith("ʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈʃ"))
+    (ipa.startsWith("tʃ") || ipa.startsWith("t‍ʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈt‍ʃ"))
   ) {
+    // Detect exact tʃ variant and possible preceding stress ˈ
     let match = "";
     if (ipa.startsWith("ˈt‍ʃ")) {
-      match = "ʃ";
-      ipaIndex += 3; // skip ˈt‍ʃ
+      match = "t‍ʃ";
+      ipaIndex += 4; // ˈ + t‍ʃ (note: t‍ʃ is 3 chars because of zero-width joiner)
     } else if (ipa.startsWith("ˈtʃ")) {
-      match = "ʃ";
+      match = "tʃ";
+      ipaIndex += 3; // ˈ + tʃ
+    } else if (ipa.startsWith("t‍ʃ")) {
+      match = "t‍ʃ";
       ipaIndex += 3;
-    } else if (ipa.startsWith("ˈʃ")) {
-      match = "ʃ";
+    } else if (ipa.startsWith("tʃ")) {
+      match = "tʃ";
       ipaIndex += 2;
-    } else if (ipa.startsWith("t‍ʃ") || ipa.startsWith("tʃ") || ipa.startsWith("ʃ")) {
-      match = "ʃ";
-      ipaIndex += (ipa.startsWith("t‍ʃ") ? 2 : ipa.startsWith("tʃ") ? 2 : 1);
     }
 
     result.push(`Ci(${match})`);
     i += 2;
   }
 
-  // Now map remaining letters
+  // Map remaining letters
   while (i < text.length && ipaIndex < ipa.length) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
-    // Check for stress marker before vowel
+    // Handle stress marks ˈ or ˌ before vowels
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
       const stress = ipaChar;
       ipaIndex++;
@@ -387,12 +388,14 @@ function applyG2PMapping(text, ipa) {
   return result.join('');
 }
 
+
 </script>
 
 
 
 </body>
 </html>
+
 
 
 
