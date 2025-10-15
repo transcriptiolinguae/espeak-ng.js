@@ -349,12 +349,13 @@ function applyG2PMapping(text, ipa) {
     return null;
   }
 
-  // Handle "ci" → "tʃ" and "gi" → "dʒ" cases
+  // --- ci → tʃ and gi → dʒ special handling for i with stress ---
   if (lowerText.startsWith("ci")) {
     const matchInfo = startsWithIpa(ipa, "tʃ");
     if (matchInfo) {
       const afterAffricate = ipa.slice(matchInfo.len);
 
+      // Check if next is stressed i (ˈi or i)
       if (afterAffricate.startsWith('ˈi') || afterAffricate.startsWith('i')) {
         result.push(`c(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
         i += 1;
@@ -390,34 +391,48 @@ function applyG2PMapping(text, ipa) {
     }
   }
 
-  // Now process the rest of the string
+  // Mapping single letters with triangle colon (ː) to double letters
+  const doubleLetterMap = {
+    'bː': 'bb',
+    'kː': 'cc',
+    'dː': 'dd',
+    'tː': 'tt',
+    'fː': 'ff',
+    'vː': 'vv',
+    'lː': 'll',
+    'mː': 'mm',
+    'nː': 'nn',
+    'sː': 'ss',
+    'zː': 'zz',
+    'ʃː': 'ʃʃ', // sibilant example
+    'ʒː': 'ʒʒ'  // sibilant example
+  };
+
+  // Process the rest normally, and check for ː to double letters
   while (i < text.length && ipaIndex < ipa.length) {
-    const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
-    // Check for 'tt' in the text and map it to 'tː' in the IPA
-    if (text[i] === 't' && text[i + 1] === 't') {
-      // We want both 't' characters mapped to 'tː'
-      result.push(`${text[i]}(${ipaChar}ː)`); // First 't' maps to 'tː'
-      ipaIndex++; // Skip the first 't' IPA character
-      result.push(`${text[i + 1]}(${ipaChar}ː)`); // Second 't' maps to 'tː'
-      i += 2; // Skip both 't's in the original text
-    } else {
-      // For other characters, handle IPA normally
-      if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
-        ipaIndex++;
-        ipaChar = ipa[ipaIndex];
-        result.push(`${letter}('${ipaChar})`);
-      } else {
-        result.push(`${letter}(${ipaChar})`);
-      }
+    // If the current IPA character is followed by ː, apply the double letter rule
+    if (ipaChar === 'ː' && ipaIndex > 0) {
+      const previousChar = ipa[ipaIndex - 1];
+      const key = `${previousChar}ː`;
 
-      ipaIndex++;
-      i++;
+      if (doubleLetterMap[key]) {
+        result.push(doubleLetterMap[key]);
+        ipaIndex++; // Skip the ː
+      } else {
+        result.push(`${previousChar}(${ipaChar})`);
+      }
+    } else {
+      // For regular IPA characters, just add them as-is
+      result.push(`${text[i]}(${ipaChar})`);
     }
+
+    ipaIndex++;
+    i++;
   }
 
-  // If there are leftover letters, append them with empty IPA
+  // If anything left in text, append with empty IPA
   while (i < text.length) {
     result.push(`${text[i]}()`);
     i++;
@@ -426,12 +441,6 @@ function applyG2PMapping(text, ipa) {
   return result.join('');
 }
 
-    // Handle 'tt' mapping to 'tː' in IPA
-    if (text[i] === 't' && text[i + 1] === 't') {
-      result.push(`${text[i]}(${ipaChar}ː)`);
-      ipaIndex++; // Skip the next 't' in IPA
-      i += 2; // Skip the next 't' in the original text
-    } else {
       // Apply regular double letter mapping for other characters
       if (doubleLetterMapping[ipaChar]) {
         ipaChar = doubleLetterMapping[ipaChar];
@@ -467,6 +476,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
