@@ -335,49 +335,75 @@
     setOutput(g2pOutput.join(' '));
   });
 
-// Extend the G2P mapping function to map letters followed by ː
 function applyG2PMapping(text, ipa) {
   const result = [];
   let ipaIndex = 0;
   let i = 0;
   const lowerText = text.toLowerCase();
 
-  // Mapping for single letters followed by ː to double letters in the original text
-  const doubleLetterMap = {
-    b: 'bb',
-    c: 'cc',
-    d: 'dd',
-    f: 'ff',
-    l: 'll',
-    m: 'mm',
-    n: 'nn',
-    p: 'pp',
-    q: 'qq',
-    r: 'rr',
-    s: 'ss',
-    t: 'tt',
-    g: 'gg',
-    z: 'zz'
-  };
+  function startsWithIpa(ipa, pattern) {
+    const variations = [`${pattern}`, `ˈ${pattern}`, `ˌ${pattern}`, `\u200D${pattern}`, `ˈ\u200D${pattern}`, `\u200Dˈ${pattern}`];
+    for (const variant of variations) {
+      if (ipa.startsWith(variant)) return { match: variant, len: variant.length };
+    }
+    return null;
+  }
 
-  // --- Process single letters followed by ː ---
+  // --- ci → tʃ and gi → dʒ special handling for i with stress ---
+  if (lowerText.startsWith("ci")) {
+    const matchInfo = startsWithIpa(ipa, "tʃ");
+    if (matchInfo) {
+      const afterAffricate = ipa.slice(matchInfo.len);
+
+      // Check if next is stressed i (ˈi or i)
+      if (afterAffricate.startsWith('ˈi') || afterAffricate.startsWith('i')) {
+        // Map c to tʃ and i to stressed i separately
+        result.push(`c(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
+        i += 1; // consumed 'c'
+        ipaIndex += matchInfo.len;
+
+        // Map i next
+        result.push(`i(${afterAffricate.startsWith('ˈi') ? 'ˈi' : 'i'})`);
+        i += 1;
+        ipaIndex += afterAffricate.startsWith('ˈi') ? 2 : 1;
+
+        // done for first two letters
+      } else {
+        // No stressed i, treat as whole ci → tʃ
+        result.push(`ci(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
+        i += 2;
+        ipaIndex += matchInfo.len;
+      }
+    }
+  } else if (lowerText.startsWith("gi")) {
+    const matchInfo = startsWithIpa(ipa, "dʒ");
+    if (matchInfo) {
+      const afterAffricate = ipa.slice(matchInfo.len);
+
+      if (afterAffricate.startsWith('ˈi') || afterAffricate.startsWith('i')) {
+        // Map g to dʒ and i to stressed i separately
+        result.push(`g(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
+        i += 1;
+        ipaIndex += matchInfo.len;
+
+        result.push(`i(${afterAffricate.startsWith('ˈi') ? 'ˈi' : 'i'})`);
+        i += 1;
+        ipaIndex += afterAffricate.startsWith('ˈi') ? 2 : 1;
+
+      } else {
+        // No stressed i, treat as whole gi → dʒ
+        result.push(`gi(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
+        i += 2;
+        ipaIndex += matchInfo.len;
+      }
+    }
+  }
+
+  // Process the rest normally
   while (i < text.length && ipaIndex < ipa.length) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
-    // Check if the current IPA character is followed by ː, and map back to double letters
-    if (ipaChar.match(/[b-df-lnprstz]/) && ipa[ipaIndex + 1] === 'ː') {
-      // Check if the letter is in the double letter map
-      if (doubleLetterMap[ipaChar]) {
-        // Map to double letter in original text
-        result.push(`${doubleLetterMap[ipaChar]}(${ipaChar}ː)`);
-        ipaIndex += 2; // Skip the 'ː'
-        i++; // Move to next character
-        continue;
-      }
-    }
-
-    // If IPA has stress markers, handle them separately
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
       ipaIndex++;
       ipaChar = ipa[ipaIndex];
@@ -408,8 +434,6 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
-
-
 
 
 
