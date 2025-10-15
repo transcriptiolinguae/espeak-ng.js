@@ -341,100 +341,81 @@ function applyG2PMapping(text, ipa) {
   let i = 0;
   const lowerText = text.toLowerCase();
 
-  // Special case for "ci" → tʃ
-  if (
-    lowerText.startsWith("ci") &&
-    (ipa.startsWith("tʃ") || ipa.startsWith("t\u200Dʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈt\u200Dʃ"))
-  ) {
-    let match = "";
-    if (ipa.startsWith("ˈt\u200Dʃ")) {
-      match = "t\u200Dʃ";
-      ipaIndex += 4;
-    } else if (ipa.startsWith("ˈtʃ")) {
-      match = "tʃ";
-      ipaIndex += 3;
-    } else if (ipa.startsWith("t\u200Dʃ")) {
-      match = "t\u200Dʃ";
-      ipaIndex += 3;
-    } else if (ipa.startsWith("tʃ")) {
-      match = "tʃ";
-      ipaIndex += 2;
-    }
+  while (i < text.length && ipaIndex < ipa.length) {
+    const letter = lowerText[i];
+    const nextLetter = lowerText[i + 1] || '';
+    const remainingIPA = ipa.slice(ipaIndex);
 
-    result.push(`${text.slice(0, 2)}(${match})`);
-    i += 2;
-  }
-  // Special case for "gi" → dʒ
-  else if (
-    lowerText.startsWith("gi") &&
-    (ipa.startsWith("dʒ") || ipa.startsWith("d\u200Dj") || ipa.startsWith("ˈdʒ") || ipa.startsWith("ˈd\u200Dj"))
-  ) {
-    let match = "";
-    if (ipa.startsWith("ˈd\u200Dj")) {
-      match = "d\u200Dj";
-      ipaIndex += 4;
-    } else if (ipa.startsWith("ˈdʒ")) {
-      match = "dʒ";
-      ipaIndex += 3;
-    } else if (ipa.startsWith("d\u200Dj")) {
-      match = "d\u200Dj";
-      ipaIndex += 3;
-    } else if (ipa.startsWith("dʒ")) {
-      match = "dʒ";
-      ipaIndex += 2;
-    }
-
-    result.push(`${text.slice(0, 2)}(${match})`);
-    i += 2;
-  }
-
-  // Process remaining letters, including special case:
-  // g not followed by i → dʒ mapping
-  for (; i < text.length; i++) {
-    const letter = text[i];
-    const lowerLetter = letter.toLowerCase();
-    const nextLetter = text[i + 1] ? text[i + 1].toLowerCase() : '';
-
+    // --- Handle "ci" → tʃ or tʃi ---
     if (
-      lowerLetter === 'g' &&
-      nextLetter !== 'i' &&
-      (
-        ipa.startsWith('ˈdʒ', ipaIndex) || 
-        ipa.startsWith('dʒ', ipaIndex) ||
-        ipa.startsWith('ˈd\u200Dj', ipaIndex) ||
-        ipa.startsWith('d\u200Dj', ipaIndex)
-      )
+      letter === 'c' && nextLetter === 'i' &&
+      (remainingIPA.startsWith('tʃ') || remainingIPA.startsWith('ˈtʃ'))
     ) {
-      let match = '';
-      if (ipa.startsWith('ˈd\u200Dj', ipaIndex)) {
-        match = 'd\u200Dj';
-        ipaIndex += 4;
-      } else if (ipa.startsWith('ˈdʒ', ipaIndex)) {
-        match = 'dʒ';
-        ipaIndex += 3;
-      } else if (ipa.startsWith('d\u200Dj', ipaIndex)) {
-        match = 'd\u200Dj';
-        ipaIndex += 3;
-      } else if (ipa.startsWith('dʒ', ipaIndex)) {
-        match = 'dʒ';
-        ipaIndex += 2;
-      }
+      const match = remainingIPA.startsWith('ˈtʃ') ? 'ˈtʃ' : 'tʃ';
+      const nextIPAChar = ipa[ipaIndex + match.length];
 
-      result.push(`${letter}(${match})`);
+      // If next IPA char is 'i', it's pronounced separately
+      if (nextIPAChar === 'i') {
+        result.push(`c(${match})`);
+        result.push(`i(i)`);
+        ipaIndex += match.length + 1;
+        i += 2;
+        continue;
+      } else {
+        result.push(`ci(${match})`);
+        ipaIndex += match.length;
+        i += 2;
+        continue;
+      }
+    }
+
+    // --- Handle "gi" → dʒ or dʒi ---
+    if (
+      letter === 'g' && nextLetter === 'i' &&
+      (remainingIPA.startsWith('dʒ') || remainingIPA.startsWith('ˈdʒ'))
+    ) {
+      const match = remainingIPA.startsWith('ˈdʒ') ? 'ˈdʒ' : 'dʒ';
+      const nextIPAChar = ipa[ipaIndex + match.length];
+
+      // If next IPA char is 'i', it's pronounced separately
+      if (nextIPAChar === 'i') {
+        result.push(`g(${match})`);
+        result.push(`i(i)`);
+        ipaIndex += match.length + 1;
+        i += 2;
+        continue;
+      } else {
+        result.push(`gi(${match})`);
+        ipaIndex += match.length;
+        i += 2;
+        continue;
+      }
+    }
+
+    // --- Handle "g" not followed by "i" → dʒ ---
+    if (
+      letter === 'g' && nextLetter !== 'i' &&
+      (remainingIPA.startsWith('dʒ') || remainingIPA.startsWith('ˈdʒ'))
+    ) {
+      const match = remainingIPA.startsWith('ˈdʒ') ? 'ˈdʒ' : 'dʒ';
+      result.push(`g(${match})`);
+      ipaIndex += match.length;
+      i += 1;
       continue;
     }
 
-    // Default processing for other letters
+    // --- Default letter-to-IPA mapping ---
     let ipaChar = ipa[ipaIndex];
 
+    // Skip stress markers and advance
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
       ipaIndex++;
       ipaChar = ipa[ipaIndex];
-      result.push(`${letter}('${ipaChar})`);
-    } else {
-      result.push(`${letter}(${ipaChar})`);
     }
+
+    result.push(`${text[i]}(${ipaChar})`);
     ipaIndex++;
+    i++;
   }
 
   return result.join('');
@@ -448,6 +429,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
