@@ -325,7 +325,7 @@
 
       if (isWord) {
         const ipa = ipaMap.get(token) || '';
-        const g2pMapped = applyG2PMapping(token, ipa);
+        const g2pMapped = applyG2PMapping(token, ipa, token);
         g2pOutput.push(g2pMapped);
       } else {
         g2pOutput.push(token);
@@ -335,25 +335,26 @@
     setOutput(g2pOutput.join(' '));
   });
 
-function applyG2PMapping(text, ipa) {
+function applyG2PMapping(text, ipa, originalText) {
   const result = [];
   let ipaIndex = 0;
   let i = 0;
+
   const lowerText = text.toLowerCase();
+  const original = originalText || text;
 
   // Handle "Ci" + tʃ / t‍ʃ specially
   if (
     lowerText.startsWith("ci") &&
     (ipa.startsWith("tʃ") || ipa.startsWith("t‍ʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈt‍ʃ"))
   ) {
-    // Detect exact tʃ variant and possible preceding stress ˈ
     let match = "";
     if (ipa.startsWith("ˈt‍ʃ")) {
       match = "t‍ʃ";
-      ipaIndex += 4; // ˈ + t‍ʃ (note: t‍ʃ is 3 chars because of zero-width joiner)
+      ipaIndex += 4;
     } else if (ipa.startsWith("ˈtʃ")) {
       match = "tʃ";
-      ipaIndex += 3; // ˈ + tʃ
+      ipaIndex += 3;
     } else if (ipa.startsWith("t‍ʃ")) {
       match = "t‍ʃ";
       ipaIndex += 3;
@@ -366,12 +367,10 @@ function applyG2PMapping(text, ipa) {
     i += 2;
   }
 
-  // Map remaining letters
-  while (i < text.length && ipaIndex < ipa.length) {
-    const letter = text[i];
+  while (i < lowerText.length && ipaIndex < ipa.length) {
+    const letter = original[i]; // ← Use original casing
     let ipaChar = ipa[ipaIndex];
 
-    // Handle stress marks ˈ or ˌ before vowels
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
       const stress = ipaChar;
       ipaIndex++;
@@ -389,12 +388,14 @@ function applyG2PMapping(text, ipa) {
 }
 
 
+
 </script>
 
 
 
 </body>
 </html>
+
 
 
 
