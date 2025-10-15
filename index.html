@@ -341,24 +341,6 @@ function applyG2PMapping(text, ipa) {
   let i = 0;
   const lowerText = text.toLowerCase();
 
-  // Mapping single letters with triangle colon to double letters
-  const doubleLetterMapping = {
-    b: 'bb',
-    c: 'cc',
-    d: 'dd',
-    f: 'ff',
-    l: 'll',
-    m: 'mm',
-    n: 'nn',
-    p: 'pp',
-    q: 'qq',
-    r: 'rr',
-    s: 'ss',
-    t: 'tt',  // map t to tt for 'tː'
-    g: 'gg',
-    z: 'zz'
-  };
-
   function startsWithIpa(ipa, pattern) {
     const variations = [`${pattern}`, `ˈ${pattern}`, `ˌ${pattern}`, `\u200D${pattern}`, `ˈ\u200D${pattern}`, `\u200Dˈ${pattern}`];
     for (const variant of variations) {
@@ -413,6 +395,37 @@ function applyG2PMapping(text, ipa) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
+    // Check for 'tt' in the text and map it to 'tː' in the IPA
+    if (text[i] === 't' && text[i + 1] === 't') {
+      // We want both 't' characters mapped to 'tː'
+      result.push(`${text[i]}(${ipaChar}ː)`); // First 't' maps to 'tː'
+      ipaIndex++; // Skip the first 't' IPA character
+      result.push(`${text[i + 1]}(${ipaChar}ː)`); // Second 't' maps to 'tː'
+      i += 2; // Skip both 't's in the original text
+    } else {
+      // For other characters, handle IPA normally
+      if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
+        ipaIndex++;
+        ipaChar = ipa[ipaIndex];
+        result.push(`${letter}('${ipaChar})`);
+      } else {
+        result.push(`${letter}(${ipaChar})`);
+      }
+
+      ipaIndex++;
+      i++;
+    }
+  }
+
+  // If there are leftover letters, append them with empty IPA
+  while (i < text.length) {
+    result.push(`${text[i]}()`);
+    i++;
+  }
+
+  return result.join('');
+}
+
     // Handle 'tt' mapping to 'tː' in IPA
     if (text[i] === 't' && text[i + 1] === 't') {
       result.push(`${text[i]}(${ipaChar}ː)`);
@@ -454,6 +467,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
