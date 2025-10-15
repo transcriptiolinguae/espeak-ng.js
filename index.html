@@ -189,6 +189,68 @@
       .trim();
   }
 
+  function showPlaceholder() {<script type="module">
+  import initESpeak from './espeak-ng.js';
+
+  const outputElem = document.getElementById('output');
+  const inputElem = document.getElementById('input');
+
+  let wasmReady = false;
+
+  window.addEventListener('load', async () => {
+    try {
+      await initESpeak({
+        print: () => {},
+        printErr: () => {}
+      });
+      wasmReady = true;
+      console.log('eSpeak NG WASM loaded and ready');
+    } catch (e) {
+      console.error('Error loading WASM:', e);
+      outputElem.classList.remove('placeholder');
+      outputElem.innerText = 'Error loading eSpeak WASM module.';
+    }
+  });
+
+  function printErrFiltered(err) {
+    if (
+      err.includes('still waiting on run dependencies') ||
+      err.includes('dependency: wasm-instantiate') ||
+      err.includes('(end of list)')
+    ) {
+      return;
+    }
+    console.error('eSpeak stderr:', err);
+  }
+
+  async function runESpeak(text) {
+    let ipaOutput = '';
+    await initESpeak({
+      arguments: ['-v', 'it', '--ipa=3', text],
+      print: (text) => {
+        ipaOutput += text;
+      },
+      printErr: printErrFiltered
+    });
+
+    return ipaOutput
+      .replace(/rɾ/g, 'rː')
+      .replace(/mm/g, 'mː')
+      .replace(/ff/g, 'fː')
+      .replace(/vv/g, 'vː')
+      .replace(/ll/g, 'lː')
+      .replace(/kk/g, 'kː')
+      .replace(/nn/g, 'nː')
+      .replace(/ɲɲ/g, 'ɲː')
+      .replace(/s\u200Ds/g, 'sː')
+      .replace(/ss/g, 'sː')
+      .replace(/t\u200D/g, 't')
+      .replace(/d\u200D/g, 'd')
+      .replace(/ɾ/g, 'r')
+      .replace(/oo/g, 'oː')
+      .trim();
+  }
+
   function showPlaceholder() {
     outputElem.className = 'placeholder';
     outputElem.innerText = 'Trascrizione';
@@ -203,87 +265,6 @@
     outputElem.classList.remove('placeholder');
     outputElem.innerText = text;
   }
-
-  // AFI button
-  document.getElementById('convert').addEventListener('click', async () => {
-    showPlaceholder();
-
-    if (!wasmReady) {
-      alert('Please wait, WASM is still loading...');
-      return;
-    }
-
-    const rawInput = inputElem.value.trim();
-    if (!rawInput) {
-      showPlaceholder();
-      return;
-    }
-
-    const markedInput = rawInput.replace(/\s+/g, '|');
-
-    try {
-      const ipa = await runESpeak(markedInput);
-      setOutput(ipa.replace(/\|/g, ' ') || '[No output generated]');
-    } catch (e) {
-      setOutput('Error during transcription: ' + e.message);
-    }
-  });
-
-  // Testo e AFI button
-  document.getElementById('convertInline').addEventListener('click', async () => {
-    showProgressPlaceholder();
-
-    if (!wasmReady) {
-      alert('Please wait, WASM is still loading...');
-      return;
-    }
-
-    const rawInput = inputElem.value.trim();
-    if (!rawInput) {
-      showPlaceholder();
-      return;
-    }
-
-    const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-    if (!tokens) {
-      setOutput('[No valid input]');
-      return;
-    }
-
-    const ipaMap = new Map();
-    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
-
-    try {
-      for (const word of uniqueWords) {
-        const ipa = await runESpeak(word);
-        ipaMap.set(word, ipa);
-      }
-    } catch (e) {
-      console.error('Error during IPA conversion:', e);
-    }
-
-    const result = [];
-    for (let i = 0; i < tokens.length; i++) {
-      const token = tokens[i];
-      const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
-
-      if (i > 0) {
-        const prev = tokens[i - 1];
-        if (![')', ',', '.', ';', ':', '!', '?'].includes(token) && prev !== '(') {
-          result.push(' ');
-        }
-      }
-
-      if (isWord) {
-        const ipa = ipaMap.get(token) || '';
-        result.push(`${token} (${ipa})`);
-      } else {
-        result.push(token);
-      }
-    }
-
-    setOutput(result.join(''));
-  });
 
   // G2P button
   document.getElementById('g2p').addEventListener('click', async () => {
@@ -335,85 +316,81 @@
     setOutput(g2pOutput.join(' '));
   });
 
-function applyG2PMapping(text, ipa) {
-  const result = [];
-  let i = 0;
-  let ipaIndex = 0;
+  function applyG2PMapping(text, ipa) {
+    const result = [];
+    let i = 0;
+    let ipaIndex = 0;
 
-  const lowerText = text.toLowerCase();
+    const lowerText = text.toLowerCase();
 
-  while (i < text.length && ipaIndex < ipa.length) {
-    const letter = lowerText[i];
-    const nextLetter = lowerText[i + 1] || '';
-    const origLetter = text[i];
-    const nextOrigLetter = text[i + 1] || '';
-    const remainingIPA = ipa.slice(ipaIndex);
+    while (i < text.length && ipaIndex < ipa.length) {
+      const letter = lowerText[i];
+      const nextLetter = lowerText[i + 1] || '';
+      const origLetter = text[i];
+      const nextOrigLetter = text[i + 1] || '';
+      const remainingIPA = ipa.slice(ipaIndex);
 
-    // Skip stress markers in IPA
-    while (ipa[ipaIndex] === 'ˈ' || ipa[ipaIndex] === 'ˌ') {
+      // Skip stress markers in IPA
+      while (ipa[ipaIndex] === 'ˈ' || ipa[ipaIndex] === 'ˌ') {
+        ipaIndex++;
+      }
+
+      // --- Special case: "ci" → tʃ or tʃi ---
+      if (
+        letter === 'c' && nextLetter === 'i' &&
+        remainingIPA.startsWith('tʃ')
+      ) {
+        const nextIPAChar = ipa[ipaIndex + 2]; // after tʃ
+        if (nextIPAChar === 'i') {
+          result.push(`c(tʃ)`);
+          result.push(`i(i)`);
+          ipaIndex += 3; // tʃ + i
+        } else {
+          result.push(`ci(tʃ)`);
+          ipaIndex += 2;
+        }
+        i += 2;
+        continue;
+      }
+
+      // --- Special case: "gi" → dʒ or dʒi ---
+      if (
+        letter === 'g' && nextLetter === 'i' &&
+        remainingIPA.startsWith('dʒ')
+      ) {
+        const nextIPAChar = ipa[ipaIndex + 2]; // after dʒ
+        if (nextIPAChar === 'i') {
+          result.push(`g(dʒ)`);
+          result.push(`i(i)`);
+          ipaIndex += 3; // dʒ + i
+        } else {
+          result.push(`gi(dʒ)`);
+          ipaIndex += 2;
+        }
+        i += 2;
+        continue;
+      }
+
+      // --- Handle "g" not followed by "i" → dʒ ---
+      if (
+        letter === 'g' && nextLetter !== 'i' &&
+        remainingIPA.startsWith('dʒ')
+      ) {
+        result.push(`${origLetter}(dʒ)`);
+        ipaIndex += 2;
+        i += 1;
+        continue;
+      }
+
+      // --- Default letter-to-IPA mapping ---
+      const currentIPAChar = ipa[ipaIndex] || '';
+      result.push(`${text[i]}(${currentIPAChar})`);
       ipaIndex++;
+      i++;
     }
 
-    // --- Special case: "ci" → tʃ or tʃi ---
-    if (
-      letter === 'c' && nextLetter === 'i' &&
-      (remainingIPA.startsWith('tʃ'))
-    ) {
-      const nextIPAChar = ipa[ipaIndex + 2]; // after tʃ
-
-      if (nextIPAChar === 'i') {
-        result.push(`c(tʃ)`);
-        result.push(`i(i)`);
-        ipaIndex += 3; // tʃ + i
-      } else {
-        result.push(`ci(tʃ)`);
-        ipaIndex += 2; // tʃ only
-      }
-      i += 2;
-      continue;
-    }
-
-    // --- Special case: "gi" → dʒ or dʒi ---
-    if (
-      letter === 'g' && nextLetter === 'i' &&
-      remainingIPA.startsWith('dʒ')
-    ) {
-      const nextIPAChar = ipa[ipaIndex + 2]; // after dʒ
-
-      if (nextIPAChar === 'i') {
-        result.push(`g(dʒ)`);
-        result.push(`i(i)`);
-        ipaIndex += 3; // dʒ + i
-      } else {
-        result.push(`gi(dʒ)`);
-        ipaIndex += 2; // dʒ only
-      }
-      i += 2;
-      continue;
-    }
-
-    // --- Handle single "g" before a/o/u → dʒ or g ---
-    if (
-      letter === 'g' && nextLetter !== 'i' &&
-      remainingIPA.startsWith('dʒ')
-    ) {
-      result.push(`${origLetter}(dʒ)`);
-      ipaIndex += 2;
-      i += 1;
-      continue;
-    }
-
-    // --- Default 1:1 mapping ---
-    const currentIPAChar = ipa[ipaIndex] || '';
-    result.push(`${text[i]}(${currentIPAChar})`);
-    ipaIndex++;
-    i++;
+    return result.join(' ');
   }
-
-  return result.join(' ');
-}
-
-
 </script>
 
 
@@ -421,6 +398,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
