@@ -288,111 +288,112 @@
     setOutput(result.join(''));
   });
 
-  // G2P button
-  document.getElementById('g2p').addEventListener('click', async () => {
-    showProgressPlaceholder();
+// G2P button
+document.getElementById('g2p').addEventListener('click', async () => {
+  showProgressPlaceholder();
 
-    if (!wasmReady) {
-      alert('Please wait, WASM is still loading...');
-      return;
-    }
-
-    const rawInput = inputElem.value.trim();
-    if (!rawInput) {
-      showPlaceholder();
-      return;
-    }
-
-    const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-    if (!tokens) {
-      setOutput('[No valid input]');
-      return;
-    }
-
-    const ipaMap = new Map();
-    const wordSet = new Set();
-
-    tokens.forEach(t => {
-      if (/^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)) {
-        wordSet.add(t.toLowerCase());
-      }
-    });
-
-    try {
-      for (const word of wordSet) {
-        const ipa = await runESpeak(word);
-        ipaMap.set(word, ipa);
-      }
-    } catch (e) {
-      console.error('Error during IPA conversion:', e);
-    }
-
-    const g2pOutput = [];
-
-    for (const token of tokens) {
-      const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
-
-      if (isWord) {
-        const ipa = ipaMap.get(token.toLowerCase()) || '';
-        const g2pMapped = applyG2PMapping(token, ipa); // token has original casing
-        g2pOutput.push(g2pMapped);
-      } else {
-        g2pOutput.push(token);
-      }
-    }
-
-    setOutput(g2pOutput.join(' '));
-  });
-
-  function applyG2PMapping(text, ipa) {
-    const result = [];
-    let ipaIndex = 0;
-    let i = 0;
-    const lowerText = text.toLowerCase();
-
-    // Special case: Ci -> tʃ
-    if (
-      lowerText.startsWith("ci") &&
-      (ipa.startsWith("tʃ") || ipa.startsWith("t‍ʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈt‍ʃ"))
-    ) {
-      let match = "";
-      if (ipa.startsWith("ˈt‍ʃ")) {
-        match = "t‍ʃ";
-        ipaIndex += 4;
-      } else if (ipa.startsWith("ˈtʃ")) {
-        match = "tʃ";
-        ipaIndex += 3;
-      } else if (ipa.startsWith("t‍ʃ")) {
-        match = "t‍ʃ";
-        ipaIndex += 3;
-      } else if (ipa.startsWith("tʃ")) {
-        match = "tʃ";
-        ipaIndex += 2;
-      }
-
-      result.push(`Ci(${match})`);
-      i += 2;
-    }
-
-    while (i < text.length && ipaIndex < ipa.length) {
-      const letter = text[i];
-      let ipaChar = ipa[ipaIndex];
-
-      if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
-        const stress = ipaChar;
-        ipaIndex++;
-        ipaChar = ipa[ipaIndex];
-        result.push(`${letter}('${ipaChar})`);
-      } else {
-        result.push(`${letter}(${ipaChar})`);
-      }
-
-      ipaIndex++;
-      i++;
-    }
-
-    return result.join('');
+  if (!wasmReady) {
+    alert('Please wait, WASM is still loading...');
+    return;
   }
+
+  const rawInput = inputElem.value.trim();
+  if (!rawInput) {
+    showPlaceholder();
+    return;
+  }
+
+  const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+  if (!tokens) {
+    setOutput('[No valid input]');
+    return;
+  }
+
+  const ipaMap = new Map();
+  const lowercaseToIPA = new Map();
+
+  const uniqueLowercaseWords = [...new Set(
+    tokens
+      .filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t))
+      .map(t => t.toLowerCase())
+  )];
+
+  try {
+    for (const word of uniqueLowercaseWords) {
+      const ipa = await runESpeak(word);
+      lowercaseToIPA.set(word, ipa);
+    }
+  } catch (e) {
+    console.error('Error during IPA conversion:', e);
+  }
+
+  const g2pOutput = [];
+
+  for (const token of tokens) {
+    const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+
+    if (isWord) {
+      const ipa = lowercaseToIPA.get(token.toLowerCase()) || '';
+      const g2pMapped = applyG2PMapping(token, ipa); // token = original casing
+      g2pOutput.push(g2pMapped);
+    } else {
+      g2pOutput.push(token);
+    }
+  }
+
+  setOutput(g2pOutput.join(' '));
+});
+
+
+function applyG2PMapping(text, ipa) {
+  const result = [];
+  let ipaIndex = 0;
+  let i = 0;
+  const lowerText = text.toLowerCase();
+
+  // Special case: Ci -> tʃ
+  if (
+    lowerText.startsWith("ci") &&
+    (ipa.startsWith("tʃ") || ipa.startsWith("t‍ʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈt‍ʃ"))
+  ) {
+    let match = "";
+    if (ipa.startsWith("ˈt‍ʃ")) {
+      match = "t‍ʃ";
+      ipaIndex += 4;
+    } else if (ipa.startsWith("ˈtʃ")) {
+      match = "tʃ";
+      ipaIndex += 3;
+    } else if (ipa.startsWith("t‍ʃ")) {
+      match = "t‍ʃ";
+      ipaIndex += 3;
+    } else if (ipa.startsWith("tʃ")) {
+      match = "tʃ";
+      ipaIndex += 2;
+    }
+
+    result.push(`Ci(${match})`);
+    i += 2;
+  }
+
+  while (i < text.length && ipaIndex < ipa.length) {
+    const letter = text[i]; // PRESERVES ORIGINAL CASE
+    let ipaChar = ipa[ipaIndex];
+
+    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
+      ipaIndex++;
+      ipaChar = ipa[ipaIndex];
+      result.push(`${letter}('${ipaChar})`);
+    } else {
+      result.push(`${letter}(${ipaChar})`);
+    }
+
+    ipaIndex++;
+    i++;
+  }
+
+  return result.join('');
+}
+
 </script>
 
 
@@ -400,6 +401,7 @@
 
 </body>
 </html>
+
 
 
 
