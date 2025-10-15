@@ -341,7 +341,7 @@ function applyG2PMapping(text, ipa) {
   let i = 0;
   const lowerText = text.toLowerCase();
 
-  // Define the mapping for single letters with triangle colon to double letters
+  // Mapping single letters with triangle colon to double letters
   const doubleLetterMapping = {
     b: 'bb',
     c: 'cc',
@@ -367,7 +367,7 @@ function applyG2PMapping(text, ipa) {
     return null;
   }
 
-  // Handle the special "ci" → "tʃ" and "gi" → "dʒ" cases
+  // Handle "ci" → "tʃ" and "gi" → "dʒ" cases
   if (lowerText.startsWith("ci")) {
     const matchInfo = startsWithIpa(ipa, "tʃ");
     if (matchInfo) {
@@ -408,30 +408,34 @@ function applyG2PMapping(text, ipa) {
     }
   }
 
-  // Handle special mappings for 'tː' → 'tt' directly here
-  ipa = ipa.replace(/tː/g, 'tt');  // Replace all occurrences of tː with tt
-
-  // Now process each character in the text and its IPA
+  // Now process the rest of the string
   while (i < text.length && ipaIndex < ipa.length) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
-    // Apply the double letter mapping to the IPA character
-    if (doubleLetterMapping[ipaChar]) {
-      ipaChar = doubleLetterMapping[ipaChar];
-    }
-
-    // Handle stress marks
-    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
-      ipaIndex++;
-      ipaChar = ipa[ipaIndex];
-      result.push(`${letter}('${ipaChar})`);
+    // Handle 'tt' mapping to 'tː' in IPA
+    if (text[i] === 't' && text[i + 1] === 't') {
+      result.push(`${text[i]}(${ipaChar}ː)`);
+      ipaIndex++; // Skip the next 't' in IPA
+      i += 2; // Skip the next 't' in the original text
     } else {
-      result.push(`${letter}(${ipaChar})`);
-    }
+      // Apply regular double letter mapping for other characters
+      if (doubleLetterMapping[ipaChar]) {
+        ipaChar = doubleLetterMapping[ipaChar];
+      }
 
-    ipaIndex++;
-    i++;
+      // Handle stress marks
+      if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
+        ipaIndex++;
+        ipaChar = ipa[ipaIndex];
+        result.push(`${letter}('${ipaChar})`);
+      } else {
+        result.push(`${letter}(${ipaChar})`);
+      }
+
+      ipaIndex++;
+      i++;
+    }
   }
 
   // If there are leftover letters, append them with empty IPA
@@ -440,10 +444,8 @@ function applyG2PMapping(text, ipa) {
     i++;
   }
 
-  // Return the result
   return result.join('');
 }
-
 
 </script>
 
@@ -452,6 +454,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
