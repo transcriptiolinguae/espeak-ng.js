@@ -341,57 +341,57 @@ function applyG2PMapping(text, ipa) {
   let i = 0;
   const lowerText = text.toLowerCase();
 
-  // Helper to check if IPA has 'i' immediately after tʃ or dʒ
-  function hasFollowingI(ipaStr, startIdx) {
-    return ipaStr[startIdx] === 'i';
+  // Utility: Check if IPA char at index is 'i'
+  function hasFollowingI(ipaStr, index) {
+    return ipaStr[index] === 'i';
   }
 
-  // Special case for "ci" → tʃ
+  // Handle "ci" → tʃ (without following i)
   if (
     lowerText.startsWith("ci") &&
-    (ipa.startsWith("tʃ") || ipa.startsWith("t\u200Dʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈt\u200Dʃ"))
+    (ipa.startsWith("tʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("t\u200Dʃ") || ipa.startsWith("ˈt\u200Dʃ"))
   ) {
-    // Determine where 'tʃ' ends in IPA
     let match = "";
     let endIdx = 0;
 
     if (ipa.startsWith("ˈt\u200Dʃ")) {
-      match = "t\u200Dʃ";
+      match = "tʃ";
       endIdx = 4;
     } else if (ipa.startsWith("ˈtʃ")) {
       match = "tʃ";
       endIdx = 3;
     } else if (ipa.startsWith("t\u200Dʃ")) {
-      match = "t\u200Dʃ";
+      match = "tʃ";
       endIdx = 3;
     } else if (ipa.startsWith("tʃ")) {
       match = "tʃ";
       endIdx = 2;
     }
 
-    // Only output if NOT followed by 'i'
+    // Only map if not followed by 'i'
     if (!hasFollowingI(ipa, endIdx)) {
       result.push(`${text.slice(0, 2)}(${match})`);
       i += 2;
       ipaIndex += endIdx;
     }
   }
-  // Special case for "gi" → dʒ
+
+  // Handle "gi" → dʒ (without following i)
   else if (
     lowerText.startsWith("gi") &&
-    (ipa.startsWith("dʒ") || ipa.startsWith("d\u200Dj") || ipa.startsWith("ˈdʒ") || ipa.startsWith("ˈd\u200Dj"))
+    (ipa.startsWith("dʒ") || ipa.startsWith("ˈdʒ") || ipa.startsWith("d\u200Dj") || ipa.startsWith("ˈd\u200Dj"))
   ) {
     let match = "";
     let endIdx = 0;
 
     if (ipa.startsWith("ˈd\u200Dj")) {
-      match = "d\u200Dj";
+      match = "dʒ";
       endIdx = 4;
     } else if (ipa.startsWith("ˈdʒ")) {
       match = "dʒ";
       endIdx = 3;
     } else if (ipa.startsWith("d\u200Dj")) {
-      match = "d\u200Dj";
+      match = "dʒ";
       endIdx = 3;
     } else if (ipa.startsWith("dʒ")) {
       match = "dʒ";
@@ -405,14 +405,15 @@ function applyG2PMapping(text, ipa) {
     }
   }
 
-  // Process remaining letters
+  // Remaining letters and IPA
   while (i < text.length && ipaIndex < ipa.length) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
+    // Handle stress markers before phonemes
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
       ipaIndex++;
-      ipaChar = ipa[ipaIndex];
+      ipaChar = ipa[ipaIndex] || '';
       result.push(`${letter}('${ipaChar})`);
     } else {
       result.push(`${letter}(${ipaChar})`);
@@ -432,6 +433,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
