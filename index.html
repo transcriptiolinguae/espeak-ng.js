@@ -441,33 +441,6 @@ function applyG2PMapping(text, ipa) {
   return result.join('');
 }
 
-      // Apply regular double letter mapping for other characters
-      if (doubleLetterMapping[ipaChar]) {
-        ipaChar = doubleLetterMapping[ipaChar];
-      }
-
-      // Handle stress marks
-      if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
-        ipaIndex++;
-        ipaChar = ipa[ipaIndex];
-        result.push(`${letter}('${ipaChar})`);
-      } else {
-        result.push(`${letter}(${ipaChar})`);
-      }
-
-      ipaIndex++;
-      i++;
-    }
-  }
-
-  // If there are leftover letters, append them with empty IPA
-  while (i < text.length) {
-    result.push(`${text[i]}()`);
-    i++;
-  }
-
-  return result.join('');
-}
 
 </script>
 
@@ -476,12 +449,6 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
-
-
-
-
-
-
 
 
 
