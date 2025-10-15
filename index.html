@@ -408,16 +408,16 @@ function applyG2PMapping(text, ipa) {
     }
   }
 
+  // Handle special mappings for 'tː' → 'tt' directly here
+  ipa = ipa.replace(/tː/g, 'tt');  // Replace all occurrences of tː with tt
+
   // Now process each character in the text and its IPA
   while (i < text.length && ipaIndex < ipa.length) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
-    // Handle the tː case explicitly - replace 'tː' with 'tt'
-    if (ipaChar === 'tː') {
-      ipaChar = doubleLetterMapping['t']; // Replace tː with tt
-    } else if (doubleLetterMapping[ipaChar]) {
-      // For other letters, apply the double-letter mapping
+    // Apply the double letter mapping to the IPA character
+    if (doubleLetterMapping[ipaChar]) {
       ipaChar = doubleLetterMapping[ipaChar];
     }
 
@@ -452,6 +452,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
