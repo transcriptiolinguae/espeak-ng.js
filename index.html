@@ -341,6 +341,25 @@ function applyG2PMapping(text, ipa) {
   let i = 0;
   const lowerText = text.toLowerCase();
 
+  // Function to check if IPA starts with a certain pattern
+  function startsWithIpa(ipa, pattern) {
+    const variations = [
+      `${pattern}`,         // Exact match
+      `ˈ${pattern}`,        // Stressed version
+      `ˌ${pattern}`,        // Secondary stressed version
+      `\u200D${pattern}`,   // Optional variants like glides
+      `ˈ\u200D${pattern}`,  // Stressed version with glides
+      `\u200Dˈ${pattern}`   // Glides with stressed
+    ];
+    
+    for (const variant of variations) {
+      if (ipa.startsWith(variant)) {
+        return { match: variant, len: variant.length };
+      }
+    }
+    return null;
+  }
+
   // Function to handle the double-letter mapping when `ː` is encountered
   function handleDoubleLetterMapping(ipaChar) {
     const doubleLetterMap = {
@@ -445,6 +464,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
