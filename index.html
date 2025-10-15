@@ -333,33 +333,43 @@
   });
 
   function applyG2PMapping(text, ipa) {
-    // Special rule for 't‍ʃ' without 'i' in IPA
-    if (ipa.includes('t‍ʃ')) {
-      const regex = /t‍ʃ(?!i)/g;
-      const matches = [...ipa.matchAll(regex)];
-
-      if (matches.length > 0 && text.includes('C')) {
-        ipa = ipa.replace(/t‍ʃ/g, 'Ci(t‍ʃ)');
-      }
-    }
-
-    // Align letters to IPA chunks
     const result = [];
     let ipaIndex = 0;
+    let i = 0;
 
-    for (let i = 0; i < text.length; i++) {
+    while (i < text.length) {
+      const nextTwo = text.slice(i, i + 2);
+
+      // Handle special Ci → t‍ʃ rule if no i follows t‍ʃ in IPA
+      if ((nextTwo === "Ci" || nextTwo === "ci") && ipa.slice(ipaIndex, ipaIndex + 2) === 't‍ʃ') {
+        const after = ipa.slice(ipaIndex + 2, ipaIndex + 3);
+        if (after !== 'i') {
+          result.push(`Ci(t‍ʃ)`);
+          i += 2;
+          ipaIndex += 2;
+          continue;
+        }
+      }
+
       const letter = text[i];
       const ipaChar = nextIPAChar(ipa, ipaIndex);
       if (!ipaChar) break;
+
       result.push(`${letter}(${ipaChar.chunk})`);
       ipaIndex = ipaChar.nextIndex;
+      i++;
     }
 
     return result.join('');
   }
 
   function nextIPAChar(ipa, startIndex) {
-    const multiCharUnits = ['t‍ʃ', 'd‍ʒ', 'ʃ', 'ʎ', 'ɲ', 'ts', 'dz', 'ɛː', 'oː', 'aː', 'eː', 'iː', 'uː'];
+    const multiCharUnits = [
+      't‍ʃ', 'd‍ʒ', 'ʃ', 'ʎ', 'ɲ', 'ts', 'dz',
+      'ɛː', 'oː', 'aː', 'eː', 'iː', 'uː',
+      'ː', 'ˈ', 'ˌ'
+    ];
+
     for (let len = 3; len >= 1; len--) {
       const chunk = ipa.slice(startIndex, startIndex + len);
       if (multiCharUnits.includes(chunk)) {
@@ -368,11 +378,13 @@
     }
 
     const chunk = ipa[startIndex];
-    return { chunk, nextIndex: startIndex + 1 };
+    return chunk ? { chunk, nextIndex: startIndex + 1 } : null;
   }
 </script>
 
+
 </body>
 </html>
+
 
 
