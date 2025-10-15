@@ -204,6 +204,7 @@
     outputElem.innerText = text;
   }
 
+  // AFI button
   document.getElementById('convert').addEventListener('click', async () => {
     showPlaceholder();
 
@@ -228,6 +229,7 @@
     }
   });
 
+  // Testo e AFI button
   document.getElementById('convertInline').addEventListener('click', async () => {
     showProgressPlaceholder();
 
@@ -283,6 +285,7 @@
     setOutput(result.join(''));
   });
 
+  // G2P button (you need to add it in HTML as <button id="g2p">G2P</button>)
   document.getElementById('g2p').addEventListener('click', async () => {
     showProgressPlaceholder();
 
@@ -337,11 +340,10 @@
     let ipaIndex = 0;
     let i = 0;
 
-    // Special case: Ci -> tʃ / t‍ʃ / ʃ
-    const startsWithCi = text.slice(0, 2).toLowerCase() === "ci";
+    // Special case: Ci → tʃ / t‍ʃ / ʃ
+    const startsWithCi = text.slice(0, 2).toLowerCase() === 'ci';
     const ipaStart = ipa.slice(0, 3);
-
-    if (startsWithCi && (ipaStart === "tʃ" || ipaStart === "t‍ʃ" || ipaStart === "ʃ")) {
+    if (startsWithCi && (ipaStart === 'tʃ' || ipaStart === 't‍ʃ' || ipaStart === 'ʃ')) {
       result.push(`Ci(${ipaStart})`);
       i += 2;
       ipaIndex += ipaStart.length;
@@ -362,8 +364,8 @@
 
   function nextIPAChar(ipa, startIndex) {
     const multiCharUnits = [
-      't‍ʃ', 'tʃ', 'dʒ', 'ʃ', 'ʎ', 'ɲ', 'ts', 'dz',
-      'ɛː', 'oː', 'aː', 'eː', 'iː', 'uː',
+      't‍ʃ', 'tʃ', 'dʒ', 'ʃ', 'ʎ', 'ɲ',
+      'ts', 'dz', 'ɛː', 'oː', 'aː', 'eː', 'iː', 'uː',
       'ː', 'ˈ', 'ˌ'
     ];
 
@@ -374,12 +376,16 @@
       }
     }
 
-    const chunk = ipa[startIndex];
-    return chunk ? { chunk, nextIndex: startIndex + 
+    const char = ipa[startIndex];
+    return char ? { chunk: char, nextIndex: startIndex + 1 } : null;
+  }
+</script>
+
 
 
 </body>
 </html>
+
 
 
 
