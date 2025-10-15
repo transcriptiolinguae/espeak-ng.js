@@ -397,6 +397,7 @@ function applyG2PMapping(text, ipa) {
     if (lowerText.includes(dc)) {
       const ipaMatch = startsWithIpa(ipa, `${dc[0]}${dc[1]}`);
       if (ipaMatch) {
+        // For double consonants like "tt", we treat it as a single unit, e.g., "tː"
         result.push(`${dc[0]}(${ipaMatch.match.replace(/^ˈ|\u200D/g, '')})`);
         i += 2;
         ipaIndex += ipaMatch.len;
@@ -409,6 +410,7 @@ function applyG2PMapping(text, ipa) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
+    // If we encounter stress markers, treat them accordingly
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
       ipaIndex++;
       ipaChar = ipa[ipaIndex];
@@ -439,6 +441,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
