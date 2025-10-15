@@ -152,6 +152,31 @@
 
   function printErrFiltered(err) {
     if (
+      err.includes('still waiting on run depende<script type="module">
+  import initESpeak from './espeak-ng.js';
+
+  const outputElem = document.getElementById('output');
+  const inputElem = document.getElementById('input');
+
+  let wasmReady = false;
+
+  window.addEventListener('load', async () => {
+    try {
+      await initESpeak({
+        print: () => {},
+        printErr: () => {}
+      });
+      wasmReady = true;
+      console.log('eSpeak NG WASM loaded and ready');
+    } catch (e) {
+      console.error('Error loading WASM:', e);
+      outputElem.classList.remove('placeholder');
+      outputElem.innerText = 'Error loading eSpeak WASM module.';
+    }
+  });
+
+  function printErrFiltered(err) {
+    if (
       err.includes('still waiting on run dependencies') ||
       err.includes('dependency: wasm-instantiate') ||
       err.includes('(end of list)')
@@ -171,22 +196,26 @@
       printErr: printErrFiltered
     });
 
-    return ipaOutput
-      .replace(/rɾ/g, 'rː')
-      .replace(/mm/g, 'mː')
+    // Double letter replacements with IPA rule
+    ipaOutput = ipaOutput
+      .replace(/bb/g, 'bː')
+      .replace(/cc/g, 'kː')
+      .replace(/dd/g, 'dː')
       .replace(/ff/g, 'fː')
-      .replace(/vv/g, 'vː')
       .replace(/ll/g, 'lː')
-      .replace(/kk/g, 'kː')
+      .replace(/mm/g, 'mː')
       .replace(/nn/g, 'nː')
-      .replace(/ɲɲ/g, 'ɲː')
-      .replace(/s\u200Ds/g, 'sː')
+      .replace(/pp/g, 'pː')
+      .replace(/qq/g, 'kː')  // Assuming 'qq' maps to 'kː' based on the example given
+      .replace(/rr/g, 'rː')
       .replace(/ss/g, 'sː')
-      .replace(/t\u200D/g, 't')
-      .replace(/d\u200D/g, 'd')
-      .replace(/ɾ/g, 'r')
-      .replace(/oo/g, 'oː')
+      .replace(/tt/g, 'tː')
+      .replace(/gg/g, 'dʒː')
+      .replace(/zz/g, 'tsː')
+      .replace(/zz/g, 'dzː')  // This handles 'zz' mapping as both 'tsː' and 'dzː' based on example
       .trim();
+
+    return ipaOutput;
   }
 
   function showPlaceholder() {
@@ -251,7 +280,7 @@
     }
 
     const ipaMap = new Map();
-    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))].
 
     try {
       for (const word of uniqueWords) {
@@ -307,7 +336,7 @@
     }
 
     const ipaMap = new Map();
-    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))].
 
     try {
       for (const word of uniqueWords) {
@@ -335,98 +364,75 @@
     setOutput(g2pOutput.join(' '));
   });
 
-function applyG2PMapping(text, ipa) {
-  const result = [];
-  let ipaIndex = 0;
-  let i = 0;
-  const lowerText = text.toLowerCase();
+  function applyG2PMapping(text, ipa) {
+    const result = [];
+    let ipaIndex = 0;
+    let i = 0;
+    const lowerText = text.toLowerCase();
 
-  function startsWithIpa(ipa, pattern) {
-    const variations = [`${pattern}`, `ˈ${pattern}`, `ˌ${pattern}`, `\u200D${pattern}`, `ˈ\u200D${pattern}`, `\u200Dˈ${pattern}`];
-    for (const variant of variations) {
-      if (ipa.startsWith(variant)) return { match: variant, len: variant.length };
+    function startsWithIpa(ipa, pattern) {
+      const variations = [`${pattern}`, `ˈ${pattern}`, `ˌ${pattern}`, `\u200D${pattern}`, `ˈ\u200D${pattern}`, `\u200Dˈ${pattern}`];
+      for (const variant of variations) {
+        if (ipa.startsWith(variant)) return { match: variant, len: variant.length };
+      }
+      return null;
     }
-    return null;
-  }
 
-  // --- ci → tʃ and gi → dʒ special handling for i with stress ---
-  if (lowerText.startsWith("ci")) {
-    const matchInfo = startsWithIpa(ipa, "tʃ");
-    if (matchInfo) {
-      const afterAffricate = ipa.slice(matchInfo.len);
+    // --- ci → tʃ and gi → dʒ special handling for i with stress ---
+    if (lowerText.startsWith("ci")) {
+      const matchInfo = startsWithIpa(ipa, "tʃ");
+      if (matchInfo) {
+        const afterAffricate = ipa.slice(matchInfo.len);
 
-      // Check if next is stressed i (ˈi or i)
-      if (afterAffricate.startsWith('ˈi') || afterAffricate.startsWith('i')) {
-        // Map c to tʃ and i to stressed i separately
-        result.push(`c(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
-        i += 1; // consumed 'c'
-        ipaIndex += matchInfo.len;
+        // Check if next is stressed i (ˈi or i)
+        if (afterAffricate.startsWith('ˈi') || afterAffricate.startsWith('i')) {
+          // Map c to tʃ and i to stressed i separately
+          result.push(`c(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
+          i += 1; // consumed 'c'
+          ipaIndex += matchInfo.len;
 
-        // Map i next
-        result.push(`i(${afterAffricate.startsWith('ˈi') ? 'ˈi' : 'i'})`);
-        i += 1;
-        ipaIndex += afterAffricate.startsWith('ˈi') ? 2 : 1;
+          // Map i next
+          result.push(`i(${afterAffricate.startsWith('ˈi') ? 'ˈi' : 'i'})`);
+          i += 1;
+          ipaIndex += afterAffricate.startsWith('ˈi') ? 2 : 1;
 
-        // done for first two letters
-      } else {
-        // No stressed i, treat as whole ci → tʃ
-        result.push(`ci(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
-        i += 2;
-        ipaIndex += matchInfo.len;
+          // done for first two letters
+        } else {
+          // No stressed i, treat as whole ci → tʃ
+          result.push(`ci(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
+          i += 2;
+          ipaIndex += matchInfo.len;
+        }
+      }
+    } else if (lowerText.startsWith("gi")) {
+      const matchInfo = startsWithIpa(ipa, "dʒ");
+      if (matchInfo) {
+        const afterAffricate = ipa.slice(matchInfo.len);
+
+        // Check if next is stressed i (ˈi or i)
+        if (afterAffricate.startsWith('ˈi') || afterAffricate.startsWith('i')) {
+          // Map g to dʒ and i to stressed i separately
+          result.push(`g(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
+          i += 1; // consumed 'g'
+          ipaIndex += matchInfo.len;
+
+          // Map i next
+          result.push(`i(${afterAffricate.startsWith('ˈi') ? 'ˈi' : 'i'})`);
+          i += 1;
+          ipaIndex += afterAffricate.startsWith('ˈi') ? 2 : 1;
+
+          // done for first two letters
+        } else {
+          // No stressed i, treat as whole gi → dʒ
+          result.push(`gi(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
+          i += 2;
+          ipaIndex += matchInfo.len;
+        }
       }
     }
-  } else if (lowerText.startsWith("gi")) {
-    const matchInfo = startsWithIpa(ipa, "dʒ");
-    if (matchInfo) {
-      const afterAffricate = ipa.slice(matchInfo.len);
 
-      if (afterAffricate.startsWith('ˈi') || afterAffricate.startsWith('i')) {
-        // Map g to dʒ and i to stressed i separately
-        result.push(`g(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
-        i += 1;
-        ipaIndex += matchInfo.len;
-
-        result.push(`i(${afterAffricate.startsWith('ˈi') ? 'ˈi' : 'i'})`);
-        i += 1;
-        ipaIndex += afterAffricate.startsWith('ˈi') ? 2 : 1;
-
-      } else {
-        // No stressed i, treat as whole gi → dʒ
-        result.push(`gi(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
-        i += 2;
-        ipaIndex += matchInfo.len;
-      }
-    }
+    return result.join('');
   }
-
-  // Process the rest normally
-  while (i < text.length && ipaIndex < ipa.length) {
-    const letter = text[i];
-    let ipaChar = ipa[ipaIndex];
-
-    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
-      ipaIndex++;
-      ipaChar = ipa[ipaIndex];
-      result.push(`${letter}('${ipaChar})`);
-    } else {
-      result.push(`${letter}(${ipaChar})`);
-    }
-
-    ipaIndex++;
-    i++;
-  }
-
-  // If anything left in text, append with empty IPA
-  while (i < text.length) {
-    result.push(`${text[i]}()`);
-    i++;
-  }
-
-  return result.join('');
-}
-
-
-
 </script>
 
 
@@ -434,6 +440,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
