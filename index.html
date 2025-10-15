@@ -344,83 +344,80 @@ function applyG2PMapping(text, ipa) {
   while (i < text.length && ipaIndex < ipa.length) {
     const letter = lowerText[i];
     const nextLetter = lowerText[i + 1] || '';
+    const origLetter = text[i];
+    const nextOrigLetter = text[i + 1] || '';
     const remainingIPA = ipa.slice(ipaIndex);
 
     // --- Handle "ci" → tʃ or tʃi ---
     if (
       letter === 'c' && nextLetter === 'i' &&
-      (remainingIPA.startsWith('tʃ') || remainingIPA.startsWith('ˈtʃ'))
+      (remainingIPA.startsWith('ˈtʃ') || remainingIPA.startsWith('tʃ'))
     ) {
       const match = remainingIPA.startsWith('ˈtʃ') ? 'ˈtʃ' : 'tʃ';
-      const nextIPAChar = ipa[ipaIndex + match.length];
+      const ipaAfterAffricate = ipa[ipaIndex + match.length];
 
-      // If next IPA char is 'i', it's pronounced separately
-      if (nextIPAChar === 'i') {
-        result.push(`c(${match})`);
-        result.push(`i(i)`);
+      if (ipaAfterAffricate === 'i') {
+        // i is pronounced → map separately
+        result.push(`${origLetter}(${match})`);
+        result.push(`${nextOrigLetter}(i)`);
         ipaIndex += match.length + 1;
-        i += 2;
-        continue;
       } else {
-        result.push(`ci(${match})`);
+        // i is not pronounced → it's part of affricate
+        result.push(`${origLetter}${nextOrigLetter}(${match})`);
         ipaIndex += match.length;
-        i += 2;
-        continue;
       }
+      i += 2;
+      continue;
     }
 
     // --- Handle "gi" → dʒ or dʒi ---
     if (
       letter === 'g' && nextLetter === 'i' &&
-      (remainingIPA.startsWith('dʒ') || remainingIPA.startsWith('ˈdʒ'))
+      (remainingIPA.startsWith('ˈdʒ') || remainingIPA.startsWith('dʒ'))
     ) {
       const match = remainingIPA.startsWith('ˈdʒ') ? 'ˈdʒ' : 'dʒ';
-      const nextIPAChar = ipa[ipaIndex + match.length];
+      const ipaAfterAffricate = ipa[ipaIndex + match.length];
 
-      // If next IPA char is 'i', it's pronounced separately
-      if (nextIPAChar === 'i') {
-        result.push(`g(${match})`);
-        result.push(`i(i)`);
+      if (ipaAfterAffricate === 'i') {
+        // i is pronounced → map separately
+        result.push(`${origLetter}(${match})`);
+        result.push(`${nextOrigLetter}(i)`);
         ipaIndex += match.length + 1;
-        i += 2;
-        continue;
       } else {
-        result.push(`gi(${match})`);
+        // i is not pronounced → it's part of affricate
+        result.push(`${origLetter}${nextOrigLetter}(${match})`);
         ipaIndex += match.length;
-        i += 2;
-        continue;
       }
+      i += 2;
+      continue;
     }
 
     // --- Handle "g" not followed by "i" → dʒ ---
     if (
       letter === 'g' && nextLetter !== 'i' &&
-      (remainingIPA.startsWith('dʒ') || remainingIPA.startsWith('ˈdʒ'))
+      (remainingIPA.startsWith('ˈdʒ') || remainingIPA.startsWith('dʒ'))
     ) {
       const match = remainingIPA.startsWith('ˈdʒ') ? 'ˈdʒ' : 'dʒ';
-      result.push(`g(${match})`);
+      result.push(`${origLetter}(${match})`);
       ipaIndex += match.length;
       i += 1;
       continue;
     }
 
     // --- Default letter-to-IPA mapping ---
-    let ipaChar = ipa[ipaIndex];
-
-    // Skip stress markers and advance
-    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
+    // Skip stress markers
+    while (ipa[ipaIndex] === 'ˈ' || ipa[ipaIndex] === 'ˌ') {
       ipaIndex++;
-      ipaChar = ipa[ipaIndex];
     }
 
-    result.push(`${text[i]}(${ipaChar})`);
+    const ipaChar = ipa[ipaIndex] || '';
+    result.push(`${origLetter}(${ipaChar})`);
     ipaIndex++;
     i++;
   }
 
   return result.join('');
 }
-
 
 </script>
 
@@ -429,6 +426,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
