@@ -335,58 +335,79 @@
     setOutput(g2pOutput.join(' '));
   });
 
-  function applyG2PMapping(text, ipa) {
-    const result = [];
-    let ipaIndex = 0;
-    let i = 0;
-    const lowerText = text.toLowerCase();
+function applyG2PMapping(text, ipa) {
+  const result = [];
+  let ipaIndex = 0;
+  let i = 0;
+  const lowerText = text.toLowerCase();
 
-    // Special case for "ci" → tʃ
-    if (
-      lowerText.startsWith("ci") &&
-      (ipa.startsWith("tʃ") || ipa.startsWith("t‍ʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈt‍ʃ"))
-    ) {
-      let match = "";
-      if (ipa.startsWith("ˈt‍ʃ")) {
-        match = "t‍ʃ";
-        ipaIndex += 4;
-      } else if (ipa.startsWith("ˈtʃ")) {
-        match = "tʃ";
-        ipaIndex += 3;
-      } else if (ipa.startsWith("t‍ʃ")) {
-        match = "t‍ʃ";
-        ipaIndex += 3;
-      } else if (ipa.startsWith("tʃ")) {
-        match = "tʃ";
-        ipaIndex += 2;
-      }
-
-      // ✅ Preserve original casing of "ci"
-      result.push(`${text.slice(0, 2)}(${match})`);
-      i += 2;
+  // Special case for "ci" → tʃ
+  if (
+    lowerText.startsWith("ci") &&
+    (ipa.startsWith("tʃ") || ipa.startsWith("t‍ʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈt‍ʃ"))
+  ) {
+    let match = "";
+    if (ipa.startsWith("ˈt‍ʃ")) {
+      match = "t‍ʃ";
+      ipaIndex += 4;
+    } else if (ipa.startsWith("ˈtʃ")) {
+      match = "tʃ";
+      ipaIndex += 3;
+    } else if (ipa.startsWith("t‍ʃ")) {
+      match = "t‍ʃ";
+      ipaIndex += 3;
+    } else if (ipa.startsWith("tʃ")) {
+      match = "tʃ";
+      ipaIndex += 2;
     }
 
-    // Process rest of the letters
-    while (i < text.length && ipaIndex < ipa.length) {
-      const letter = text[i];
-      let ipaChar = ipa[ipaIndex];
-
-      // Handle stress marks
-      if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
-        const stress = ipaChar;
-        ipaIndex++;
-        ipaChar = ipa[ipaIndex];
-        result.push(`${letter}('${ipaChar})`);
-      } else {
-        result.push(`${letter}(${ipaChar})`);
-      }
-
-      ipaIndex++;
-      i++;
-    }
-
-    return result.join('');
+    result.push(`${text.slice(0, 2)}(${match})`);
+    i += 2;
   }
+  // Special case for "gi" → dʒ
+  else if (
+    lowerText.startsWith("gi") &&
+    (ipa.startsWith("dʒ") || ipa.startsWith("d\u200Dj") || ipa.startsWith("ˈdʒ") || ipa.startsWith("ˈd\u200Dj"))
+  ) {
+    let match = "";
+    if (ipa.startsWith("ˈd\u200Dj")) {
+      match = "d\u200Dj";
+      ipaIndex += 4;
+    } else if (ipa.startsWith("ˈdʒ")) {
+      match = "dʒ";
+      ipaIndex += 3;
+    } else if (ipa.startsWith("d\u200Dj")) {
+      match = "d\u200Dj";
+      ipaIndex += 3;
+    } else if (ipa.startsWith("dʒ")) {
+      match = "dʒ";
+      ipaIndex += 2;
+    }
+
+    result.push(`${text.slice(0, 2)}(${match})`);
+    i += 2;
+  }
+
+  // Process remaining letters
+  while (i < text.length && ipaIndex < ipa.length) {
+    const letter = text[i];
+    let ipaChar = ipa[ipaIndex];
+
+    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
+      ipaIndex++;
+      ipaChar = ipa[ipaIndex];
+      result.push(`${letter}('${ipaChar})`);
+    } else {
+      result.push(`${letter}(${ipaChar})`);
+    }
+
+    ipaIndex++;
+    i++;
+  }
+
+  return result.join('');
+}
+
 </script>
 
 
@@ -394,6 +415,7 @@
 
 </body>
 </html>
+
 
 
 
