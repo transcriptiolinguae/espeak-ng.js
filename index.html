@@ -137,10 +137,7 @@
 
   window.addEventListener('load', async () => {
     try {
-      await initESpeak({
-        print: () => {},
-        printErr: () => {}
-      });
+      await initESpeak({ print: () => {}, printErr: () => {} });
       wasmReady = true;
       console.log('eSpeak NG WASM loaded and ready');
     } catch (e) {
@@ -251,10 +248,16 @@
     }
 
     const ipaMap = new Map();
-    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+    const wordSet = new Set();
+
+    tokens.forEach(t => {
+      if (/^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)) {
+        wordSet.add(t.toLowerCase());
+      }
+    });
 
     try {
-      for (const word of uniqueWords) {
+      for (const word of wordSet) {
         const ipa = await runESpeak(word);
         ipaMap.set(word, ipa);
       }
@@ -275,7 +278,7 @@
       }
 
       if (isWord) {
-        const ipa = ipaMap.get(token) || '';
+        const ipa = ipaMap.get(token.toLowerCase()) || '';
         result.push(`${token} (${ipa})`);
       } else {
         result.push(token);
@@ -285,7 +288,7 @@
     setOutput(result.join(''));
   });
 
-  // G2P button (you need to add it in HTML as <button id="g2p">G2P</button>)
+  // G2P button
   document.getElementById('g2p').addEventListener('click', async () => {
     showProgressPlaceholder();
 
@@ -307,10 +310,16 @@
     }
 
     const ipaMap = new Map();
-    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+    const wordSet = new Set();
+
+    tokens.forEach(t => {
+      if (/^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)) {
+        wordSet.add(t.toLowerCase());
+      }
+    });
 
     try {
-      for (const word of uniqueWords) {
+      for (const word of wordSet) {
         const ipa = await runESpeak(word);
         ipaMap.set(word, ipa);
       }
@@ -324,8 +333,8 @@
       const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
 
       if (isWord) {
-        const ipa = ipaMap.get(token) || '';
-        const g2pMapped = applyG2PMapping(token, ipa, token);
+        const ipa = ipaMap.get(token.toLowerCase()) || '';
+        const g2pMapped = applyG2PMapping(token, ipa); // token has original casing
         g2pOutput.push(g2pMapped);
       } else {
         g2pOutput.push(token);
@@ -335,66 +344,63 @@
     setOutput(g2pOutput.join(' '));
   });
 
-function applyG2PMapping(text, ipa, originalText) {
-  const result = [];
-  let ipaIndex = 0;
-  let i = 0;
+  function applyG2PMapping(text, ipa) {
+    const result = [];
+    let ipaIndex = 0;
+    let i = 0;
+    const lowerText = text.toLowerCase();
 
-  const lowerText = text.toLowerCase();
-  const original = originalText || text;
+    // Special case: Ci -> tʃ
+    if (
+      lowerText.startsWith("ci") &&
+      (ipa.startsWith("tʃ") || ipa.startsWith("t‍ʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈt‍ʃ"))
+    ) {
+      let match = "";
+      if (ipa.startsWith("ˈt‍ʃ")) {
+        match = "t‍ʃ";
+        ipaIndex += 4;
+      } else if (ipa.startsWith("ˈtʃ")) {
+        match = "tʃ";
+        ipaIndex += 3;
+      } else if (ipa.startsWith("t‍ʃ")) {
+        match = "t‍ʃ";
+        ipaIndex += 3;
+      } else if (ipa.startsWith("tʃ")) {
+        match = "tʃ";
+        ipaIndex += 2;
+      }
 
-  // Handle "Ci" + tʃ / t‍ʃ specially
-  if (
-    lowerText.startsWith("ci") &&
-    (ipa.startsWith("tʃ") || ipa.startsWith("t‍ʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈt‍ʃ"))
-  ) {
-    let match = "";
-    if (ipa.startsWith("ˈt‍ʃ")) {
-      match = "t‍ʃ";
-      ipaIndex += 4;
-    } else if (ipa.startsWith("ˈtʃ")) {
-      match = "tʃ";
-      ipaIndex += 3;
-    } else if (ipa.startsWith("t‍ʃ")) {
-      match = "t‍ʃ";
-      ipaIndex += 3;
-    } else if (ipa.startsWith("tʃ")) {
-      match = "tʃ";
-      ipaIndex += 2;
+      result.push(`Ci(${match})`);
+      i += 2;
     }
 
-    result.push(`Ci(${match})`);
-    i += 2;
-  }
+    while (i < text.length && ipaIndex < ipa.length) {
+      const letter = text[i];
+      let ipaChar = ipa[ipaIndex];
 
-  while (i < lowerText.length && ipaIndex < ipa.length) {
-    const letter = original[i]; // ← Use original casing
-    let ipaChar = ipa[ipaIndex];
+      if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
+        const stress = ipaChar;
+        ipaIndex++;
+        ipaChar = ipa[ipaIndex];
+        result.push(`${letter}('${ipaChar})`);
+      } else {
+        result.push(`${letter}(${ipaChar})`);
+      }
 
-    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
-      const stress = ipaChar;
       ipaIndex++;
-      ipaChar = ipa[ipaIndex];
-      result.push(`${letter}('${ipaChar})`);
-    } else {
-      result.push(`${letter}(${ipaChar})`);
+      i++;
     }
 
-    ipaIndex++;
-    i++;
+    return result.join('');
   }
-
-  return result.join('');
-}
-
-
-
 </script>
+
 
 
 
 </body>
 </html>
+
 
 
 
