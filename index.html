@@ -152,31 +152,6 @@
 
   function printErrFiltered(err) {
     if (
-      err.includes('still waiting on run depende<script type="module">
-  import initESpeak from './espeak-ng.js';
-
-  const outputElem = document.getElementById('output');
-  const inputElem = document.getElementById('input');
-
-  let wasmReady = false;
-
-  window.addEventListener('load', async () => {
-    try {
-      await initESpeak({
-        print: () => {},
-        printErr: () => {}
-      });
-      wasmReady = true;
-      console.log('eSpeak NG WASM loaded and ready');
-    } catch (e) {
-      console.error('Error loading WASM:', e);
-      outputElem.classList.remove('placeholder');
-      outputElem.innerText = 'Error loading eSpeak WASM module.';
-    }
-  });
-
-  function printErrFiltered(err) {
-    if (
       err.includes('still waiting on run dependencies') ||
       err.includes('dependency: wasm-instantiate') ||
       err.includes('(end of list)')
@@ -196,23 +171,23 @@
       printErr: printErrFiltered
     });
 
-    // Double letter replacements with IPA rule
+    // Map double letters to IPA transcription with a triangle colon (ː)
     ipaOutput = ipaOutput
-      .replace(/bb/g, 'bː')
-      .replace(/cc/g, 'kː')
-      .replace(/dd/g, 'dː')
-      .replace(/ff/g, 'fː')
-      .replace(/ll/g, 'lː')
-      .replace(/mm/g, 'mː')
-      .replace(/nn/g, 'nː')
-      .replace(/pp/g, 'pː')
-      .replace(/qq/g, 'kː')  // Assuming 'qq' maps to 'kː' based on the example given
-      .replace(/rr/g, 'rː')
-      .replace(/ss/g, 'sː')
-      .replace(/tt/g, 'tː')
-      .replace(/gg/g, 'dʒː')
-      .replace(/zz/g, 'tsː')
-      .replace(/zz/g, 'dzː')  // This handles 'zz' mapping as both 'tsː' and 'dzː' based on example
+      .replace(/bb/g, 'bː')   // bb → bː
+      .replace(/cc/g, 'kː')   // cc → kː
+      .replace(/dd/g, 'dː')   // dd → dː
+      .replace(/ff/g, 'fː')   // ff → fː
+      .replace(/ll/g, 'lː')   // ll → lː
+      .replace(/mm/g, 'mː')   // mm → mː
+      .replace(/nn/g, 'nː')   // nn → nː
+      .replace(/pp/g, 'pː')   // pp → pː
+      .replace(/qq/g, 'kː')   // qq → kː (same as cc)
+      .replace(/rr/g, 'rː')   // rr → rː
+      .replace(/ss/g, 'sː')   // ss → sː
+      .replace(/tt/g, 'tː')   // tt → tː
+      .replace(/gg/g, 'dʒː')  // gg → dʒː (geminated g)
+      .replace(/zz/g, 'tsː')  // zz → tsː (geminated z)
+      .replace(/zz/g, 'dzː')  // zz → dzː (geminated z)
       .trim();
 
     return ipaOutput;
@@ -280,7 +255,8 @@
     }
 
     const ipaMap = new Map();
-    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))].
+    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+
 
     try {
       for (const word of uniqueWords) {
@@ -336,7 +312,8 @@
     }
 
     const ipaMap = new Map();
-    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))].
+    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+
 
     try {
       for (const word of uniqueWords) {
@@ -393,42 +370,15 @@
 
           // Map i next
           result.push(`i(${afterAffricate.startsWith('ˈi') ? 'ˈi' : 'i'})`);
-          i += 1;
-          ipaIndex += afterAffricate.startsWith('ˈi') ? 2 : 1;
-
-          // done for first two letters
+          ipaIndex += 1; // Consumed i
         } else {
-          // No stressed i, treat as whole ci → tʃ
-          result.push(`ci(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
-          i += 2;
-          ipaIndex += matchInfo.len;
+          result.push(`c(tʃ)`);
         }
+      } else {
+        result.push(`ci`);
       }
-    } else if (lowerText.startsWith("gi")) {
-      const matchInfo = startsWithIpa(ipa, "dʒ");
-      if (matchInfo) {
-        const afterAffricate = ipa.slice(matchInfo.len);
-
-        // Check if next is stressed i (ˈi or i)
-        if (afterAffricate.startsWith('ˈi') || afterAffricate.startsWith('i')) {
-          // Map g to dʒ and i to stressed i separately
-          result.push(`g(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
-          i += 1; // consumed 'g'
-          ipaIndex += matchInfo.len;
-
-          // Map i next
-          result.push(`i(${afterAffricate.startsWith('ˈi') ? 'ˈi' : 'i'})`);
-          i += 1;
-          ipaIndex += afterAffricate.startsWith('ˈi') ? 2 : 1;
-
-          // done for first two letters
-        } else {
-          // No stressed i, treat as whole gi → dʒ
-          result.push(`gi(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
-          i += 2;
-          ipaIndex += matchInfo.len;
-        }
-      }
+    } else {
+      result.push(text); // no special IPA mapping
     }
 
     return result.join('');
@@ -438,8 +388,10 @@
 
 
 
+
 </body>
 </html>
+
 
 
 
