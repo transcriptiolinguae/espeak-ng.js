@@ -357,14 +357,19 @@ function applyG2PMapping(text, ipa) {
 
       // Check if next is stressed i (ˈi or i)
       if (afterAffricate.startsWith('ˈi') || afterAffricate.startsWith('i')) {
+        // Map c to tʃ and i to stressed i separately
         result.push(`c(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
-        i += 1;
+        i += 1; // consumed 'c'
         ipaIndex += matchInfo.len;
 
+        // Map i next
         result.push(`i(${afterAffricate.startsWith('ˈi') ? 'ˈi' : 'i'})`);
         i += 1;
         ipaIndex += afterAffricate.startsWith('ˈi') ? 2 : 1;
+
+        // done for first two letters
       } else {
+        // No stressed i, treat as whole ci → tʃ
         result.push(`ci(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
         i += 2;
         ipaIndex += matchInfo.len;
@@ -376,6 +381,7 @@ function applyG2PMapping(text, ipa) {
       const afterAffricate = ipa.slice(matchInfo.len);
 
       if (afterAffricate.startsWith('ˈi') || afterAffricate.startsWith('i')) {
+        // Map g to dʒ and i to stressed i separately
         result.push(`g(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
         i += 1;
         ipaIndex += matchInfo.len;
@@ -383,7 +389,9 @@ function applyG2PMapping(text, ipa) {
         result.push(`i(${afterAffricate.startsWith('ˈi') ? 'ˈi' : 'i'})`);
         i += 1;
         ipaIndex += afterAffricate.startsWith('ˈi') ? 2 : 1;
+
       } else {
+        // No stressed i, treat as whole gi → dʒ
         result.push(`gi(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
         i += 2;
         ipaIndex += matchInfo.len;
@@ -391,41 +399,17 @@ function applyG2PMapping(text, ipa) {
     }
   }
 
-  // Mapping single letters with triangle colon (ː) to double letters
-  const doubleLetterMap = {
-    'bː': 'bb',
-    'kː': 'cc',
-    'dː': 'dd',
-    'tː': 'tt',
-    'fː': 'ff',
-    'vː': 'vv',
-    'lː': 'll',
-    'mː': 'mm',
-    'nː': 'nn',
-    'sː': 'ss',
-    'zː': 'zz',
-    'ʃː': 'ʃʃ', // sibilant example
-    'ʒː': 'ʒʒ'  // sibilant example
-  };
-
-  // Process the rest normally, and check for ː to double letters
+  // Process the rest normally
   while (i < text.length && ipaIndex < ipa.length) {
+    const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
-    // If the current IPA character is followed by ː, apply the double letter rule
-    if (ipaChar === 'ː' && ipaIndex > 0) {
-      const previousChar = ipa[ipaIndex - 1];
-      const key = `${previousChar}ː`;
-
-      if (doubleLetterMap[key]) {
-        result.push(doubleLetterMap[key]);
-        ipaIndex++; // Skip the ː
-      } else {
-        result.push(`${previousChar}(${ipaChar})`);
-      }
+    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
+      ipaIndex++;
+      ipaChar = ipa[ipaIndex];
+      result.push(`${letter}('${ipaChar})`);
     } else {
-      // For regular IPA characters, just add them as-is
-      result.push(`${text[i]}(${ipaChar})`);
+      result.push(`${letter}(${ipaChar})`);
     }
 
     ipaIndex++;
@@ -440,6 +424,7 @@ function applyG2PMapping(text, ipa) {
 
   return result.join('');
 }
+
 
 
 </script>
