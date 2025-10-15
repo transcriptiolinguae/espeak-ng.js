@@ -340,10 +340,10 @@ function applyG2PMapping(text, ipa) {
   const result = [];
   const lowerText = text.toLowerCase();
 
-  let i = 0;
-  let ipaIndex = 0;
+  let i = 0;       // text index
+  let ipaIndex = 0; // IPA index
 
-  while (i < text.length && ipaIndex < ipa.length) {
+  while (i < text.length) {
     const letter = lowerText[i];
     const origLetter = text[i];
 
@@ -352,7 +352,13 @@ function applyG2PMapping(text, ipa) {
       ipaIndex++;
     }
 
-    // Check next IPA two-char cluster for affricates
+    if (ipaIndex >= ipa.length) {
+      // No more IPA left, just add letter without IPA
+      result.push(`${origLetter}()`);
+      i++;
+      continue;
+    }
+
     const ipaTwoChars = ipa.slice(ipaIndex, ipaIndex + 2);
 
     if ((letter === 'c' || letter === 'g') && ipaTwoChars === 'tʃ') {
@@ -362,7 +368,8 @@ function applyG2PMapping(text, ipa) {
       i++;
       continue;
     }
-    if ((letter === 'g') && ipaTwoChars === 'dʒ') {
+
+    if (letter === 'g' && ipaTwoChars === 'dʒ') {
       // Map g -> dʒ
       result.push(`${origLetter}(dʒ)`);
       ipaIndex += 2;
@@ -371,15 +378,17 @@ function applyG2PMapping(text, ipa) {
     }
 
     // For other letters, map one IPA char
-    const ipaChar = ipa[ipaIndex] || '';
-    result.push(`${origLetter}(${ipaChar})`);
-    ipaIndex++;
-    i++;
-  }
+    const ipaChar = ipa[ipaIndex];
 
-  // Handle any leftover letters (no IPA)
-  while (i < text.length) {
-    result.push(text[i] + '()');
+    // Defensive: if ipaChar is undefined or empty string, avoid output like a()
+    if (ipaChar) {
+      result.push(`${origLetter}(${ipaChar})`);
+      ipaIndex++;
+    } else {
+      // No IPA char left, map letter with empty parentheses
+      result.push(`${origLetter}()`);
+    }
+
     i++;
   }
 
@@ -394,6 +403,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
