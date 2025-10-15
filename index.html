@@ -354,7 +354,7 @@ function applyG2PMapping(text, ipa) {
     q: 'qq',
     r: 'rr',
     s: 'ss',
-    t: 'tt',
+    t: 'tt',  // map t to tt for 'tː'
     g: 'gg',
     z: 'zz'
   };
@@ -413,11 +413,15 @@ function applyG2PMapping(text, ipa) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
-    // If the letter has a mapping in the doubleLetterMapping, replace with double letters
-    if (doubleLetterMapping[ipaChar]) {
+    // Handle the tː case explicitly
+    if (ipaChar === 'tː') {
+      ipaChar = doubleLetterMapping['t']; // Replace tː with tt
+    } else if (doubleLetterMapping[ipaChar]) {
+      // For other letters, apply the double-letter mapping
       ipaChar = doubleLetterMapping[ipaChar];
     }
 
+    // Handle stress marks
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
       ipaIndex++;
       ipaChar = ipa[ipaIndex];
@@ -440,7 +444,6 @@ function applyG2PMapping(text, ipa) {
 }
 
 
-
 </script>
 
 
@@ -448,6 +451,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
