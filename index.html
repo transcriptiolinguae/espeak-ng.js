@@ -343,7 +343,14 @@ function applyG2PMapping(text, ipa) {
 
   // Helper to strip leading stress or ZWJ and return core + offset
   function startsWithIpa(ipa, pattern) {
-    const variations = [`${pattern}`, `ˈ${pattern}`, `ˌ${pattern}`, `\u200D${pattern}`, `ˈ\u200D${pattern}`, `\u200Dˈ${pattern}`];
+    const variations = [
+      `${pattern}`,
+      `ˈ${pattern}`,
+      `ˌ${pattern}`,
+      `\u200D${pattern}`,
+      `ˈ\u200D${pattern}`,
+      `\u200Dˈ${pattern}`
+    ];
     for (const variant of variations) {
       if (ipa.startsWith(variant)) return { match: variant, len: variant.length };
     }
@@ -354,9 +361,13 @@ function applyG2PMapping(text, ipa) {
   if (lowerText.startsWith("ci")) {
     const matchInfo = startsWithIpa(ipa, "tʃ");
     if (matchInfo) {
-      const afterAffricate = ipa[matchInfo.len];
-      if (afterAffricate !== 'i') {
-        // All conditions met: ci + starts with tʃ + no 'i' after in IPA
+      const afterAffricate = ipa.slice(matchInfo.len);
+      const isFollowedByI = afterAffricate.startsWith('i') ||
+                            afterAffricate.startsWith('ˈi') ||
+                            afterAffricate.startsWith('ˌi');
+
+      if (!isFollowedByI) {
+        // All conditions met: ci + starts with tʃ + no 'i' or stressed i after in IPA
         result.push(`ci(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
         i += 2;
         ipaIndex += matchInfo.len;
@@ -368,9 +379,13 @@ function applyG2PMapping(text, ipa) {
   if (i === 0 && lowerText.startsWith("gi")) {
     const matchInfo = startsWithIpa(ipa, "dʒ");
     if (matchInfo) {
-      const afterAffricate = ipa[matchInfo.len];
-      if (afterAffricate !== 'i') {
-        // All conditions met: gi + starts with dʒ + no 'i' after in IPA
+      const afterAffricate = ipa.slice(matchInfo.len);
+      const isFollowedByI = afterAffricate.startsWith('i') ||
+                            afterAffricate.startsWith('ˈi') ||
+                            afterAffricate.startsWith('ˌi');
+
+      if (!isFollowedByI) {
+        // All conditions met: gi + starts with dʒ + no 'i' or stressed i after in IPA
         result.push(`gi(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
         i += 2;
         ipaIndex += matchInfo.len;
@@ -407,6 +422,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
