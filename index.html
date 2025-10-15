@@ -349,53 +349,29 @@ function applyG2PMapping(text, ipa) {
     return null;
   }
 
-  // --- ci → tʃ and gi → dʒ special handling for i with stress ---
-  if (lowerText.startsWith("ci")) {
-    const matchInfo = startsWithIpa(ipa, "tʃ");
-    if (matchInfo) {
-      const afterAffricate = ipa.slice(matchInfo.len);
-
-      // Check if next is stressed i (ˈi or i)
-      if (afterAffricate.startsWith('ˈi') || afterAffricate.startsWith('i')) {
-        // Map c to tʃ and i to stressed i separately
-        result.push(`c(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
-        i += 1; // consumed 'c'
-        ipaIndex += matchInfo.len;
-
-        // Map i next
-        result.push(`i(${afterAffricate.startsWith('ˈi') ? 'ˈi' : 'i'})`);
-        i += 1;
-        ipaIndex += afterAffricate.startsWith('ˈi') ? 2 : 1;
-
-        // done for first two letters
-      } else {
-        // No stressed i, treat as whole ci → tʃ
-        result.push(`ci(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
-        i += 2;
-        ipaIndex += matchInfo.len;
-      }
+  // --- Adjust for patterns like t(t)t(ː) -> tt(tː), d(d)d(ː) -> dd(dː) ---
+  const replaceDoubleLetters = (letter, ipa) => {
+    if (ipa.startsWith(letter + letter)) {
+      const remainingIpa = ipa.slice(letter.length);
+      return `${letter}${letter}(${remainingIpa})`;
     }
-  } else if (lowerText.startsWith("gi")) {
-    const matchInfo = startsWithIpa(ipa, "dʒ");
+    return `${letter}(${ipa})`;
+  };
+
+  // Check if the first character is a doubled "t" or "d" and map accordingly
+  if (lowerText.startsWith("tt")) {
+    const matchInfo = startsWithIpa(ipa, "t");
     if (matchInfo) {
-      const afterAffricate = ipa.slice(matchInfo.len);
-
-      if (afterAffricate.startsWith('ˈi') || afterAffricate.startsWith('i')) {
-        // Map g to dʒ and i to stressed i separately
-        result.push(`g(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
-        i += 1;
-        ipaIndex += matchInfo.len;
-
-        result.push(`i(${afterAffricate.startsWith('ˈi') ? 'ˈi' : 'i'})`);
-        i += 1;
-        ipaIndex += afterAffricate.startsWith('ˈi') ? 2 : 1;
-
-      } else {
-        // No stressed i, treat as whole gi → dʒ
-        result.push(`gi(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
-        i += 2;
-        ipaIndex += matchInfo.len;
-      }
+      result.push(replaceDoubleLetters("t", ipa));
+      ipaIndex += matchInfo.len;
+      i += 2;
+    }
+  } else if (lowerText.startsWith("dd")) {
+    const matchInfo = startsWithIpa(ipa, "d");
+    if (matchInfo) {
+      result.push(replaceDoubleLetters("d", ipa));
+      ipaIndex += matchInfo.len;
+      i += 2;
     }
   }
 
@@ -434,6 +410,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
