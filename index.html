@@ -171,26 +171,22 @@
       printErr: printErrFiltered
     });
 
-    // Map double letters to IPA transcription with a triangle colon (ː)
-    ipaOutput = ipaOutput
-      .replace(/bb/g, 'bː')   // bb → bː
-      .replace(/cc/g, 'kː')   // cc → kː
-      .replace(/dd/g, 'dː')   // dd → dː
-      .replace(/ff/g, 'fː')   // ff → fː
-      .replace(/ll/g, 'lː')   // ll → lː
-      .replace(/mm/g, 'mː')   // mm → mː
-      .replace(/nn/g, 'nː')   // nn → nː
-      .replace(/pp/g, 'pː')   // pp → pː
-      .replace(/qq/g, 'kː')   // qq → kː (same as cc)
-      .replace(/rr/g, 'rː')   // rr → rː
-      .replace(/ss/g, 'sː')   // ss → sː
-      .replace(/tt/g, 'tː')   // tt → tː
-      .replace(/gg/g, 'dʒː')  // gg → dʒː (geminated g)
-      .replace(/zz/g, 'tsː')  // zz → tsː (geminated z)
-      .replace(/zz/g, 'dzː')  // zz → dzː (geminated z)
+    return ipaOutput
+      .replace(/rɾ/g, 'rː')
+      .replace(/mm/g, 'mː')
+      .replace(/ff/g, 'fː')
+      .replace(/vv/g, 'vː')
+      .replace(/ll/g, 'lː')
+      .replace(/kk/g, 'kː')
+      .replace(/nn/g, 'nː')
+      .replace(/ɲɲ/g, 'ɲː')
+      .replace(/s\u200Ds/g, 'sː')
+      .replace(/ss/g, 'sː')
+      .replace(/t\u200D/g, 't')
+      .replace(/d\u200D/g, 'd')
+      .replace(/ɾ/g, 'r')
+      .replace(/oo/g, 'oː')
       .trim();
-
-    return ipaOutput;
   }
 
   function showPlaceholder() {
@@ -257,7 +253,6 @@
     const ipaMap = new Map();
     const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
 
-
     try {
       for (const word of uniqueWords) {
         const ipa = await runESpeak(word);
@@ -314,7 +309,6 @@
     const ipaMap = new Map();
     const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
 
-
     try {
       for (const word of uniqueWords) {
         const ipa = await runESpeak(word);
@@ -341,58 +335,121 @@
     setOutput(g2pOutput.join(' '));
   });
 
-  function applyG2PMapping(text, ipa) {
-    const result = [];
-    let ipaIndex = 0;
-    let i = 0;
-    const lowerText = text.toLowerCase();
+function applyG2PMapping(text, ipa) {
+  const result = [];
+  let ipaIndex = 0;
+  let i = 0;
+  const lowerText = text.toLowerCase();
 
-    function startsWithIpa(ipa, pattern) {
-      const variations = [`${pattern}`, `ˈ${pattern}`, `ˌ${pattern}`, `\u200D${pattern}`, `ˈ\u200D${pattern}`, `\u200Dˈ${pattern}`];
-      for (const variant of variations) {
-        if (ipa.startsWith(variant)) return { match: variant, len: variant.length };
-      }
-      return null;
+  // Mapping for double letters to IPA with triangle colon
+  const doubleLetterMap = {
+    'bb': 'bː',
+    'cc': 'kː',
+    'dd': 'dː',
+    'ff': 'fː',
+    'll': 'lː',
+    'mm': 'mː',
+    'nn': 'nː',
+    'pp': 'pː',
+    'qq': 'kː', // Assuming qq maps to /kː/
+    'rr': 'rː',
+    'ss': 'sː',
+    'tt': 'tː',
+    'gg': 'dʒː',
+    'zz': 'tsː', // Assuming zz maps to /tsː/
+    'zz': 'dzː' // Assuming zz could also map to /dzː/
+  };
+
+  // Check and replace double letters with the desired IPA mapping
+  function replaceDoubleLetters(text, ipa) {
+    for (const [letters, ipaSound] of Object.entries(doubleLetterMap)) {
+      const regex = new RegExp(`(${letters})`, 'g');
+      ipa = ipa.replace(regex, `${ipaSound}`);
     }
-
-    // --- ci → tʃ and gi → dʒ special handling for i with stress ---
-    if (lowerText.startsWith("ci")) {
-      const matchInfo = startsWithIpa(ipa, "tʃ");
-      if (matchInfo) {
-        const afterAffricate = ipa.slice(matchInfo.len);
-
-        // Check if next is stressed i (ˈi or i)
-        if (afterAffricate.startsWith('ˈi') || afterAffricate.startsWith('i')) {
-          // Map c to tʃ and i to stressed i separately
-          result.push(`c(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
-          i += 1; // consumed 'c'
-          ipaIndex += matchInfo.len;
-
-          // Map i next
-          result.push(`i(${afterAffricate.startsWith('ˈi') ? 'ˈi' : 'i'})`);
-          ipaIndex += 1; // Consumed i
-        } else {
-          result.push(`c(tʃ)`);
-        }
-      } else {
-        result.push(`ci`);
-      }
-    } else {
-      result.push(text); // no special IPA mapping
-    }
-
-    return result.join('');
+    return ipa;
   }
-</script>
 
+  // Apply double letter rules before processing the word
+  ipa = replaceDoubleLetters(text, ipa);
+
+  // --- ci → tʃ and gi → dʒ special handling for i with stress ---
+  if (lowerText.startsWith("ci")) {
+    const matchInfo = startsWithIpa(ipa, "tʃ");
+    if (matchInfo) {
+      const afterAffricate = ipa.slice(matchInfo.len);
+
+      // Check if next is stressed i (ˈi or i)
+      if (afterAffricate.startsWith('ˈi') || afterAffricate.startsWith('i')) {
+        result.push(`c(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
+        i += 1; // consumed 'c'
+        ipaIndex += matchInfo.len;
+
+        result.push(`i(${afterAffricate.startsWith('ˈi') ? 'ˈi' : 'i'})`);
+        i += 1;
+        ipaIndex += afterAffricate.startsWith('ˈi') ? 2 : 1;
+      } else {
+        result.push(`ci(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
+        i += 2;
+        ipaIndex += matchInfo.len;
+      }
+    }
+  } else if (lowerText.startsWith("gi")) {
+    const matchInfo = startsWithIpa(ipa, "dʒ");
+    if (matchInfo) {
+      const afterAffricate = ipa.slice(matchInfo.len);
+
+      if (afterAffricate.startsWith('ˈi') || afterAffricate.startsWith('i')) {
+        result.push(`g(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
+        i += 1;
+        ipaIndex += matchInfo.len;
+
+        result.push(`i(${afterAffricate.startsWith('ˈi') ? 'ˈi' : 'i'})`);
+        i += 1;
+        ipaIndex += afterAffricate.startsWith('ˈi') ? 2 : 1;
+      } else {
+        result.push(`gi(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
+        i += 2;
+        ipaIndex += matchInfo.len;
+      }
+    }
+  }
+
+  // Process the rest normally
+  while (i < text.length && ipaIndex < ipa.length) {
+    const letter = text[i];
+    let ipaChar = ipa[ipaIndex];
+
+    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
+      ipaIndex++;
+      ipaChar = ipa[ipaIndex];
+      result.push(`${letter}('${ipaChar})`);
+    } else {
+      result.push(`${letter}(${ipaChar})`);
+    }
+
+    ipaIndex++;
+    i++;
+  }
+
+  // If anything left in text, append with empty IPA
+  while (i < text.length) {
+    result.push(`${text[i]}()`);
+    i++;
+  }
+
+  return result.join('');
+}
+
+
+
+
+</script>
 
 
 
 
 </body>
 </html>
-
-
 
 
 
