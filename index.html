@@ -336,82 +336,56 @@
   });
 
   // Apply your specific mapping rules here
-  function applyG2PMapping(text, ipa) {
-    const result = [];
-    const lowerText = text.toLowerCase();
+function applyG2PMapping(text, ipa) {
+  const result = [];
+  const lowerText = text.toLowerCase();
 
-    let i = 0;
-    let ipaIndex = 0;
+  let i = 0;
+  let ipaIndex = 0;
 
-    while (i < text.length && ipaIndex < ipa.length) {
-      const letter = lowerText[i];
-      const nextLetter = lowerText[i + 1] || '';
-      const origLetter = text[i];
-      const nextOrigLetter = text[i + 1] || '';
+  while (i < text.length && ipaIndex < ipa.length) {
+    const letter = lowerText[i];
+    const origLetter = text[i];
 
-      // Skip stress markers
-      while (ipa[ipaIndex] === 'ˈ' || ipa[ipaIndex] === 'ˌ') {
-        ipaIndex++;
-      }
-
-      // Handle 'ci' → tʃ only if IPA does NOT have an 'i' immediately after tʃ
-      if (
-        letter === 'c' &&
-        nextLetter === 'i' &&
-        ipa.slice(ipaIndex, ipaIndex + 2) === 'tʃ' &&
-        ipa[ipaIndex + 2] !== 'i'
-      ) {
-        result.push(`c(tʃ)`);
-        i++;
-        // Skip the 'i' letter WITHOUT mapping if IPA has an 'i' here
-        result.push(`i(${ipa[ipaIndex + 1] || ''})`);
-        ipaIndex += 2;
-        i++;
-        continue;
-      }
-
-      // Handle 'gi' → dʒ only if IPA does NOT have an 'i' immediately after dʒ
-      if (
-        letter === 'g' &&
-        nextLetter === 'i' &&
-        ipa.slice(ipaIndex, ipaIndex + 2) === 'dʒ' &&
-        ipa[ipaIndex + 2] !== 'i'
-      ) {
-        result.push(`g(dʒ)`);
-        i++;
-        result.push(`i(${ipa[ipaIndex + 1] || ''})`);
-        ipaIndex += 2;
-        i++;
-        continue;
-      }
-
-      // Handle 'g' followed by something other than 'i' and IPA 'dʒ'
-      if (
-        letter === 'g' &&
-        nextLetter !== 'i' &&
-        ipa.slice(ipaIndex, ipaIndex + 2) === 'dʒ'
-      ) {
-        result.push(`${origLetter}(dʒ)`);
-        ipaIndex += 2;
-        i++;
-        continue;
-      }
-
-      // Map normally
-      const currentIPAChar = ipa[ipaIndex] || '';
-      result.push(`${origLetter}(${currentIPAChar})`);
+    // Skip stress markers in IPA
+    while (ipa[ipaIndex] === 'ˈ' || ipa[ipaIndex] === 'ˌ') {
       ipaIndex++;
-      i++;
     }
 
-    // Add any remaining letters without IPA (usually punctuation or leftovers)
-    while (i < text.length) {
-      result.push(text[i] + '()');
+    // Check next IPA two-char cluster for affricates
+    const ipaTwoChars = ipa.slice(ipaIndex, ipaIndex + 2);
+
+    if ((letter === 'c' || letter === 'g') && ipaTwoChars === 'tʃ') {
+      // Map c -> tʃ
+      result.push(`${origLetter}(tʃ)`);
+      ipaIndex += 2;
       i++;
+      continue;
+    }
+    if ((letter === 'g') && ipaTwoChars === 'dʒ') {
+      // Map g -> dʒ
+      result.push(`${origLetter}(dʒ)`);
+      ipaIndex += 2;
+      i++;
+      continue;
     }
 
-    return result.join('');
+    // For other letters, map one IPA char
+    const ipaChar = ipa[ipaIndex] || '';
+    result.push(`${origLetter}(${ipaChar})`);
+    ipaIndex++;
+    i++;
   }
+
+  // Handle any leftover letters (no IPA)
+  while (i < text.length) {
+    result.push(text[i] + '()');
+    i++;
+  }
+
+  return result.join('');
+}
+
 </script>
 
 
@@ -420,6 +394,7 @@
 
 </body>
 </html>
+
 
 
 
