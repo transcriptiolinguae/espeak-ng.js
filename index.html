@@ -349,13 +349,12 @@ function applyG2PMapping(text, ipa) {
     return null;
   }
 
-  // --- ci → tʃ and gi → dʒ special handling for i with stress ---
+  // Handle special "ci" and "gi" cases as before
   if (lowerText.startsWith("ci")) {
     const matchInfo = startsWithIpa(ipa, "tʃ");
     if (matchInfo) {
       const afterAffricate = ipa.slice(matchInfo.len);
 
-      // Check if next is stressed i (ˈi or i)
       if (afterAffricate.startsWith('ˈi') || afterAffricate.startsWith('i')) {
         result.push(`c(${matchInfo.match.replace(/^ˈ|\u200D/g, '')})`);
         i += 1;
@@ -391,45 +390,36 @@ function applyG2PMapping(text, ipa) {
     }
   }
 
-  // Handle double consonants (e.g. "tt" → "tː", "ss" → "sː")
-  const doubleConsonants = ['tt', 'll', 'nn', 'mm', 'rr', 'ss'];
-  for (let dc of doubleConsonants) {
-    if (lowerText.includes(dc)) {
-      const ipaMatch = startsWithIpa(ipa, `${dc[0]}${dc[1]}`);
-      if (ipaMatch) {
-        // For double consonants like "tt", we treat it as a single unit, e.g., "tː"
-        result.push(`${dc[0]}(${ipaMatch.match.replace(/^ˈ|\u200D/g, '')})`);
-        i += 2;
-        ipaIndex += ipaMatch.len;
-      }
-    }
-  }
-
-  // Process the rest normally
+  // Handle double consonants like "tt", "ll", "nn", etc.
   while (i < text.length && ipaIndex < ipa.length) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
-    // If we encounter stress markers, treat them accordingly
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
       ipaIndex++;
       ipaChar = ipa[ipaIndex];
       result.push(`${letter}('${ipaChar})`);
     } else {
-      result.push(`${letter}(${ipaChar})`);
+      // Check for double consonants and handle as single unit
+      if (i + 1 < text.length && text[i] === text[i + 1] && ipaChar === ipa[ipaIndex + 1]) {
+        result.push(`${letter}${ipaChar === 't' ? 'tː' : ipaChar}`);
+        i += 2;
+        ipaIndex += 2; // Skip next ipaChar
+      } else {
+        result.push(`${letter}(${ipaChar})`);
+        ipaIndex++;
+        i++;
+      }
     }
-
-    ipaIndex++;
-    i++;
   }
 
-  // If anything left in text, append with empty IPA
+  // Handle any remaining letters or IPA
   while (i < text.length) {
     result.push(`${text[i]}()`);
     i++;
   }
 
-  return result.join('');
+  return result.join(' ');
 }
 
 
@@ -441,6 +431,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
