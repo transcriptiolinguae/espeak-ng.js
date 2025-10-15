@@ -413,7 +413,7 @@ function applyG2PMapping(text, ipa) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
-    // Handle the tː case explicitly
+    // Handle the tː case explicitly - replace 'tː' with 'tt'
     if (ipaChar === 'tː') {
       ipaChar = doubleLetterMapping['t']; // Replace tː with tt
     } else if (doubleLetterMapping[ipaChar]) {
@@ -440,6 +440,7 @@ function applyG2PMapping(text, ipa) {
     i++;
   }
 
+  // Return the result
   return result.join('');
 }
 
@@ -451,6 +452,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
