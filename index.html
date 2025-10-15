@@ -344,17 +344,17 @@ function applyG2PMapping(text, ipa) {
   // Special case for "ci" → tʃ
   if (
     lowerText.startsWith("ci") &&
-    (ipa.startsWith("tʃ") || ipa.startsWith("t‍ʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈt‍ʃ"))
+    (ipa.startsWith("tʃ") || ipa.startsWith("t\u200Dʃ") || ipa.startsWith("ˈtʃ") || ipa.startsWith("ˈt\u200Dʃ"))
   ) {
     let match = "";
-    if (ipa.startsWith("ˈt‍ʃ")) {
-      match = "t‍ʃ";
+    if (ipa.startsWith("ˈt\u200Dʃ")) {
+      match = "t\u200Dʃ";
       ipaIndex += 4;
     } else if (ipa.startsWith("ˈtʃ")) {
       match = "tʃ";
       ipaIndex += 3;
-    } else if (ipa.startsWith("t‍ʃ")) {
-      match = "t‍ʃ";
+    } else if (ipa.startsWith("t\u200Dʃ")) {
+      match = "t\u200Dʃ";
       ipaIndex += 3;
     } else if (ipa.startsWith("tʃ")) {
       match = "tʃ";
@@ -388,9 +388,43 @@ function applyG2PMapping(text, ipa) {
     i += 2;
   }
 
-  // Process remaining letters
-  while (i < text.length && ipaIndex < ipa.length) {
+  // Process remaining letters, including special case:
+  // g not followed by i → dʒ mapping
+  for (; i < text.length; i++) {
     const letter = text[i];
+    const lowerLetter = letter.toLowerCase();
+    const nextLetter = text[i + 1] ? text[i + 1].toLowerCase() : '';
+
+    if (
+      lowerLetter === 'g' &&
+      nextLetter !== 'i' &&
+      (
+        ipa.startsWith('ˈdʒ', ipaIndex) || 
+        ipa.startsWith('dʒ', ipaIndex) ||
+        ipa.startsWith('ˈd\u200Dj', ipaIndex) ||
+        ipa.startsWith('d\u200Dj', ipaIndex)
+      )
+    ) {
+      let match = '';
+      if (ipa.startsWith('ˈd\u200Dj', ipaIndex)) {
+        match = 'd\u200Dj';
+        ipaIndex += 4;
+      } else if (ipa.startsWith('ˈdʒ', ipaIndex)) {
+        match = 'dʒ';
+        ipaIndex += 3;
+      } else if (ipa.startsWith('d\u200Dj', ipaIndex)) {
+        match = 'd\u200Dj';
+        ipaIndex += 3;
+      } else if (ipa.startsWith('dʒ', ipaIndex)) {
+        match = 'dʒ';
+        ipaIndex += 2;
+      }
+
+      result.push(`${letter}(${match})`);
+      continue;
+    }
+
+    // Default processing for other letters
     let ipaChar = ipa[ipaIndex];
 
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
@@ -400,13 +434,12 @@ function applyG2PMapping(text, ipa) {
     } else {
       result.push(`${letter}(${ipaChar})`);
     }
-
     ipaIndex++;
-    i++;
   }
 
   return result.join('');
 }
+
 
 </script>
 
@@ -415,6 +448,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
