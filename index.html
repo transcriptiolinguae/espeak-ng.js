@@ -345,14 +345,14 @@ function applyG2PMapping(text, ipa) {
   // Predefined mappings for G2P
   const g2pMappings = {
     "bb": "bː",
-    "cc": "kː",  // Default mapping for "cc"
+    "cc": "kː",
     "dd": "dː",
     "ff": "fː",
     "ll": "ː",
     "mm": "ː",
     "nn": "ː",
     "pp": "ː",
-    "qq": "qq",  
+    "qq": "qq",
     "rr": "rː",
     "ss": "sː",
     "tt": "tː",
@@ -361,9 +361,8 @@ function applyG2PMapping(text, ipa) {
     "zz": "dzː"
   };
 
-  // Function to check if the IPA sequence is followed by specific vowels
   function isFollowedByVowel(ipa, index) {
-    const following = ipa.slice(index + 3);  // Skip 'ː' and check the next character
+    const following = ipa.slice(index + 2); // Skip 'ː' and check the following character
     return following.startsWith('i') || following.startsWith('ˈi') || following.startsWith('j') || following.startsWith('ˈj') ||
            following.startsWith('e') || following.startsWith('ˈe') || following.startsWith('ɛ') || following.startsWith('ˈɛ');
   }
@@ -373,27 +372,31 @@ function applyG2PMapping(text, ipa) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
-    // Custom Mapping: 'cc' → 'tʃː' only if followed by 'i'
-    if (lowerText.slice(i, i + 2) === 'cc' && ipa.slice(ipaIndex, ipaIndex + 3) === 'tʃː') {
-      // If "cc" is followed by 'i', map to 'tʃː', but don't map if after 'tʃː' certain vowels follow
-      if (lowerText[i + 2] === 'i' && !isFollowedByVowel(ipa, ipaIndex)) {
-        result.push(`cci(${ipaChar})`);  // Map 'cc' to 'tʃː' as "cci"
-        i += 2;  // Skip 'cc'
-        ipaIndex += 3;  // Skip 'tʃː'
+    // Check for 'tʃː' and apply the custom mapping if not followed by specific vowels
+    if (ipaChar === 't' && ipa[ipaIndex + 1] === 'ʃ' && ipa[ipaIndex + 2] === 'ː') {
+      if (!isFollowedByVowel(ipa, ipaIndex)) {
+        result.push(`cci(${ipaChar}ʃː)`);  // Map tʃː to cci
+        i += 3;  // Skip 'tʃː'
+        ipaIndex += 3;  // Skip the corresponding IPA characters
+        continue;
+      } else {
+        result.push(`${text.slice(i, i + 3)}(${ipaChar}ʃː)`);  // Keep as is if followed by vowels
+        i += 3;
+        ipaIndex += 3;
         continue;
       }
     }
 
-    // Default behavior for other predefined G2P mappings
+    // Check for predefined G2P mapping (e.g., bb -> bː, cc -> kː, etc.)
     const mappedIpa = g2pMappings[lowerText.slice(i, i + 2)];
     if (mappedIpa) {
       result.push(`${text.slice(i, i + 2)}(${mappedIpa})`);
-      i += 2;
-      ipaIndex += mappedIpa.length;
+      i += 2;  // Skip the next letter
+      ipaIndex += mappedIpa.length;  // Move IPA index forward
       continue;
     }
 
-    // Default processing of IPA characters
+    // Default behavior: Process the IPA character normally
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
       ipaIndex++;
       ipaChar = ipa[ipaIndex];
@@ -406,7 +409,7 @@ function applyG2PMapping(text, ipa) {
     i++;
   }
 
-  // Append any remaining characters from text without IPA mapping
+  // If anything left in text, append with empty IPA
   while (i < text.length) {
     result.push(`${text[i]}()`);
     i++;
@@ -414,6 +417,7 @@ function applyG2PMapping(text, ipa) {
 
   return result.join(' ');
 }
+
 
 </script>
 
@@ -425,7 +429,3 @@ function applyG2PMapping(text, ipa) {
 
 
  
-
-
-
-
