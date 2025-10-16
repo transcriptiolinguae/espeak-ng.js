@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>  
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -373,7 +373,7 @@ function applyG2PMapping(text, ipa) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
-    // Check if 'g' is followed by 'i', 'j', 'e', or 'ɛ' in the IPA output
+  // Check if 'g' is followed by 'i', 'j', 'e', or 'ɛ' in the IPA output
     if (letter === 'g' && (ipa[ipaIndex + 1] === 'i' || ipa[ipaIndex + 1] === 'j' || ipa[ipaIndex + 1] === 'e' || ipa[ipaIndex + 1] === 'ɛ')) {
       result.push(`gh(${ipaChar})`); // Map 'g' + 'i'/'j'/'e'/'ɛ' to 'gh(g)'
       i += 2;  // Skip the next letter (i/j/e/ɛ)
@@ -409,7 +409,7 @@ function applyG2PMapping(text, ipa) {
     i++;
   }
 
-  return result.join(' ');
+  return result.join('');
 }
 
 
@@ -420,6 +420,24 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
