@@ -380,11 +380,11 @@ function applyG2PMapping(text, ipa) {
       ipaIndex += 1;  // Skip the next two IPA characters (ˈ and the following character)
       continue;
     } else {
-    (letter === 'g' && (ipa[ipaIndex + 1] === 'i' || ipa[ipaIndex + 1] === 'j' || ipa[ipaIndex + 1] === 'e' || ipa[ipaIndex + 1] === 'ɛ')) {
+    if (letter === 'g' && (ipa[ipaIndex + 1] === 'i' || ipa[ipaIndex + 1] === 'j' || ipa[ipaIndex + 1] === 'e' || ipa[ipaIndex + 1] === 'ɛ')) {
       result.push(`gh(${ipaChar})`); // Map 'g' + 'ˈ' + ('i'/'j'/'e'/'ɛ') to 'gh(g)'
       i += 2;  // Skip the next two letters (ˈ and the following character)
       ipaIndex += 1;  // Skip the next IPA character
-      continue;
+      continue;}
     }
 
     // Check for predefined G2P mapping (e.g., bb -> bː, cc -> kː, etc.)
@@ -427,5 +427,6 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
