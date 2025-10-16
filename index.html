@@ -341,54 +341,48 @@ function applyG2PMapping(text, ipa) {
   let i = 0;
   const lowerText = text.toLowerCase();
 
-  // Define mappings for double consonants, including "zz"
-  const doubleConsonantMappings = {
+  // Predefined mappings for G2P
+  const g2pMappings = {
     "bb": "bː",
     "cc": "kː",
     "dd": "dː",
     "ff": "fː",
-    "ll": "lː",
-    "mm": "mː",
-    "nn": "nː",
-    "pp": "pː",
-    "qq": "kː",  // assuming qq maps to /kː/
+    "ll": "ː",   // Handling ll(ː) as per your example
+    "mm": "ː",   // Handling mm(ː)
+    "nn": "ː",   // Handling nn(ː)
+    "pp": "ː",   // Handling pp(ː)
+    "qq": "qq",  // No change for qq
     "rr": "rː",
     "ss": "sː",
     "tt": "tː",
     "gg": "dʒː",
-    "zz": "tsː",  // Special case for "zz" → "tsː"
+    "zz": "tsː",
+    "zz": "dzː"  // Handling zz for both tsː and dzː
   };
 
-  // Special handling for "zz" mapping
-  if (lowerText.startsWith("zz")) {
-    const matchInfo = startsWithIpa(ipa, "tsː");
-    if (matchInfo) {
-      result.push(`zz(${matchInfo.match})`);
-      i += 2; // Move ahead by "zz"
-      ipaIndex += matchInfo.len; // Move the IPA index accordingly
-      return result.join(''); // Return after applying the mapping
+  function startsWithIpa(ipa, pattern) {
+    const variations = [`${pattern}`, `ˈ${pattern}`, `ˌ${pattern}`, `\u200D${pattern}`, `ˈ\u200D${pattern}`, `\u200Dˈ${pattern}`];
+    for (const variant of variations) {
+      if (ipa.startsWith(variant)) return { match: variant, len: variant.length };
     }
+    return null;
   }
 
-  // Handle double consonant mappings directly for other cases
-  for (const [grapheme, phoneme] of Object.entries(doubleConsonantMappings)) {
-    if (lowerText.startsWith(grapheme)) {
-      const matchInfo = startsWithIpa(ipa, phoneme);
-      if (matchInfo) {
-        result.push(`${grapheme}(${matchInfo.match})`);
-        i += grapheme.length; // Move ahead by grapheme length
-        ipaIndex += matchInfo.len; // Move the IPA index accordingly
-        return result.join(''); // return once the mapping is applied
-      }
-    }
-  }
-
-  // Continue with the rest of the mapping logic
+  // Process the word-by-word logic
   while (i < text.length && ipaIndex < ipa.length) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
-    // Handle stress marks
+    // Check for predefined G2P mapping (e.g., bb -> bː, cc -> kː, etc.)
+    const mappedIpa = g2pMappings[lowerText.slice(i, i + 2)];
+    if (mappedIpa) {
+      result.push(`${text.slice(i, i + 2)}(${mappedIpa})`);
+      i += 2;  // Skip the next letter, since we just processed 2 chars
+      ipaIndex += mappedIpa.length;  // Move IPA index forward by the length of mapped IPA
+      continue;
+    }
+
+    // Default behavior: Process the IPA character normally
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
       ipaIndex++;
       ipaChar = ipa[ipaIndex];
@@ -410,8 +404,6 @@ function applyG2PMapping(text, ipa) {
   return result.join('');
 }
 
-
-
 </script>
 
 
@@ -419,6 +411,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
