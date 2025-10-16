@@ -361,11 +361,11 @@ function applyG2PMapping(text, ipa) {
     "zz": "dzː"  // Handling zz for both tsː and dzː
   };
 
-  // Check if 'tʃː' or 'dʒː' is followed by any of the specified vowels
+  // Check if the given IPA sequence is followed by a vowel
   function isFollowedByVowel(ipa, index) {
-    const following = ipa.slice(index + 2); // Skip 'ː' and check the following character
-    return following.startsWith('i') || following.startsWith('ˈi') || following.startsWith('j') || following.startsWith('ˈj') ||
-           following.startsWith('e') || following.startsWith('ˈe') || following.startsWith('ɛ') || following.startsWith('ˈɛ');
+    // We need to check after 'ː' in 'tʃː' or 'dʒː'
+    const following = ipa.slice(index + 3); // Skip 'tʃː' or 'dʒː' and check the following character
+    return /[iˈiʝˈeɛ]/.test(following[0]);  // Check if next character is 'i', 'j', 'e', or 'ɛ'
   }
 
   // Process the word-by-word logic
@@ -422,7 +422,6 @@ function applyG2PMapping(text, ipa) {
 }
 
 
-
 </script>
 
 
@@ -433,5 +432,6 @@ function applyG2PMapping(text, ipa) {
 
 
  
+
 
 
