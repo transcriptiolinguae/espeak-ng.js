@@ -184,7 +184,6 @@
       .replace(/t\u200D/g, 't')
       .replace(/d\u200D/g, 'd')
       .replace(/ɾ/g, 'r')
-      .replace(/ɪ/g, 'i')
       .replace(/oo/g, 'oː')
       .trim();
   }
@@ -360,10 +359,18 @@ function applyG2PMapping(text, ipa) {
     "zz": "dzː"  // Handling zz for both tsː and dzː
   };
 
+  function startsWithIpa(ipa, pattern) {
+    const variations = [`${pattern}`, `ˈ${pattern}`, `ˌ${pattern}`, `\u200D${pattern}`, `ˈ\u200D${pattern}`, `\u200Dˈ${pattern}`];
+    for (const variant of variations) {
+      if (ipa.startsWith(variant)) return { match: variant, len: variant.length };
+    }
+    return null;
+  }
+
   // Check if 'tʃː' or 'dʒː' is followed by any of the specified vowels
   function isFollowedByVowel(ipa, index) {
     const following = ipa.slice(index + 2); // Skip 'ː' and check the following character
-    return following.startsWith('i') || following.startsWith('ˈi') || following.startsWith('j') || following.startsWith('ˈj') || 
+    return following.startsWith('i') || following.startsWith('ˈi') || following.startsWith('j') || following.startsWith('ˈj') ||
            following.startsWith('e') || following.startsWith('ˈe') || following.startsWith('ɛ') || following.startsWith('ˈɛ');
   }
 
@@ -372,7 +379,21 @@ function applyG2PMapping(text, ipa) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
-    // Check for 'tʃː' (ch) and 'dʒː' (j) and apply the custom mapping if not followed by specific vowels
+        // Check if 'g' is followed by primary stress mark and 'i', 'j', 'e', or 'ɛ' in the IPA output
+    if (letter === 'g' && ipa[ipaIndex + 1] === 'ˈ' && (ipa[ipaIndex + 2] === 'i' || ipa[ipaIndex + 2] === 'j' || ipa[ipaIndex + 2] === 'e' || ipa[ipaIndex + 2] === 'ɛ')) {
+      result.push(`gh(${ipaChar})`); // Map 'g' + 'ˈ' + ('i'/'j'/'e'/'ɛ') to 'gh(g)'
+      i += 2;  // Skip the next two letters (ˈ and the following character)
+      ipaIndex += 1;  // Skip the next two IPA characters (ˈ and the following character)
+      continue;
+    } else {
+    if (letter === 'g' && (ipa[ipaIndex + 1] === 'i' || ipa[ipaIndex + 1] === 'j' || ipa[ipaIndex + 1] === 'e' || ipa[ipaIndex + 1] === 'ɛ')) {
+      result.push(`gh(${ipaChar})`); // Map 'g' + 'ˈ' + ('i'/'j'/'e'/'ɛ') to 'gh(g)'
+      i += 2;  // Skip the next two letters (ˈ and the following character)
+      ipaIndex += 1;  // Skip the next IPA character
+      continue;}
+    }
+
+    // Check for 'tʃː' or 'dʒː' and apply the custom mapping if not followed by specific vowels
     if (ipaChar === 't' && ipa[ipaIndex + 1] === 'ʃ' && ipa[ipaIndex + 2] === 'ː') {
       if (!isFollowedByVowel(ipa, ipaIndex)) {
         result.push(`cci(${ipaChar}ʃː)`);  // Map tʃː to cci
@@ -431,3 +452,4 @@ function applyG2PMapping(text, ipa) {
 </html>
 
 
+ 
