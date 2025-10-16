@@ -360,24 +360,41 @@ function applyG2PMapping(text, ipa) {
     "zz": "dzː"  // Handling zz for both tsː and dzː
   };
 
-  function startsWithIpa(ipa, pattern) {
-    const variations = [`${pattern}`, `ˈ${pattern}`, `ˌ${pattern}`, `\u200D${pattern}`, `ˈ\u200D${pattern}`, `\u200Dˈ${pattern}`];
-    for (const variant of variations) {
-      if (ipa.startsWith(variant)) return { match: variant, len: variant.length };
-    }
-    return null;
-  }
+  // List of valid IPA characters after tʃː and dʒː
+  const validNextChars = ['i', 'ˈi', 'j', 'ˈj', 'e', 'ˈe', 'ɛ', 'ˈɛ'];
 
   // Process the word-by-word logic
   while (i < text.length && ipaIndex < ipa.length) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
+    // Check if 'tʃː' is in IPA and check the following character
+    if (ipaChar === 't' && ipa[ipaIndex + 1] === 'ʃ' && ipa[ipaIndex + 2] === 'ː') {
+      const nextChar = ipa[ipaIndex + 3] + ipa[ipaIndex + 4]; // Check next two chars for stress and vowel
+      if (!validNextChars.includes(nextChar)) {
+        result.push(`cci(${ipaChar}${ipa[ipaIndex + 1]}${ipa[ipaIndex + 2]})`);
+        ipaIndex += 3; // Skip 'tʃː'
+        i += 1;
+        continue;
+      }
+    }
+
+    // Check if 'dʒː' is in IPA and check the following character
+    if (ipaChar === 'd' && ipa[ipaIndex + 1] === 'ʒ' && ipa[ipaIndex + 2] === 'ː') {
+      const nextChar = ipa[ipaIndex + 3] + ipa[ipaIndex + 4]; // Check next two chars for stress and vowel
+      if (!validNextChars.includes(nextChar)) {
+        result.push(`ggi(${ipaChar}${ipa[ipaIndex + 1]}${ipa[ipaIndex + 2]})`);
+        ipaIndex += 3; // Skip 'dʒː'
+        i += 1;
+        continue;
+      }
+    }
+
     // Check if 'g' is followed by primary stress mark and 'i', 'j', 'e', or 'ɛ' in the IPA output
     if (letter === 'g' && ipa[ipaIndex + 1] === 'ˈ' && (ipa[ipaIndex + 2] === 'i' || ipa[ipaIndex + 2] === 'j' || ipa[ipaIndex + 2] === 'e' || ipa[ipaIndex + 2] === 'ɛ')) {
       result.push(`gh(${ipaChar})`); // Map 'g' + 'ˈ' + ('i'/'j'/'e'/'ɛ') to 'gh(g)'
-      i += 2;  // Skip the next two letters (ˈ and the following character)
-      ipaIndex += 1;  // Skip the next two IPA characters (ˈ and the following character)
+      i += 3;  // Skip the next two letters (ˈ and the following character)
+      ipaIndex += 2;  // Skip the next two IPA characters (ˈ and the following character)
       continue;
     }
 
@@ -413,7 +430,6 @@ function applyG2PMapping(text, ipa) {
 }
 
 
-
 </script>
 
 
@@ -421,4 +437,5 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
