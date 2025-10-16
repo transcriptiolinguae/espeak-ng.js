@@ -1,4 +1,3 @@
-<!DOCTYPE html>  
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -368,31 +367,23 @@ function applyG2PMapping(text, ipa) {
     return null;
   }
 
-  // Check if we should apply the special 'cc' -> 'cci(tʃː)' or 'gg' -> 'ggi(dʒː)' logic
-  function shouldApplySpecialMapping(nextIpaChar) {
-    return !(nextIpaChar === 'i' || nextIpaChar === 'ˈi' || nextIpaChar === 'j' || nextIpaChar === 'ˈj' ||
-             nextIpaChar === 'e' || nextIpaChar === 'ˈe' || nextIpaChar === 'ɛ' || nextIpaChar === 'ˈɛ');
-  }
-
   // Process the word-by-word logic
   while (i < text.length && ipaIndex < ipa.length) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
-    // Check for 'cc' after tʃː (tʃː -> cci)
-    if (letter === 'c' && ipa[ipaIndex - 1] === 't' && ipa[ipaIndex - 2] === 'ʃ' && shouldApplySpecialMapping(ipa[ipaIndex + 1])) {
-      result.push(`cci(tʃː)`);
-      i += 1; // Skip 'c' and move to next character
-      ipaIndex += 1;  // Skip the IPA for 'c'
+    // Check if 'g' is followed by primary stress mark and 'i', 'j', 'e', or 'ɛ' in the IPA output
+    if (letter === 'g' && ipa[ipaIndex + 1] === 'ˈ' && (ipa[ipaIndex + 2] === 'i' || ipa[ipaIndex + 2] === 'j' || ipa[ipaIndex + 2] === 'e' || ipa[ipaIndex + 2] === 'ɛ')) {
+      result.push(`gh(${ipaChar})`); // Map 'g' + 'ˈ' + ('i'/'j'/'e'/'ɛ') to 'gh(g)'
+      i += 2;  // Skip the next two letters (ˈ and the following character)
+      ipaIndex += 1;  // Skip the next two IPA characters (ˈ and the following character)
       continue;
-    }
-
-    // Check for 'gg' after dʒː (dʒː -> ggi)
-    if (letter === 'g' && ipa[ipaIndex - 1] === 'd' && ipa[ipaIndex - 2] === 'ʒ' && shouldApplySpecialMapping(ipa[ipaIndex + 1])) {
-      result.push(`ggi(dʒː)`);
-      i += 1; // Skip 'g' and move to next character
-      ipaIndex += 1;  // Skip the IPA for 'g'
-      continue;
+    } else {
+    if (letter === 'g' && (ipa[ipaIndex + 1] === 'i' || ipa[ipaIndex + 1] === 'j' || ipa[ipaIndex + 1] === 'e' || ipa[ipaIndex + 1] === 'ɛ')) {
+      result.push(`gh(${ipaChar})`); // Map 'g' + 'ˈ' + ('i'/'j'/'e'/'ɛ') to 'gh(g)'
+      i += 2;  // Skip the next two letters (ˈ and the following character)
+      ipaIndex += 1;  // Skip the next IPA character
+      continue;}
     }
 
     // Check for predefined G2P mapping (e.g., bb -> bː, cc -> kː, etc.)
@@ -423,7 +414,7 @@ function applyG2PMapping(text, ipa) {
     i++;
   }
 
-  return result.join(' ');
+  return result.join('');
 }
 
 
@@ -437,5 +428,4 @@ function applyG2PMapping(text, ipa) {
 </html>
 
 
-
-
+ 
