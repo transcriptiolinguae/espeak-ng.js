@@ -360,9 +360,9 @@ function applyG2PMapping(text, ipa) {
     "zz": "dzː"  // Handling zz for both tsː and dzː
   };
 
-  // Helper function to check for specific vowels after 'tʃː' or 'dʒː'
+  // Helper function to check if the next IPA characters are vowels or similar
   function isFollowedByVowel(ipa, index) {
-    const following = ipa.slice(index + 2); // Skip 'ː' and check the following character
+    const following = ipa.slice(index + 3); // Skip 'ː' and check the following character after tʃː or dʒː
     return following.startsWith('i') || following.startsWith('ˈi') || following.startsWith('j') || following.startsWith('ˈj') ||
            following.startsWith('e') || following.startsWith('ˈe') || following.startsWith('ɛ') || following.startsWith('ˈɛ');
   }
@@ -372,7 +372,7 @@ function applyG2PMapping(text, ipa) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
-    // Check for 'tʃː' or 'dʒː' and apply the custom mapping if not followed by specific vowels
+    // Check for 'tʃː' and 'dʒː' and apply custom mapping if not followed by specific vowels
     if (ipaChar === 't' && ipa[ipaIndex + 1] === 'ʃ' && ipa[ipaIndex + 2] === 'ː') {
       if (!isFollowedByVowel(ipa, ipaIndex)) {
         result.push(`cci(${ipaChar}ʃː)`);  // Map tʃː to cci
@@ -431,5 +431,6 @@ function applyG2PMapping(text, ipa) {
 
 
  
+
 
 
