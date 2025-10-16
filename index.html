@@ -370,8 +370,8 @@ function applyG2PMapping(text, ipa) {
   // Check if 'tʃː' or 'dʒː' is followed by any of the specified vowels
   function isFollowedByVowel(ipa, index) {
     const following = ipa.slice(index + 2); // Skip 'ː' and check the following character
-    return following.startsWith('i') || following.startsWith('ˈi') || following.startsWith('j') || following.startsWith('ˈj') ||
-           following.startsWith('e') || following.startsWith('ˈe') || following.startsWith('ɛ') || following.startsWith('ˈɛ');
+    return following.startsWith('i') || following.startsWith('ˈi') || following.startsWith('j') || following.startsWith('ˈj') || following.startsWith('ˈɪ') ||
+           following.startsWith('ɪ') || following.startsWith('e') || following.startsWith('ˈe') || following.startsWith('ɛ') || following.startsWith('ˈɛ');
   }
 
   // Process the word-by-word logic
@@ -453,3 +453,4 @@ function applyG2PMapping(text, ipa) {
 
 
  
+
