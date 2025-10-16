@@ -127,120 +127,269 @@
   <button id="g2p">G2P</button>
   <pre id="output" class="placeholder">Trascrizione</pre>
 
-<script>
-  // Check for 'tʃː' or 'dʒː' and apply the custom mapping if not followed by specific vowels
+<script type="module">
+  import initESpeak from './espeak-ng.js';
+
+  const outputElem = document.getElementById('output');
+  const inputElem = document.getElementById('input');
+
+  let wasmReady = false;
+
+  window.addEventListener('load', async () => {
+    try {
+      await initESpeak({
+        print: () => {},
+        printErr: () => {}
+      });
+      wasmReady = true;
+      console.log('eSpeak NG WASM loaded and ready');
+    } catch (e) {
+      console.error('Error loading WASM:', e);
+      outputElem.classList.remove('placeholder');
+      outputElem.innerText = 'Error loading eSpeak WASM module.';
+    }
+  });
+
+  function printErrFiltered(err) {
+    if (
+      err.includes('still waiting on run dependencies') ||
+      err.includes('dependency: wasm-instantiate') ||
+      err.includes('(end of list)')
+    ) {
+      return;
+    }
+    console.error('eSpeak stderr:', err);
+  }
+
+  async function runESpeak(text) {
+    let ipaOutput = '';
+    await initESpeak({
+      arguments: ['-v', 'it', '--ipa=3', text],
+      print: (text) => {
+        ipaOutput += text;
+      },
+      printErr: printErrFiltered
+    });
+
+    return ipaOutput
+      .replace(/rɾ/g, 'rː')
+      .replace(/mm/g, 'mː')
+      .replace(/ff/g, 'fː')
+      .replace(/vv/g, 'vː')
+      .replace(/ll/g, 'lː')
+      .replace(/kk/g, 'kː')
+      .replace(/nn/g, 'nː')
+      .replace(/ɲɲ/g, 'ɲː')
+      .replace(/s\u200Ds/g, 'sː')
+      .replace(/ss/g, 'sː')
+      .replace(/t\u200D/g, 't')
+      .replace(/d\u200D/g, 'd')
+      .replace(/ɾ/g, 'r')
+      .replace(/ɪ/g, 'i')
+      .replace(/oo/g, 'oː')
+      .trim();
+  }
+
+  function showPlaceholder() {
+    outputElem.className = 'placeholder';
+    outputElem.innerText = 'Trascrizione';
+  }
+
+  function showProgressPlaceholder() {
+    outputElem.className = 'placeholder';
+    outputElem.innerText = 'Trascrizione in corso...';
+  }
+
+  function setOutput(text) {
+    outputElem.classList.remove('placeholder');
+    outputElem.innerText = text;
+  }
+
+  // AFI button
+  document.getElementById('convert').addEventListener('click', async () => {
+    showPlaceholder();
+
+    if (!wasmReady) {
+      alert('Please wait, WASM is still loading...');
+      return;
+    }
+
+    const rawInput = inputElem.value.trim();
+    if (!rawInput) {
+      showPlaceholder();
+      return;
+    }
+
+    const markedInput = rawInput.replace(/\s+/g, '|');
+
+    try {
+      const ipa = await runESpeak(markedInput);
+      setOutput(ipa.replace(/\|/g, ' ') || '[No output generated]');
+    } catch (e) {
+      setOutput('Error during transcription: ' + e.message);
+    }
+  });
+
+  // Testo e AFI button
+  document.getElementById('convertInline').addEventListener('click', async () => {
+    showProgressPlaceholder();
+
+    if (!wasmReady) {
+      alert('Please wait, WASM is still loading...');
+      return;
+    }
+
+    const rawInput = inputElem.value.trim();
+    if (!rawInput) {
+      showPlaceholder();
+      return;
+    }
+
+    const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+    if (!tokens) {
+      setOutput('[No valid input]');
+      return;
+    }
+
+    const ipaMap = new Map();
+    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+
+    try {
+      for (const word of uniqueWords) {
+        const ipa = await runESpeak(word);
+        ipaMap.set(word, ipa);
+      }
+    } catch (e) {
+      console.error('Error during IPA conversion:', e);
+    }
+
+    const result = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+
+      if (i > 0) {
+        const prev = tokens[i - 1];
+        if (![')', ',', '.', ';', ':', '!', '?'].includes(token) && prev !== '(') {
+          result.push(' ');
+        }
+      }
+
+      if (isWord) {
+        const ipa = ipaMap.get(token) || '';
+        result.push(`${token} (${ipa})`);
+      } else {
+        result.push(token);
+      }
+    }
+
+    setOutput(result.join(''));
+  });
+
+  // G2P button
+  document.getElementById('g2p').addEventListener('click', async () => {
+    showProgressPlaceholder();
+
+    if (!wasmReady) {
+      alert('Please wait, WASM is still loading...');
+      return;
+    }
+
+    const rawInput = inputElem.value.trim();
+    if (!rawInput) {
+      showPlaceholder();
+      return;
+    }
+
+    const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+    if (!tokens) {
+      setOutput('[No valid input]');
+      return;
+    }
+
+    const ipaMap = new Map();
+    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+
+    try {
+      for (const word of uniqueWords) {
+        const ipa = await runESpeak(word);
+        ipaMap.set(word, ipa);
+      }
+    } catch (e) {
+      console.error('Error during IPA conversion:', e);
+    }
+
+    const g2pOutput = [];
+
+    for (const token of tokens) {
+      const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+
+      if (isWord) {
+        const ipa = ipaMap.get(token) || '';
+        const g2pMapped = applyG2PMapping(token, ipa);
+        g2pOutput.push(g2pMapped);
+      } else {
+        g2pOutput.push(token);
+      }
+    }
+
+    setOutput(g2pOutput.join(' '));
+  });
+
+function applyG2PMapping(text, ipa) {
+  const result = [];
+  let ipaIndex = 0;
+  let i = 0;
+  const lowerText = text.toLowerCase();
+
+  // Check if "i" follows "cc" or "gg" in the original text
+  function followsCcGgWithI(originalText) {
+    const ccGgRegex = /(cc|gg)(i)/;
+    return ccGgRegex.test(originalText);
+  }
+
+  // Check if 'tʃː' or 'dʒː' is followed by any of the specified vowels
   function isFollowedByVowel(ipa, index) {
-    const following = ipa.slice(index + 3); // Skip 'ː' and check the following characters (3 because 'tʃː' is 3 chars long)
+    const following = ipa.slice(index + 2); // Skip 'ː' and check the following character
     return following.startsWith('i') || following.startsWith('ˈi') || following.startsWith('j') || following.startsWith('ˈj');
   }
 
   // Process the word-by-word logic
-  function applyG2PMapping(text, ipa) {
-    const result = [];
-    let ipaIndex = 0;
-    let i = 0;
-    const lowerText = text.toLowerCase();
+  while (i < text.length && ipaIndex < ipa.length) {
+    const letter = text[i];
+    let ipaChar = ipa[ipaIndex];
 
-    // Predefined mappings for G2P
-    const g2pMappings = {
-      "bb": "bː",
-      "cc": "kː",
-      "dd": "dː",
-      "ff": "fː",
-      "ll": "ː",   // Handling ll(ː) as per your example
-      "mm": "ː",   // Handling mm(ː)
-      "nn": "ː",   // Handling nn(ː)
-      "pp": "ː",   // Handling pp(ː)
-      "qq": "qq",  // No change for qq
-      "rr": "rː",
-      "ss": "sː",
-      "tt": "tː",
-      "gg": "dʒː",
-      "zz": "tsː",
-      "zz": "dzː"  // Handling zz for both tsː and dzː
-    };
-
-    function startsWithIpa(ipa, pattern) {
-      const variations = [`${pattern}`, `ˈ${pattern}`, `ˌ${pattern}`, `\u200D${pattern}`, `ˈ\u200D${pattern}`, `\u200Dˈ${pattern}`];
-      for (const variant of variations) {
-        if (ipa.startsWith(variant)) return { match: variant, len: variant.length };
-      }
-      return null;
-    }
-
-    // Process the word-by-word logic
-    while (i < text.length && ipaIndex < ipa.length) {
-      const letter = text[i];
-      let ipaChar = ipa[ipaIndex];
-
-      // Check for 'g' followed by primary stress mark and 'i', 'j', 'e', or 'ɛ' in the IPA output
-      if (letter === 'g' && ipa[ipaIndex + 1] === 'ˈ' && (ipa[ipaIndex + 2] === 'i' || ipa[ipaIndex + 2] === 'j' || ipa[ipaIndex + 2] === 'e' || ipa[ipaIndex + 2] === 'ɛ')) {
-        result.push(`gh(${ipaChar})`); // Map 'g' + 'ˈ' + ('i'/'j'/'e'/'ɛ') to 'gh(g)'
-        i += 2;  // Skip the next two letters (ˈ and the following character)
-        ipaIndex += 1;  // Skip the next two IPA characters (ˈ and the following character)
-        continue;
-      } else if (letter === 'g' && (ipa[ipaIndex + 1] === 'i' || ipa[ipaIndex + 1] === 'j' || ipa[ipaIndex + 1] === 'e' || ipa[ipaIndex + 1] === 'ɛ')) {
-        result.push(`gh(${ipaChar})`); // Map 'g' + 'ˈ' + ('i'/'j'/'e'/'ɛ') to 'gh(g)'
-        i += 2;  // Skip the next two letters (ˈ and the following character)
-        ipaIndex += 1;  // Skip the next IPA character
+    // Check for 'tʃː' or 'dʒː' and apply the custom mapping if not followed by specific vowels
+    if (ipaChar === 't' && ipa[ipaIndex + 1] === 'ʃ' && ipa[ipaIndex + 2] === 'ː') {
+      // Only map to 'cci(tʃː)' if "i" follows "cc" in the original text and not followed by i/j in IPA
+      if (!isFollowedByVowel(ipa, ipaIndex) && followsCcGgWithI(text)) {
+        result.push(`cci(${ipaChar}ʃː)`);  // Map tʃː to cci
+        i += 3;  // Skip 'tʃː'
+        ipaIndex += 3;  // Skip the corresponding IPA characters
         continue;
       }
-
-      // Check for 'tʃː' or 'dʒː' and apply the custom mapping if not followed by specific vowels
-      if (ipaChar === 't' && ipa[ipaIndex + 1] === 'ʃ' && ipa[ipaIndex + 2] === 'ː') {
-        if (!isFollowedByVowel(ipa, ipaIndex)) {
-          result.push(`cci(${ipaChar}ʃː)`);  // Map tʃː to cci
-          i += 3;  // Skip 'tʃː'
-          ipaIndex += 3;  // Skip the corresponding IPA characters
-          continue;
-        }
-      } else if (ipaChar === 'd' && ipa[ipaIndex + 1] === 'ʒ' && ipa[ipaIndex + 2] === 'ː') {
-        if (!isFollowedByVowel(ipa, ipaIndex)) {
-          result.push(`ggi(${ipaChar}ʒː)`);  // Map dʒː to ggi
-          i += 3;  // Skip 'dʒː'
-          ipaIndex += 3;  // Skip the corresponding IPA characters
-          continue;
-        }
-      }
-
-      // Check for predefined G2P mapping (e.g., bb -> bː, cc -> kː, etc.)
-      const mappedIpa = g2pMappings[lowerText.slice(i, i + 2)];
-      if (mappedIpa) {
-        result.push(`${text.slice(i, i + 2)}(${mappedIpa})`);
-        i += 2;  // Skip the next letter, since we just processed 2 chars
-        ipaIndex += mappedIpa.length;  // Move IPA index forward by the length of mapped IPA
+    } else if (ipaChar === 'd' && ipa[ipaIndex + 1] === 'ʒ' && ipa[ipaIndex + 2] === 'ː') {
+      // Only map to 'ggi(dʒː)' if "i" follows "gg" in the original text and not followed by i/j in IPA
+      if (!isFollowedByVowel(ipa, ipaIndex) && followsCcGgWithI(text)) {
+        result.push(`ggi(${ipaChar}ʒː)`);  // Map dʒː to ggi
+        i += 3;  // Skip 'dʒː'
+        ipaIndex += 3;  // Skip the corresponding IPA characters
         continue;
       }
-
-      // Default behavior: Process the IPA character normally
-      if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
-        ipaIndex++;
-        ipaChar = ipa[ipaIndex];
-        result.push(`${letter}('${ipaChar})`);
-      } else {
-        result.push(`${letter}(${ipaChar})`);
-      }
-
-      ipaIndex++;
-      i++;
     }
 
-    // If anything left in text, append with empty IPA
-    while (i < text.length) {
-      result.push(`${text[i]}()`);
-      i++;
-    }
-
-    return result.join('');
+    // Process the IPA normally if no mapping
+    result.push(`${letter}(${ipaChar})`);
+    ipaIndex++;
+    i++;
   }
 
-  // Test the function with example input
-  const text = "Check the transcription for tʃː and dʒː";
-  const ipa = "tʃːɛk ðə trænsˈkrɪpʃən fɔː dʒː";
-  console.log(applyG2PMapping(text, ipa));
+  return result.join('');
+}
+
+
 
 </script>
-
 
 
 
@@ -250,6 +399,3 @@
 
 
  
-
-
-
