@@ -381,6 +381,14 @@ function applyG2PMapping(text, ipa) {
       continue;
     }
 
+        // Check if 'g' is followed by 'i' or 'j' in the IPA output
+    if (letter === 'g' && (ipa[ipaIndex + 1] === 'e' || ipa[ipaIndex + 1] === 'ɛ')) {
+      result.push(`gh(${ipaChar})`); // Map 'g' + 'i'/'j' to 'gh(g)'
+      i += 2;  // Skip the next letter (i or j)
+      ipaIndex += 2;  // Skip the next IPA character (i or j)
+      continue;
+    }
+
     // Check for predefined G2P mapping (e.g., bb -> bː, cc -> kː, etc.)
     const mappedIpa = g2pMappings[lowerText.slice(i, i + 2)];
     if (mappedIpa) {
@@ -420,6 +428,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
