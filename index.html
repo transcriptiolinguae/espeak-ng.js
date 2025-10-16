@@ -341,7 +341,7 @@ function applyG2PMapping(text, ipa) {
   let i = 0;
   const lowerText = text.toLowerCase();
 
-  // Define mappings for double consonants
+  // Define mappings for double consonants, including "zz"
   const doubleConsonantMappings = {
     "bb": "bː",
     "cc": "kː",
@@ -356,11 +356,21 @@ function applyG2PMapping(text, ipa) {
     "ss": "sː",
     "tt": "tː",
     "gg": "dʒː",
-    "zz": "tsː",
-    "zz": "dzː" // For the "zz" sound having two possible mappings
+    "zz": "tsː",  // Special case for "zz" → "tsː"
   };
 
-  // Handle double consonant mappings directly
+  // Special handling for "zz" mapping
+  if (lowerText.startsWith("zz")) {
+    const matchInfo = startsWithIpa(ipa, "tsː");
+    if (matchInfo) {
+      result.push(`zz(${matchInfo.match})`);
+      i += 2; // Move ahead by "zz"
+      ipaIndex += matchInfo.len; // Move the IPA index accordingly
+      return result.join(''); // Return after applying the mapping
+    }
+  }
+
+  // Handle double consonant mappings directly for other cases
   for (const [grapheme, phoneme] of Object.entries(doubleConsonantMappings)) {
     if (lowerText.startsWith(grapheme)) {
       const matchInfo = startsWithIpa(ipa, phoneme);
@@ -409,6 +419,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
