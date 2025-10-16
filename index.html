@@ -376,8 +376,8 @@ function applyG2PMapping(text, ipa) {
     // Check if 'g' is followed by primary stress mark and 'i', 'j', 'e', or 'ɛ' in the IPA output
     if (letter === 'g' && ipa[ipaIndex + 1] === 'ˈ' && (ipa[ipaIndex + 2] === 'i' || ipa[ipaIndex + 2] === 'j' || ipa[ipaIndex + 2] === 'e' || ipa[ipaIndex + 2] === 'ɛ')) {
       result.push(`gh(${ipaChar})`); // Map 'g' + 'ˈ' + ('i'/'j'/'e'/'ɛ') to 'gh(g)'
-      i += 3;  // Skip the next two letters (ˈ and the following character)
-      ipaIndex += 2;  // Skip the next two IPA characters (ˈ and the following character)
+      i += 2;  // Skip the next two letters (ˈ and the following character)
+      ipaIndex += 1;  // Skip the next two IPA characters (ˈ and the following character)
       continue;
     }
 
@@ -421,3 +421,4 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
