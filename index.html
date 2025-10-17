@@ -470,9 +470,6 @@ function applyG2PMapping(text, ipa) {
       } else {
         result.push(`${letter}(tʃ)`); // Map as c(tʃ)
       }
-    } else {
-      // If no stress or "ci" mapping, just push the letter with its IPA character
-      result.push(`${letter}(${ipaChar})`);
     }
     
     ipaIndex++;
@@ -506,6 +503,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
