@@ -371,7 +371,10 @@ function applyG2PMapping(text, ipa) {
           i += 2; // Skip past "ci"
           ipaIndex += 2; // Skip past the "tʃ" in IPA
           continue; // Skip the rest of the processing for this "ci"
-        }
+        } else {
+      // If no stress or "ci" mapping, just push the letter with its IPA character
+      result.push(`${letter}(${ipaChar})`);
+    }
       }
     }
 
@@ -391,5 +394,6 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
