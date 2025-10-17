@@ -363,7 +363,7 @@ function applyG2PMapping(text, ipa) {
     if (i + 1 < text.length && lowerText[i] === 'c' && lowerText[i + 1] === 'i') {
       // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
       if (ipa[ipaIndex] === 't' && ipa[ipaIndex + 1] === 'ʃ') {
-        const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4); // Check the next two IPA chars
+        const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 3); // Check the next two IPA chars
 
         if (!/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
           // map "ci" with "tʃ" to "ci(tʃ)"
@@ -377,7 +377,7 @@ function applyG2PMapping(text, ipa) {
 
     // If "c" followed by "tʃ" in IPA
     if (ipa[ipaIndex] === 't' && ipa[ipaIndex + 1] === 'ʃ') {
-      const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4); // Check the next IPA chars
+      const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 3); // Check the next IPA chars
 
       if (/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is followed by "i", "ˈi", "j", or "ˈj"
         result.push(`${letter}(tʃ)`); // map c(tʃ)
@@ -406,3 +406,4 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
