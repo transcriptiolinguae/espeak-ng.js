@@ -351,12 +351,18 @@ while (i < text.length && ipaIndex < ipa.length) {
     // Check if "tʃ" in IPA is followed by "i", "ˈi", "j", or "ˈj"
     const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4); // Check next two IPA chars
 
-    if (!/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
-      // Replace "ci" with "tʃ"
+    if (/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is followed by those sounds
+      // Replace "ci" with "tʃ" in the result
       result.push(`${text.slice(i, i + 2)}(tʃ)`);
       i += 2; // Skip past "ci"
       ipaIndex += 2; // Skip corresponding IPA
       continue; // Skip the rest of the processing for this "ci"
+    } else {
+      // If "tʃ" is not followed by those sounds, continue processing normally
+      result.push(`${text.slice(i, i + 2)}(ci)`); // This keeps the "ci" mapping as is
+      i += 2; // Skip past "ci"
+      ipaIndex += 2; // Skip corresponding IPA
+      continue;
     }
   }
 
@@ -367,9 +373,6 @@ while (i < text.length && ipaIndex < ipa.length) {
     ipaIndex++;
     ipaChar = ipa[ipaIndex];
     result.push(`${letter}('${ipaChar})`);
-  } else if (ipaChar === 'tʃ') {
-    // If we find "tʃ" in IPA, map it to c(tʃ)
-    result.push(`${letter}(tʃ)`);
   } else {
     result.push(`${letter}(${ipaChar})`);
   }
@@ -380,6 +383,7 @@ while (i < text.length && ipaIndex < ipa.length) {
 
 return result.join('');
 
+
 }
 </script>
 
@@ -388,6 +392,7 @@ return result.join('');
 
 </body>
 </html>
+
 
 
 
