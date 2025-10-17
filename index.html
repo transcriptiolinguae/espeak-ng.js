@@ -362,6 +362,7 @@ function applyG2PMapping(text, ipa) {
     "zz": "dzː"  // Handling zz for both tsː and dzː
   };
 
+  // Function to check for IPA patterns with stress
   function startsWithIpa(ipa, pattern) {
     const variations = [`${pattern}`, `ˈ${pattern}`, `ˌ${pattern}`, `\u200D${pattern}`, `ˈ\u200D${pattern}`, `\u200Dˈ${pattern}`];
     for (const variant of variations) {
@@ -384,11 +385,11 @@ function applyG2PMapping(text, ipa) {
 
     // Handle stress marks (ˈ or ˌ) in IPA
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
-      ipaIndex++; // Move to the next character (the stressed character)
+      ipaIndex++; // Skip stress mark and move to next IPA character
       ipaChar = ipa[ipaIndex];
-      result.push(`${letter}('${ipaChar})`); // Map the letter with the stress mark
-      ipaIndex++; // Skip past the stressed character
-      i++; // Move to the next letter in the text
+      result.push(`${letter}('${ipaChar})`); // Add stress mark
+      ipaIndex++; // Skip the stressed character
+      i++; // Move to next letter in the text
       continue;
     }
 
@@ -397,7 +398,7 @@ function applyG2PMapping(text, ipa) {
       if (ipa[ipaIndex] === 't' && ipa[ipaIndex + 1] === 'ʃ') {
         const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4); // Check next IPA chars
         if (!/i|ˈi|j|ˈj/.test(nextIpa)) {
-          result.push(`${letter}${text[i + 1]}(tʃ)`); // Map "ci" with "tʃ" to "ci(tʃ)"
+          result.push(`${letter}${text[i + 1]}(tʃ)`); // Map "ci" to "tʃ"
           i += 2;
           ipaIndex += 2;
           continue;
@@ -409,10 +410,11 @@ function applyG2PMapping(text, ipa) {
     if (ipa[ipaIndex] === 't' && ipa[ipaIndex + 1] === 'ʃ') {
       const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4);
       if (/i|ˈi|j|ˈj/.test(nextIpa)) {
-        result.push(`${letter}(tʃ)`); // map c(tʃ)
-        ipaIndex++;
+        result.push(`${letter}(tʃ)`); // Map c(tʃ)
+        ipaIndex += 2; // Skip 'ʃ'
       } else {
-        result.push(`${letter}(tʃ)`); // map c(tʃ)
+        result.push(`${letter}(tʃ)`); // Map c(tʃ)
+        ipaIndex++; // Skip 't'
       }
     }
 
@@ -474,7 +476,6 @@ function applyG2PMapping(text, ipa) {
 
 
 
-
 </script>
 
 
@@ -482,6 +483,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
