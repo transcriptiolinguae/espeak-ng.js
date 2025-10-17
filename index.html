@@ -186,6 +186,7 @@
       .replace(/d\u200D/g, 'd')
       .replace(/ɾ/g, 'r')
       .replace(/ɪ/g, 'i')
+      .replace(/ʊ/g, 'u')      
       .replace(/oo/g, 'oː')
       .trim();
   }
@@ -357,7 +358,7 @@ function applyG2PMapping(text, ipa) {
     "rr": "rː",
     "ss": "sː",
     "tt": "tː",
-    "gg": "dʒː",
+    "gg": "dʒː",  
     "zz": "tsː",
     "zz": "dzː"  // Handling zz for both tsː and dzː
   };
