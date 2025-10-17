@@ -346,7 +346,7 @@ function applyG2PMapping(text, ipa) {
   const g2pMappings = {
     "bb": "bː",
     "cc": "kː",
-    "cc": "tʃː",
+    "cc": "tʃː", // Handling cc separately as it's used in both mappings
     "dd": "dː",
     "ff": "fː",
     "ll": "ː",   // Handling ll(ː) as per your example
@@ -362,6 +362,7 @@ function applyG2PMapping(text, ipa) {
     "zz": "dzː"  // Handling zz for both tsː and dzː
   };
 
+  // Function to check for IPA patterns with stress
   function startsWithIpa(ipa, pattern) {
     const variations = [`${pattern}`, `ˈ${pattern}`, `ˌ${pattern}`, `\u200D${pattern}`, `ˈ\u200D${pattern}`, `\u200Dˈ${pattern}`];
     for (const variant of variations) {
@@ -398,9 +399,9 @@ function applyG2PMapping(text, ipa) {
         const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4); // Check next IPA chars
         if (!/i|ˈi|j|ˈj/.test(nextIpa)) {
           result.push(`${letter}${text[i + 1]}(tʃ)`); // Map "ci" with "tʃ" to "ci(tʃ)"
-          i += 2;
+          i += 2; // Move both text and IPA indices forward by 2
           ipaIndex += 2;
-          continue;
+          continue; // Skip the rest of the loop and process the next pair of characters
         }
       }
     }
@@ -409,10 +410,11 @@ function applyG2PMapping(text, ipa) {
     if (ipa[ipaIndex] === 't' && ipa[ipaIndex + 1] === 'ʃ') {
       const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4);
       if (/i|ˈi|j|ˈj/.test(nextIpa)) {
-        result.push(`${letter}(tʃ)`); // map c(tʃ)
-        ipaIndex++;
+        result.push(`${letter}(tʃ)`); // map c(tʃ) when followed by i, j, e
+        ipaIndex += 2; // Skip 'tʃ' in IPA
       } else {
-        result.push(`${letter}(tʃ)`); // map c(tʃ)
+        result.push(`${letter}(tʃ)`); // map c(tʃ) normally
+        ipaIndex += 2; // Skip 'tʃ' in IPA
       }
     }
 
@@ -474,7 +476,6 @@ function applyG2PMapping(text, ipa) {
 
 
 
-
 </script>
 
 
@@ -482,6 +483,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
