@@ -359,15 +359,9 @@ function applyG2PMapping(text, ipa) {
     "ss": "sː",
     "tt": "tː",
     "gg": "dʒː",  
+    "zz": "tsː",
+    "zz": "dzː"  // Handling zz for both tsː and dzː
   };
-
-    // Handle custom mappings for "tsː" and "dzː"
-  if (ipa.includes("tsː")) {
-    ipa = ipa.replace(/tsː/g, "zz(tsː)");
-  }
-  if (ipa.includes("dzː")) {
-    ipa = ipa.replace(/dzː/g, "zz(dzː)");
-  }
 
   function startsWithIpa(ipa, pattern) {
     const variations = [`${pattern}`, `ˈ${pattern}`, `ˌ${pattern}`, `\u200D${pattern}`, `ˈ\u200D${pattern}`, `\u200Dˈ${pattern}`];
@@ -460,7 +454,6 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
-
 
 
 
