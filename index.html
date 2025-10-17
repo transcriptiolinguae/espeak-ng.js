@@ -335,56 +335,49 @@
     setOutput(g2pOutput.join(' '));
   });
 
-function applyG2PMapping(text, ipa) {
+function applyG2PMapping(text, ipa) {  
   const result = [];
   let ipaIndex = 0;
   let i = 0;
   const lowerText = text.toLowerCase();
 
-// Iterate through the text
-while (i < text.length && ipaIndex < ipa.length) {
-  const letter = text[i];
-  let ipaChar = ipa[ipaIndex];
+  // Iterate through the text
+  while (i < text.length && ipaIndex < ipa.length) {
+    const letter = text[i];
+    let ipaChar = ipa[ipaIndex];
 
-  // Look for "ci" in the original text
-  if (i + 1 < text.length && lowerText[i] === 'c' && lowerText[i + 1] === 'i') {
-    // Check if "tʃ" in IPA is followed by "i", "ˈi", "j", or "ˈj"
-    const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4); // Check next two IPA chars
+    // Look for "ci" in the original text
+    if (i + 1 < text.length && lowerText[i] === 'c' && lowerText[i + 1] === 'i') {
+      // Check if "tʃ" in IPA is followed by "i", "ˈi", "j", or "ˈj"
+      const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4); // Check next two IPA chars
 
-    if (/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is followed by those sounds
-      // Replace "ci" with "tʃ" in the result
-      result.push(`${text.slice(i, i + 2)}(tʃ)`);
-      i += 2; // Skip past "ci"
-      ipaIndex += 2; // Skip corresponding IPA
-      continue; // Skip the rest of the processing for this "ci"
-    } else {
-      // If "tʃ" is not followed by those sounds, continue processing normally
-      result.push(`${text.slice(i, i + 2)}(ci)`); // This keeps the "ci" mapping as is
-      i += 2; // Skip past "ci"
-      ipaIndex += 2; // Skip corresponding IPA
-      continue;
+      if (!/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
+        // Map "ci" with "tʃ" to "ci(tʃ)"
+        result.push(`${letter}${text[i + 1]}(tʃ)`);  // Add ci(tʃ) to the result
+        i += 2; // Skip past "ci"
+        ipaIndex += 2; // Skip corresponding IPA
+        continue; // Skip the rest of the processing for this "ci"
+      }
     }
-  }
 
-  // If not "ci", or it's already handled, continue processing
-  if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
-    // Handle stress marks in IPA
-    const stress = ipaChar;
+    // If not "ci", or it's already handled, continue processing
+    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
+      // Handle stress marks in IPA
+      const stress = ipaChar;
+      ipaIndex++;
+      ipaChar = ipa[ipaIndex];
+      result.push(`${letter}('${ipaChar})`);
+    } else {
+      result.push(`${letter}(${ipaChar})`);
+    }
+
     ipaIndex++;
-    ipaChar = ipa[ipaIndex];
-    result.push(`${letter}('${ipaChar})`);
-  } else {
-    result.push(`${letter}(${ipaChar})`);
+    i++;
   }
 
-  ipaIndex++;
-  i++;
+  return result.join('');
 }
 
-return result.join('');
-
-
-}
 </script>
 
 
@@ -392,6 +385,7 @@ return result.join('');
 
 </body>
 </html>
+
 
 
 
