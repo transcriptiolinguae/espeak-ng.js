@@ -377,9 +377,6 @@ function applyG2PMapping(text, ipa) {
       result.push(`${letter}(${ipaChar})`);
     }
 
-    ipaIndex++;
-    i++;
-  }
 
       // If not "ci", or it's already handled, continue processing
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
@@ -392,6 +389,10 @@ function applyG2PMapping(text, ipa) {
       result.push(`${letter}(${ipaChar})`);
     }
 
+    ipaIndex++;
+    i++;
+  }
+
   return result.join('');
 }
 
@@ -402,6 +403,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
