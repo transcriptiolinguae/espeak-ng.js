@@ -377,24 +377,13 @@ function applyG2PMapping(text, ipa) {
       result.push(`${letter}(${ipaChar})`);
     }
 
-
-      // If not "ci", or it's already handled, continue processing
-    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
-      // Handle stress marks in IPA
-      const stress = ipaChar;
-      ipaIndex++;
-      ipaChar = ipa[ipaIndex];
-      result.push(`${letter}('${ipaChar})`);
-    } else {
-      result.push(`${letter}(${ipaChar})`);
-    }
-
     ipaIndex++;
     i++;
   }
 
   return result.join('');
 }
+
 
 </script>
 
@@ -403,6 +392,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
