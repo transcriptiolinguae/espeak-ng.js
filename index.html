@@ -365,7 +365,7 @@ function applyG2PMapping(text, ipa) {
       if (ipa[ipaIndex] === 't' && ipa[ipaIndex + 1] === 'ʃ') {
         const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4); // Check the next two IPA chars
 
-        if (/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is followed by those sounds
+        if (!/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
           // map "ci" with "tʃ" to "ci(tʃ)"
           result.push(`${letter}${text[i + 1]}(tʃ)`);
           i += 2; // Skip past "ci"
@@ -390,11 +390,11 @@ function applyG2PMapping(text, ipa) {
       result.push(`${letter}(${ipaChar})`);
     }
 
-    ipaIndex++;
+    ipaIndex+++;
     i++;
   }
 
-  return result.join(' ');
+  return result.join('');
 }
 
 
