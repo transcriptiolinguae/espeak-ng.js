@@ -346,6 +346,19 @@ function applyG2PMapping(text, ipa) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
+    // Handle stress marks (ˈ or ˌ) in IPA
+    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
+      // Store the stress mark (primary or secondary)
+      const stress = ipaChar;
+      ipaIndex++; // Move to the next character (the stressed character)
+      ipaChar = ipa[ipaIndex]; // Get the stressed character
+
+      result.push(`${letter}('${ipaChar})`); // Map the letter with the stress mark
+      ipaIndex++; // Skip past the stressed character
+      i++; // Move to the next letter in the text
+      continue;
+    }
+
     // Look for "ci" in the original text
     if (i + 1 < text.length && lowerText[i] === 'c' && lowerText[i + 1] === 'i') {
       // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
@@ -373,7 +386,7 @@ function applyG2PMapping(text, ipa) {
         result.push(`${letter}(tʃ)`); // Map as c(tʃ)
       }
     } else {
-      // If not "ci", or it's already handled, continue processing
+      // If no stress or "ci" mapping, just push the letter with its IPA character
       result.push(`${letter}(${ipaChar})`);
     }
 
@@ -385,6 +398,7 @@ function applyG2PMapping(text, ipa) {
 }
 
 
+
 </script>
 
 
@@ -392,6 +406,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
