@@ -336,7 +336,7 @@
     setOutput(g2pOutput.join(' '));
   });
 
-function applyG2PMapping(text, ipa) {        
+function applyG2PMapping(text, ipa) {
   const result = [];
   let ipaIndex = 0;
   let i = 0;
@@ -384,7 +384,6 @@ function applyG2PMapping(text, ipa) {
 
     // Handle stress marks (ˈ or ˌ) in IPA
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
-      const stress = ipaChar;
       ipaIndex++; // Move to the next character (the stressed character)
       ipaChar = ipa[ipaIndex];
       result.push(`${letter}('${ipaChar})`); // Map the letter with the stress mark
@@ -483,6 +482,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
