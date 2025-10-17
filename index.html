@@ -1,3 +1,18 @@
+Skip to content
+ 
+Search Gists
+Search...
+All gists
+Back to GitHub
+@transcriptiolinguae
+transcriptiolinguae/NOT-Capital-C-stays.txt Secret
+Last active 36 minutes ago
+Code
+Revisions
+8
+Clone this repository at &lt;script src=&quot;https://gist.github.com/transcriptiolinguae/56ba3ee3ba24e7a61f64b0a757c4f235.js&quot;&gt;&lt;/script&gt;
+<script src="https://gist.github.com/transcriptiolinguae/56ba3ee3ba24e7a61f64b0a757c4f235.js"></script>
+NOT-Capital-C-stays.txt
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -348,7 +363,8 @@ function applyG2PMapping(text, ipa) {
 
     // Handle stress marks (ˈ or ˌ) in IPA
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
-      const stress = ipaChar; // Store the stress mark (primary or secondary)
+      // Store the stress mark (primary or secondary)
+      const stress = ipaChar;
       ipaIndex++; // Move to the next character (the stressed character)
       ipaChar = ipa[ipaIndex]; // Get the stressed character
 
@@ -360,42 +376,32 @@ function applyG2PMapping(text, ipa) {
 
     // Look for "ci" in the original text
     if (i + 1 < text.length && lowerText[i] === 'c' && lowerText[i + 1] === 'i') {
-      // "ci" is mapped to "tʃ" in Italian (as in "Cicatrice")
-      result.push(`${letter}${text[i + 1]}(tʃ)`); // Map "ci" to "tʃ"
-      i += 2; // Skip past "ci"
-      ipaIndex += 1; // Skip the IPA character for "i"
-      continue; // Skip the rest of the processing for this "ci"
-    }
+      // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
+      if (ipa[ipaIndex] === 't' && ipa[ipaIndex + 1] === 'ʃ') {
+        const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4); // Check the next two IPA chars
 
-    // Handle vowel mapping (e.g., "i", "e", "a" in Italian)
-    if (ipaChar === 'i') {
-      if (ipa[ipaIndex - 1] === 'ˈ') {
-        // Apply stress on "i" (primary stress)
-        result.push(`${letter}('i)`);
-      } else {
-        // Regular "i"
-        result.push(`${letter}(i)`);
+        if (!/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
+          // map "ci" with "tʃ" to "ci(tʃ)"
+          result.push(`${letter}${text[i + 1]}(tʃ)`);
+          i += 2; // Skip past "ci"
+          ipaIndex += 2; // Skip past the "tʃ" in IPA
+          continue; // Skip the rest of the processing for this "ci"
+        }
       }
-    } else if (ipaChar === 'e') {
-      // In Italian, "e" can map to either /e/ or /ɛ/, depending on the word
-      result.push(`${letter}(e)`); // Assuming default /e/
-    } else if (ipaChar === 'a') {
-      // Regular Italian "a"
-      result.push(`${letter}(a)`);
-    } else if (ipaChar === 'o') {
-      // Regular Italian "o"
-      result.push(`${letter}(o)`);
-    } else if (ipaChar === 'u') {
-      // Regular Italian "u"
-      result.push(`${letter}(u)`);
     }
 
-    // Handle "tʃ" after "c" in IPA
+    // If "c" followed by "tʃ" in IPA
     if (ipa[ipaIndex] === 't' && ipa[ipaIndex + 1] === 'ʃ') {
-      result.push(`${letter}(tʃ)`); // Map "c" + "i" → "tʃ"
-      ipaIndex++; // Skip past 'ʃ'
+      const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4); // Check the next IPA chars
+
+      if (/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is followed by "i", "ˈi", "j", or "ˈj"
+        result.push(`${letter}(tʃ)`); // map c(tʃ)
+        ipaIndex++; // Skip past 'ʃ'
+      } else {
+        result.push(`${letter}(tʃ)`); // Map as c(tʃ)
+      }
     } else {
-      // If not handled, push the character with its IPA symbol
+      // If no stress or "ci" mapping, just push the letter with its IPA character
       result.push(`${letter}(${ipaChar})`);
     }
 
@@ -408,7 +414,6 @@ function applyG2PMapping(text, ipa) {
 
 
 
-
 </script>
 
 
@@ -416,3 +421,20 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+@transcriptiolinguae
+Comment
+ 
+Leave a comment
+ 
+Footer
+© 2025 GitHub, Inc.
+Footer navigation
+Terms
+Privacy
+Security
+Status
+Community
+Docs
+Contact
+Manage cookies
+Do not share my personal information
