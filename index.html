@@ -358,12 +358,17 @@ function applyG2PMapping(text, ipa) {
         ipaIndex += 2; // Skip corresponding IPA
         continue; // Skip the rest of the processing for this "ci"
       }
+    } else if (lowerText[i] === 'c' && lowerText[i + 1] === 'i') {
+      // If "ci" doesn't meet the condition, map "c" and "tʃ" to "c(tʃ)"
+      result.push(`${letter}(tʃ)`);  // Map "c" to "c(tʃ)"
+      i += 2; // Skip past "ci"
+      ipaIndex += 2; // Skip corresponding IPA
+      continue; // Skip the rest of the processing for this "ci"
     }
 
     // If not "ci", or it's already handled, continue processing
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
       // Handle stress marks in IPA
-      const stress = ipaChar;
       ipaIndex++;
       ipaChar = ipa[ipaIndex];
       result.push(`${letter}('${ipaChar})`);
@@ -378,6 +383,7 @@ function applyG2PMapping(text, ipa) {
   return result.join('');
 }
 
+
 </script>
 
 
@@ -385,6 +391,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
