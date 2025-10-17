@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -185,7 +185,6 @@
       .replace(/t\u200D/g, 't')
       .replace(/d\u200D/g, 'd')
       .replace(/ɾ/g, 'r')
-      .replace(/ɪ/g, 'i')
       .replace(/oo/g, 'oː')
       .trim();
   }
@@ -336,73 +335,58 @@
     setOutput(g2pOutput.join(' '));
   });
 
-function applyG2PMapping(text, ipa) {
+function applyG2PMapping(text, ipa) {        
   const result = [];
   let ipaIndex = 0;
   let i = 0;
   const lowerText = text.toLowerCase();
 
-  // Predefined mappings for G2P
-  const g2pMappings = {
-    "bb": "bː",
-    "cc": "kː",
-    "cc": "tʃː",
-    "dd": "dː",
-    "ff": "fː",
-    "ll": "ː",   // Handling ll(ː) as per your example
-    "mm": "ː",   // Handling mm(ː)
-    "nn": "ː",   // Handling nn(ː)
-    "pp": "ː",   // Handling pp(ː)
-    "qq": "qq",  // No change for qq
-    "rr": "rː",
-    "ss": "sː",
-    "tt": "tː",
-    "gg": "dʒː",
-    "zz": "tsː",
-    "zz": "dzː"  // Handling zz for both tsː and dzː
-  };
-
-  // Check if 'tʃː' or 'dʒː' is followed by any of the specified vowels
-  function isFollowedByVowel(ipa, index) {
-    const following = ipa.slice(index + 3); // Skip 'ː' and check the following character
-    return following.startsWith('i') || following.startsWith('ˈi') || following.startsWith('j') || following.startsWith('ˈj');
-  }
-
-  // Process the word-by-word logic
+  // Iterate through the text
   while (i < text.length && ipaIndex < ipa.length) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
-    // Handle "tʃ" and mapping based on the following characters
-    if (ipaChar === 't' && ipa[ipaIndex + 1] === 'ʃ' && ipa[ipaIndex + 2] === 'ː') {
-      if (isFollowedByVowel(ipa, ipaIndex)) {
-        result.push(`c(${ipaChar}ʃː)`);  // Map 'c' to 'tʃː' if followed by 'i', 'j'
-        i += 3;
-        ipaIndex += 3;
-        continue;
-      } else if (text[i + 1] === 'i') {
-        result.push(`ci(${ipaChar}ʃː)`);  // Map 'ci' to 'tʃː' if 'i' follows 'c'
-        i += 2;
-        ipaIndex += 3;
-        continue;
-      }
-    }
+    // Handle stress marks (ˈ or ˌ) in IPA
+    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
+      // Store the stress mark (primary or secondary)
+      const stress = ipaChar;
+      ipaIndex++; // Move to the next character (the stressed character)
+      ipaChar = ipa[ipaIndex]; // Get the stressed character
 
-    // Check for predefined G2P mapping (e.g., bb -> bː, cc -> kː, etc.)
-    const mappedIpa = g2pMappings[lowerText.slice(i, i + 2)];
-    if (mappedIpa) {
-      result.push(`${text.slice(i, i + 2)}(${mappedIpa})`);
-      i += 2;  // Skip the next letter, since we just processed 2 chars
-      ipaIndex += mappedIpa.length;  // Move IPA index forward by the length of mapped IPA
+      result.push(`${letter}('${ipaChar})`); // Map the letter with the stress mark
+      ipaIndex++; // Skip past the stressed character
+      i++; // Move to the next letter in the text
       continue;
     }
 
-    // Default behavior: Process the IPA character normally
-    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
-      ipaIndex++;
-      ipaChar = ipa[ipaIndex];
-      result.push(`${letter}('${ipaChar})`);
+    // Look for "ci" in the original text
+    if (i + 1 < text.length && lowerText[i] === 'c' && lowerText[i + 1] === 'i') {
+      // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
+      if (ipa[ipaIndex] === 't' && ipa[ipaIndex + 1] === 'ʃ') {
+        const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4); // Check the next two IPA chars
+
+        if (/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is followed by those sounds
+          // map "ci" with "tʃ" to "ci(tʃ)"
+          result.push(`${letter}${text[i + 1]}(tʃ)`);
+          i += 2; // Skip past "ci"
+          ipaIndex += 2; // Skip past the "tʃ" in IPA
+          continue; // Skip the rest of the processing for this "ci"
+        }
+      }
+    }
+
+    // If "c" followed by "tʃ" in IPA
+    if (ipa[ipaIndex] === 't' && ipa[ipaIndex + 1] === 'ʃ') {
+      const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4); // Check the next IPA chars
+
+      if (/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is followed by "i", "ˈi", "j", or "ˈj"
+        result.push(`${letter}(tʃ)`); // map c(tʃ)
+        ipaIndex++; // Skip past 'ʃ'
+      } else {
+        result.push(`${letter}(tʃ)`); // Map as c(tʃ)
+      }
     } else {
+      // If no stress or "ci" mapping, just push the letter with its IPA character
       result.push(`${letter}(${ipaChar})`);
     }
 
@@ -410,15 +394,8 @@ function applyG2PMapping(text, ipa) {
     i++;
   }
 
-  // If anything left in text, append with empty IPA
-  while (i < text.length) {
-    result.push(`${text[i]}()`);
-    i++;
-  }
-
-  return result.join('');
+  return result.join(' ');
 }
-
 
 
 
@@ -429,12 +406,3 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
