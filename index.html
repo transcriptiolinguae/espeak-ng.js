@@ -285,57 +285,94 @@
     setOutput(result.join(''));
   });
 
-  // G2P button
-  document.getElementById('g2p').addEventListener('click', async () => {
-    showProgressPlaceholder();
+document.getElementById('g2p').addEventListener('click', async () => {
+  showProgressPlaceholder();
 
-    if (!wasmReady) {
-      alert('Please wait, WASM is still loading...');
-      return;
+  if (!wasmReady) {
+    alert('Please wait, WASM is still loading...');
+    return; // This is fine here because it's in a function.
+  }
+
+  const rawInput = inputElem.value.trim();
+  if (!rawInput) {
+    showPlaceholder();
+    return; // Also fine, as it's inside a function.
+  }
+
+  const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+  if (!tokens) {
+    setOutput('[No valid input]');
+    return; // This too is fine, as it's within a function.
+  }
+
+  const ipaMap = new Map();
+  const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+
+
+  try {
+    for (const word of uniqueWords) {
+      const ipa = await runESpeak(word);
+      ipaMap.set(word, ipa);
     }
+  } catch (e) {
+    console.error('Error during IPA conversion:', e);
+  }
 
-    const rawInput = inputElem.value.trim();
-    if (!rawInput) {
-      showPlaceholder();
-      return;
+  const g2pOutput = [];
+
+  for (const token of tokens) {
+    const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+
+    if (isWord) {
+      const ipa = ipaMap.get(token) || '';
+      const g2pMapped = applyG2PMapping(token, ipa); // Call applyG2PMapping inside the loop
+      g2pOutput.push(g2pMapped);
+    } else {
+      g2pOutput.push(token);
     }
+  }
 
-    const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-    if (!tokens) {
-      setOutput('[No valid input]');
-      return;
+  setOutput(g2pOutput.join(' '));
+});
+
+// Here is the updated `applyG2PMapping` function
+
+function applyG2PMapping(text, ipa) {
+  const result = [];
+  let ipaIndex = 0;
+  let i = 0;
+  const lowerText = text.toLowerCase();
+
+  // Predefined mappings for G2P
+  const g2pMappings = {
+    "bb": "bː",
+    "cc": "kː", // Default for cc, can be customized
+    "dd": "dː",
+    "ff": "fː",
+    "ll": "ː",   // Handling ll(ː) as per your example
+    "mm": "ː",   // Handling mm(ː)
+    "nn": "ː",   // Handling nn(ː)
+    "pp": "ː",   // Handling pp(ː)
+    "qq": "qq",  // No change for qq
+    "rr": "rː",
+    "ss": "sː",
+    "tt": "tː",
+    "gg": "dʒː",
+    "zz": "tsː",
+    "zz": "dzː"  // Handling zz for both tsː and dzː
+  };
+
+  function startsWithIpa(ipa, pattern) {
+    const variations = [`${pattern}`, `ˈ${pattern}`, `ˌ${pattern}`, `\u200D${pattern}`, `ˈ\u200D${pattern}`, `\u200Dˈ${pattern}`];
+    for (const variant of variations) {
+      if (ipa.startsWith(variant)) return { match: variant, len: variant.length };
     }
+    return null;
+  }
 
-    const ipaMap = new Map();
-    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
-
-    try {
-      for (const word of uniqueWords) {
-        const ipa = await runESpeak(word);
-        ipaMap.set(word, ipa);
-      }
-    } catch (e) {
-      console.error('Error during IPA conversion:', e);
-    }
-
-    const g2pOutput = [];
-
-    for (const token of tokens) {
-      const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
-
-      if (isWord) {
-        const ipa = ipaMap.get(token) || '';
-        const g2pMapped = applyG2PMapping(token, ipa);
-        g2pOutput.push(g2pMapped);
-      } else {
-        g2pOutput.push(token);
-      }
-    }
-
-    setOutput(g2pOutput.join(' '));
-  });
-
- // Skip 'ː' and check the following character
+  // Check if 'tʃː' or 'dʒː' is followed by any of the specified vowels
+  function isFollowedByVowel(ipa, index) {
+    const following = ipa.slice(index + 3); // Skip 'ː' and check the following character
     return following.startsWith('i') || following.startsWith('ˈi') || following.startsWith('j') || following.startsWith('ˈj');
   }
 
@@ -382,6 +419,7 @@
 
   return result.join('');
 }
+
 </script>
 
 
@@ -389,6 +427,7 @@
 
 </body>
 </html>
+
 
 
 
