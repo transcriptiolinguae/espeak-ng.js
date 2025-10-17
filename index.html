@@ -382,10 +382,10 @@ function applyG2PMapping(text, ipa) {
     let ipaChar = ipa[ipaIndex];
 
     // Check if "c" is followed by specific vowels in IPA (i, ˈi, j, ˈj)
-    if (letter === 'c' && (ipa[ipaIndex + 1] === 'i' || ipa[ipaIndex + 1] === 'ˈi' || ipa[ipaIndex + 1] === 'j' || ipa[ipaIndex + 1] === 'ˈj')) {
+    if (letter === 'c' && (ipa[ipaIndex + 2] === 'i' || ipa[ipaIndex + 2] === 'ˈi' || ipa[ipaIndex + 2] === 'j' || ipa[ipaIndex + 2] === 'ˈj')) {
       result.push(`c(tʃ)`);  // Map "c" to "tʃ"
       i += 1;  // Skip the 'c'
-      ipaIndex += 1;  // Skip the corresponding IPA character
+      ipaIndex += 2;  // Skip the corresponding IPA character
       continue;
     }
 
@@ -427,6 +427,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
