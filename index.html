@@ -375,21 +375,6 @@ function applyG2PMapping(text, ipa) {
       }
     }
 
-    // If "c" followed by "tʃ" in IPA
-    if (ipa[ipaIndex] === 't' && ipa[ipaIndex + 1] === 'ʃ') {
-      const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 3); // Check the next IPA chars
-
-      if (/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is followed by "i", "ˈi", "j", or "ˈj"
-        result.push(`${letter}(tʃ)`); // map c(tʃ)
-        ipaIndex++; // Skip past 'ʃ'
-      } else {
-        result.push(`${letter}(tʃ)`); // Map as c(tʃ)
-      }
-    } else {
-      // If no stress or "ci" mapping, just push the letter with its IPA character
-      result.push(`${letter}(${ipaChar})`);
-    }
-
     ipaIndex++;
     i++;
   }
@@ -406,4 +391,5 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
