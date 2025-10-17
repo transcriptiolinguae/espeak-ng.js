@@ -341,42 +341,44 @@ function applyG2PMapping(text, ipa) {
   let i = 0;
   const lowerText = text.toLowerCase();
 
-  // Iterate through the text
-  while (i < text.length && ipaIndex < ipa.length) {
-    const letter = text[i];
-    let ipaChar = ipa[ipaIndex];
+// Iterate through the text
+while (i < text.length && ipaIndex < ipa.length) {
+  const letter = text[i];
+  let ipaChar = ipa[ipaIndex];
 
-    // Look for "ci" in the original text
-    if (i + 1 < text.length && lowerText[i] === 'c' && lowerText[i + 1] === 'i') {
-      // Check if "tʃ" in IPA is followed by "i", "ˈi", "j", or "ˈj"
-      const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4); // Check next two IPA chars
+  // Look for "ci" in the original text
+  if (i + 1 < text.length && lowerText[i] === 'c' && lowerText[i + 1] === 'i') {
+    // Check if "tʃ" in IPA is followed by "i", "ˈi", "j", or "ˈj"
+    const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4); // Check next two IPA chars
 
-      if (!/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
-        // Replace "ci" with "tʃ"
-        result.push(`${text.slice(i, i + 2)}(tʃ)`);
-        i += 2; // Skip past "ci"
-        ipaIndex += 2; // Skip corresponding IPA
-        continue; // Skip the rest of the processing for this "ci"
-      }
+    if (!/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
+      // Replace "ci" with "tʃ"
+      result.push(`${text.slice(i, i + 2)}(tʃ)`);
+      i += 2; // Skip past "ci"
+      ipaIndex += 2; // Skip corresponding IPA
+      continue; // Skip the rest of the processing for this "ci"
     }
-
-    // If not "ci", or it's already handled, continue processing
-    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
-      // Handle stress marks in IPA
-      const stress = ipaChar;
-      ipaIndex++;
-      ipaChar = ipa[ipaIndex];
-      result.push(`${letter}('${ipaChar})`);
-    } else {
-      result.push(`${letter}(${ipaChar})`);
-    }
-
-    ipaIndex++;
-    i++;
   }
 
-  return result.join('');
+  // If not "ci", or it's already handled, continue processing
+  if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
+    // Handle stress marks in IPA
+    const stress = ipaChar;
+    ipaIndex++;
+    ipaChar = ipa[ipaIndex];
+    result.push(`${letter}('${ipaChar})`);
+  } else if (ipaChar === 'tʃ') {
+    // If we find "tʃ" in IPA, map it to c(tʃ)
+    result.push(`${letter}(tʃ)`);
+  } else {
+    result.push(`${letter}(${ipaChar})`);
+  }
+
+  ipaIndex++;
+  i++;
 }
+
+return result.join('');
 </script>
 
 
@@ -384,6 +386,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
