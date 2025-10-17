@@ -358,13 +358,13 @@ function applyG2PMapping(text, ipa) {
         ipaIndex += 2; // Skip corresponding IPA
         continue; // Skip the rest of the processing for this "ci"
       }
-    } else if (lowerText[i] === 'c' && lowerText[i + 1] === 'i') {
-      // If "ci" doesn't meet the condition, map "c" and "tʃ" to "c(tʃ)"
-      result.push(`${letter}(tʃ)`);  // Map "c" to "c(tʃ)"
-      i += 2; // Skip past "ci"
-      ipaIndex += 2; // Skip corresponding IPA
-      continue; // Skip the rest of the processing for this "ci"
-    }
+    } else if (/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
+        // Map "ci" with "tʃ" to "ci(tʃ)"
+        result.push(`${letter}(tʃ)`);  // Map "c" to "c(tʃ)"
+        i += 2; // Skip past "ci"
+        ipaIndex += 2; // Skip corresponding IPA
+        continue; // Skip the rest of the processing for this "ci"
+      }
 
     // If not "ci", or it's already handled, continue processing
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
@@ -391,6 +391,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
