@@ -381,7 +381,6 @@ function applyG2PMapping(text, ipa) {
 
       if (/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is followed by "i", "ˈi", "j", or "ˈj"
         result.push(`${letter}(tʃ)`); // map c(tʃ)
-        i += 1;
         ipaIndex++; // Skip past 'ʃ'
       } else {
         result.push(`${letter}(tʃ)`); // Map as c(tʃ)
