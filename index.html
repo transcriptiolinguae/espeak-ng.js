@@ -336,7 +336,7 @@
     setOutput(g2pOutput.join(' '));
   });
 
-function applyG2PMapping(text, ipa) {
+function applyG2PMapping(text, ipa) {        
   const result = [];
   let ipaIndex = 0;
   let i = 0;
@@ -382,33 +382,69 @@ function applyG2PMapping(text, ipa) {
     const letter = text[i];
     let ipaChar = ipa[ipaIndex];
 
-        // Check if 'g' is followed by primary stress mark and 'i', 'j', 'e', or 'ɛ' in the IPA output
-    if (letter === 'g' && ipa[ipaIndex + 1] === 'ˈ' && (ipa[ipaIndex + 2] === 'i' || ipa[ipaIndex + 2] === 'j' || ipa[ipaIndex + 2] === 'e' || ipa[ipaIndex + 2] === 'ɛ')) {
-      result.push(`gh(${ipaChar})`); // Map 'g' + 'ˈ' + ('i'/'j'/'e'/'ɛ') to 'gh(g)'
-      i += 2;  // Skip the next two letters (ˈ and the following character)
-      ipaIndex += 1;  // Skip the next two IPA characters (ˈ and the following character)
+    // Handle stress marks (ˈ or ˌ) in IPA
+    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
+      const stress = ipaChar;
+      ipaIndex++; // Move to the next character (the stressed character)
+      ipaChar = ipa[ipaIndex];
+      result.push(`${letter}('${ipaChar})`); // Map the letter with the stress mark
+      ipaIndex++; // Skip past the stressed character
+      i++; // Move to the next letter in the text
       continue;
-    } else {
-    if (letter === 'g' && (ipa[ipaIndex + 1] === 'i' || ipa[ipaIndex + 1] === 'j' || ipa[ipaIndex + 1] === 'e' || ipa[ipaIndex + 1] === 'ɛ')) {
-      result.push(`gh(${ipaChar})`); // Map 'g' + 'ˈ' + ('i'/'j'/'e'/'ɛ') to 'gh(g)'
-      i += 2;  // Skip the next two letters (ˈ and the following character)
-      ipaIndex += 1;  // Skip the next IPA character
-      continue;}
     }
 
-    // Check for 'tʃː' or 'dʒː' and apply the custom mapping if not followed by specific vowels
+    // Handle "ci" in the original text
+    if (i + 1 < text.length && lowerText[i] === 'c' && lowerText[i + 1] === 'i') {
+      if (ipa[ipaIndex] === 't' && ipa[ipaIndex + 1] === 'ʃ') {
+        const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4); // Check next IPA chars
+        if (!/i|ˈi|j|ˈj/.test(nextIpa)) {
+          result.push(`${letter}${text[i + 1]}(tʃ)`); // Map "ci" with "tʃ" to "ci(tʃ)"
+          i += 2;
+          ipaIndex += 2;
+          continue;
+        }
+      }
+    }
+
+    // Handle 'c' followed by 'tʃ' in IPA
+    if (ipa[ipaIndex] === 't' && ipa[ipaIndex + 1] === 'ʃ') {
+      const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4);
+      if (/i|ˈi|j|ˈj/.test(nextIpa)) {
+        result.push(`${letter}(tʃ)`); // map c(tʃ)
+        ipaIndex++;
+      } else {
+        result.push(`${letter}(tʃ)`); // map c(tʃ)
+      }
+    }
+
+    // Handle 'g' followed by specific vowels and stress marks
+    if (letter === 'g' && ipa[ipaIndex + 1] === 'ˈ' && (ipa[ipaIndex + 2] === 'i' || ipa[ipaIndex + 2] === 'j' || ipa[ipaIndex + 2] === 'e' || ipa[ipaIndex + 2] === 'ɛ')) {
+      result.push(`gh(${ipaChar})`);
+      i += 2;
+      ipaIndex += 1;
+      continue;
+    }
+
+    if (letter === 'g' && (ipa[ipaIndex + 1] === 'i' || ipa[ipaIndex + 1] === 'j' || ipa[ipaIndex + 1] === 'e' || ipa[ipaIndex + 1] === 'ɛ')) {
+      result.push(`gh(${ipaChar})`);
+      i += 2;
+      ipaIndex += 1;
+      continue;
+    }
+
+    // Handle 'tʃː' or 'dʒː' and apply custom mapping if not followed by specific vowels
     if (ipaChar === 't' && ipa[ipaIndex + 1] === 'ʃ' && ipa[ipaIndex + 2] === 'ː') {
       if (!isFollowedByVowel(ipa, ipaIndex)) {
         result.push(`cci(${ipaChar}ʃː)`);  // Map tʃː to cci
-        i += 3;  // Skip 'tʃː'
-        ipaIndex += 3;  // Skip the corresponding IPA characters
+        i += 3;
+        ipaIndex += 3;
         continue;
       }
     } else if (ipaChar === 'd' && ipa[ipaIndex + 1] === 'ʒ' && ipa[ipaIndex + 2] === 'ː') {
       if (!isFollowedByVowel(ipa, ipaIndex)) {
         result.push(`ggi(${ipaChar}ʒː)`);  // Map dʒː to ggi
-        i += 3;  // Skip 'dʒː'
-        ipaIndex += 3;  // Skip the corresponding IPA characters
+        i += 3;
+        ipaIndex += 3;
         continue;
       }
     }
@@ -417,20 +453,13 @@ function applyG2PMapping(text, ipa) {
     const mappedIpa = g2pMappings[lowerText.slice(i, i + 2)];
     if (mappedIpa) {
       result.push(`${text.slice(i, i + 2)}(${mappedIpa})`);
-      i += 2;  // Skip the next letter, since we just processed 2 chars
-      ipaIndex += mappedIpa.length;  // Move IPA index forward by the length of mapped IPA
+      i += 2;
+      ipaIndex += mappedIpa.length;
       continue;
     }
 
     // Default behavior: Process the IPA character normally
-    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
-      ipaIndex++;
-      ipaChar = ipa[ipaIndex];
-      result.push(`${letter}('${ipaChar})`);
-    } else {
-      result.push(`${letter}(${ipaChar})`);
-    }
-
+    result.push(`${letter}(${ipaChar})`);
     ipaIndex++;
     i++;
   }
@@ -446,6 +475,7 @@ function applyG2PMapping(text, ipa) {
 
 
 
+
 </script>
 
 
@@ -453,6 +483,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
