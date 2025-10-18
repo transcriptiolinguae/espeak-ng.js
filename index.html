@@ -480,14 +480,10 @@ if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' 
           continue; // Skip the rest of the processing for this "ci"
         }
       }
-    }
-
-
-    
-             
+    }           
  
             // gn(ɲː)
-    if (lowerText[i] === 'g' && ipa[ipaIndex + 1] === 'n') { 
+    if (lowerText[i] === 'g' && lowerText[i + 1] === 'n') { 
     if (ipa[ipaIndex] === 'ɲ' && ipa[ipaIndex + 1] === 'ː') {
         result.push(`${letter}${text[i + 1]}(ɲː)`); // map c(tʃ)
         i += 2; // Skip past "ci"
@@ -831,6 +827,7 @@ if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' 
 
 </body>
 </html>
+
 
 
 
