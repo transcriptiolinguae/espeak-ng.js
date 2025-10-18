@@ -485,7 +485,7 @@ function applyG2PMapping(text, ipa) {
       } else {
         result.push(`${letter}(tʃ)`); // Map as c(tʃ)
       }
-    
+    }
 
     // Check for predefined G2P mapping (e.g., bb -> bː, cc -> kː, etc.)
     const mappedIpa = g2pMappings[lowerText.slice(i, i + 2)];
@@ -527,32 +527,3 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
