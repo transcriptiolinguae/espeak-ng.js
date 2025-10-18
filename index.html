@@ -365,7 +365,6 @@ function applyG2PMapping(text, ipa) {
     "mm": "mː",   
     "nn": "nː",   
     "pp": "pː",
-    "gn": "ɲː",
     "qq": "qq",  
     "rr": "rː",
     "ss": "sː",
@@ -467,16 +466,24 @@ if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' 
 
 
              
-       
+    //     if (ipaChar === 'ɲ') {
+     //   result.push(`gn(${ipaChar})`);  
+     //   i += 2;  
+     //   ipaIndex += 1;  
+     //   continue;
+  //  } 
 
-
-    if (ipaChar === 'ɲ') {
-        result.push(`gn(${ipaChar})`);  
-        i += 2;  
-        ipaIndex += 1;  
-        continue;
+            // gn(ɲː)
+    if (lowerText[i] === 'g' && ipa[ipaIndex + 1] === 'n') { 
+    if (ipa[ipaIndex] === 'ɲ' && ipa[ipaIndex + 1] === 'ː') {
+        result.push(`${letter}${text[i + 1]}(ɲː)`); // map c(tʃ)
+        i += 1; // Skip past "ci"
+        ipaIndex += 2; // Skip past the "tʃ" in IPA
+        continue; // Skip the rest of the processing for this "ci"
+      }
     }
-
+ 
+    
 
     if (ipaChar === 'ʎ') {
         result.push(`gli(${ipaChar})`);  
@@ -616,6 +623,26 @@ if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' 
       }
     }
 
+
+
+
+    // ch(k)
+    
+        if (lowerText[i] === 'c' && lowerText[i + 1] === 'h') {
+      // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
+      if (ipa[ipaIndex] === 'k') {
+        const nextIpa = ipa.slice(ipaIndex + 1, ipaIndex + 3); // Check the next two IPA chars
+
+        if (/i|ˈi|j|ˈj|e|ˈe|ɛ|ˈɛ/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
+          // map "ci" with "tʃ" to "ci(tʃ)"
+          result.push(`${letter}${text[i + 1]}(k)`);
+          i += 2; // Skip past "ci"
+          ipaIndex += 1; // Skip past the "tʃ" in IPA
+          continue; // Skip the rest of the processing for this "ci"
+        }
+      }
+    }
+
     
     
 // gi(dʒ)
@@ -635,6 +662,24 @@ if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' 
       }
     }
 
+
+
+        // gh(k)
+    
+        if (lowerText[i] === 'g' && lowerText[i + 1] === 'h') {
+      // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
+      if (ipa[ipaIndex] === 'g') {
+        const nextIpa = ipa.slice(ipaIndex + 1, ipaIndex + 3); // Check the next two IPA chars
+
+        if (/i|ˈi|j|ˈj|e|ˈe|ɛ|ˈɛ/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
+          // map "ci" with "tʃ" to "ci(tʃ)"
+          result.push(`${letter}${text[i + 1]}(g)`);
+          i += 2; // Skip past "ci"
+          ipaIndex += 1; // Skip past the "tʃ" in IPA
+          continue; // Skip the rest of the processing for this "ci"
+        }
+      }
+    }
 
 
         // c(tʃ)
@@ -773,5 +818,6 @@ if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' 
 
 </body>
 </html>
+
 
 
