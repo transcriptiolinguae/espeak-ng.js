@@ -493,7 +493,7 @@ if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' 
     }
 
     
-    if (ipaChar === 't' && ipa[ipaIndex + 1] === 's') {
+    if (ipaChar === 't' && lowerText[i + 1] === 's') {
         result.push(`z(${ipaChar}${ipa[ipaIndex + 1]})`);  
         i += 1;  
         ipaIndex += 2;  
@@ -818,6 +818,7 @@ if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' 
 
 </body>
 </html>
+
 
 
 
