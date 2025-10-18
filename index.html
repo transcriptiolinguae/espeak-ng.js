@@ -407,22 +407,8 @@ function applyG2PMapping(text, ipa) {
       continue;}
     }
 
-    // Check for 'tʃː' or 'dʒː' and apply the custom mapping if not followed by specific vowels
-    if (ipaChar === 't' && ipa[ipaIndex + 1] === 'ʃ' && ipa[ipaIndex + 2] === 'ː') {
-      if (!isFollowedByVowel(ipa, ipaIndex)) {
-        result.push(`cci(${ipaChar}ʃː)`);  // Map tʃː to cci
-        i += 3;  // Skip 'tʃː'
-        ipaIndex += 3;  // Skip the corresponding IPA characters
-        continue;
-      }
-    } else if (ipaChar === 'd' && ipa[ipaIndex + 1] === 'ʒ' && ipa[ipaIndex + 2] === 'ː') {
-      if (!isFollowedByVowel(ipa, ipaIndex)) {
-        result.push(`ggi(${ipaChar}ʒː)`);  // Map dʒː to ggi
-        i += 3;  // Skip 'dʒː'
-        ipaIndex += 3;  // Skip the corresponding IPA characters
-        continue;
-      }
-    }
+  
+
 
 
 
@@ -641,6 +627,7 @@ if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' 
 
 </body>
 </html>
+
 
 
 
