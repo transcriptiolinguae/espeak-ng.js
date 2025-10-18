@@ -434,7 +434,7 @@ function applyG2PMapping(text, ipa) {
 
         if (!/ː/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
           // map "ci" with "tʃ" to "ci(tʃ)"
-          result.push(`${letter}${text[i + 1]}(ts)`);
+          result.push(`${letter}(ts)`);
           i += 1; // Skip past "ci"
           ipaIndex += 2; // Skip past the "tʃ" in IPA
           continue; // Skip the rest of the processing for this "ci"
@@ -858,6 +858,7 @@ if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' 
 
 </body>
 </html>
+
 
 
 
