@@ -368,7 +368,6 @@ function applyG2PMapping(text, ipa) {
     "qq": "qq",  // No change for qq
     "rr": "rː",
     "ss": "sː",
-    "z": "ts",
     "tt": "tː",
     "gg": "dʒː",  
   };
@@ -471,8 +470,17 @@ function applyG2PMapping(text, ipa) {
         i += 2;  
         ipaIndex += 1;  
         continue;
+    }
+
+    
+    if (ipaChar === 't' && ipa[ipaIndex + 1] === 's') {
+        result.push(`z(${ipaChar}{$ipa[ipaIndex + 1]})`);  
+        i += 1;  
+        ipaIndex += 2;  
+        continue;
     
     }
+
 
 
         if (lowerText[i] === 'c' && lowerText[i + 1] === 'i') {
@@ -542,4 +550,5 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
