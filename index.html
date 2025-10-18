@@ -346,7 +346,6 @@ function applyG2PMapping(text, ipa) {
   // Predefined mappings for G2P
   const g2pMappings = {
     "bb": "bː",
-    "cc": "kː",
     "cc": "tʃː",
     "dd": "dː",
     "ff": "fː",
@@ -415,17 +414,32 @@ function applyG2PMapping(text, ipa) {
 
 
         if (ipaChar === 'd' && ipa[ipaIndex + 1] === 'z' && ipa[ipaIndex + 2] === 'ː') {
-        result.push(`zz(${ipaChar}${ipa[ipaIndex + 1]}ː)`);  // Map tʃː to cci
-        i += 2;  // Skip 'tʃː'
-        ipaIndex += 2;  // Skip the corresponding IPA characters
+        result.push(`zz(${ipaChar}${ipa[ipaIndex + 1]}ː)`);  
+        i += 2;  
+        ipaIndex += 2;  
         continue;
     
     } else if (ipaChar === 't' && ipa[ipaIndex + 1] === 's' && ipa[ipaIndex + 2] === 'ː') {
-        result.push(`zz(${ipaChar}${ipa[ipaIndex + 1]}ː)`);  // Map dʒː to ggi
-        i += 2;  // Skip 'dʒː'
-        ipaIndex += 2;  // Skip the corresponding IPA characters
+        result.push(`zz(${ipaChar}${ipa[ipaIndex + 1]}ː)`); 
+        i += 2; 
+        ipaIndex += 2; 
         continue;
       }
+
+
+            if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'i') {
+        result.push(`cch(${ipaChar}${ipa[ipaIndex + 1]}ː)`);  
+        i += 2;  
+        ipaIndex += 2;  
+        continue;
+    
+    } else if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' {
+        result.push(`cc(${ipaChar}${ipa[ipaIndex + 1]}ː)`); 
+        i += 2; 
+        ipaIndex += 2; 
+        continue;
+      }
+    
     
 
     // Check for predefined G2P mapping (e.g., bb -> bː, cc -> kː, etc.)
@@ -468,6 +482,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
