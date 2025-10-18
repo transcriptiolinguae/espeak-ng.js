@@ -471,6 +471,14 @@ function applyG2PMapping(text, ipa) {
         continue;
     }
 
+
+    if (ipaChar === 'ʎ') {
+        result.push(`gl(${ipaChar})`);  
+        i += 2;  
+        ipaIndex += 1;  
+        continue;
+    }
+
     
     if (ipaChar === 't' && ipa[ipaIndex + 1] === 's') {
         result.push(`z(${ipaChar}${ipa[ipaIndex + 1]})`);  
@@ -555,6 +563,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
