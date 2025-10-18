@@ -334,7 +334,21 @@
       }
     }
 
-    setOutput(g2pOutput.join(' '));
+    
+let fixedOutput = '';
+for (let i = 0; i < g2pOutput.length; i++) {
+  const token = g2pOutput[i];
+  if (i === 0) {
+    fixedOutput += token;
+  } else if (/^[.,;!?]$/.test(token)) {
+    // no space before punctuation
+    fixedOutput += token;
+  } else {
+    fixedOutput += ' ' + token;
+  }
+}
+setOutput(fixedOutput);
+
   });
 
 function applyG2PMapping(text, ipa) {
@@ -528,6 +542,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
