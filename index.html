@@ -432,7 +432,17 @@ function applyG2PMapping(text, ipa) {
         ipaIndex += 2;  
         continue;
     
-    } 
+    } else if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ː') {
+        result.push(`cc(${ipaChar}${ipa[ipaIndex + 1]}ː)`); 
+        i += 2; 
+        ipaIndex += 2; 
+        continue;
+    } else if (ipaChar === 't' && ipa[ipaIndex + 1] === 'ʃ' && ipa[ipaIndex + 2] === 'ː') {
+        result.push(`cc(${ipaChar}${ipa[ipaIndex + 1]}ː)`); 
+        i += 2; 
+        ipaIndex += 3; 
+        continue;
+      }
     
     
 
@@ -476,6 +486,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
