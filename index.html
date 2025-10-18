@@ -438,7 +438,7 @@ function applyG2PMapping(text, ipa) {
       }
 
 
-            if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && !ipa[ipaIndex + 2] === 'ˈ' && !ipa[ipaIndex + 3] === 'i') {
+           if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && !ipa[ipaIndex + 2] === 'ˈ' && !ipa[ipaIndex + 3] === 'i') {
         result.push(`cc(${ipaChar}${ipa[ipaIndex + 1]})`); 
         i += 2; 
         ipaIndex += 2; 
@@ -454,7 +454,38 @@ function applyG2PMapping(text, ipa) {
         result.push(`cch(${ipaChar}${ipa[ipaIndex + 1]})`);  
         i += 3;  
         ipaIndex += 2;  
-        continue;          
+        continue;
+
+
+
+                 } else if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' && ipa[ipaIndex + 3] === 'e') {
+        result.push(`cch(${ipaChar}${ipa[ipaIndex + 1]})`);  
+        i += 3;  
+        ipaIndex += 2;  
+        continue;
+
+    } else if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'e') {
+        result.push(`cch(${ipaChar}${ipa[ipaIndex + 1]})`);  
+        i += 3;  
+        ipaIndex += 2;  
+        continue;
+
+
+                 } else if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' && ipa[ipaIndex + 3] === 'ɛ') {
+        result.push(`cch(${ipaChar}${ipa[ipaIndex + 1]})`);  
+        i += 3;  
+        ipaIndex += 2;  
+        continue;
+
+    } else if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ɛ') {
+        result.push(`cch(${ipaChar}${ipa[ipaIndex + 1]})`);  
+        i += 3;  
+        ipaIndex += 2;  
+        continue;
+             
+
+
+             
               
     } else if (ipaChar === 't' && ipa[ipaIndex + 1] === 'ʃ' && ipa[ipaIndex + 2] === 'ː') {
         result.push(`cc(${ipaChar}${ipa[ipaIndex + 1]}ː)`); 
@@ -580,6 +611,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
