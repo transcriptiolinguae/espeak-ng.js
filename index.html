@@ -354,7 +354,6 @@ function applyG2PMapping(text, ipa) {
     "pp": "ː",   // Handling pp(ː)
     "qq": "qq",  // No change for qq
     "rr": "rː",
-    "gn": "ɲ",
     "ss": "sː",
     "tt": "tː",
     "gg": "dʒː",  
@@ -444,6 +443,15 @@ function applyG2PMapping(text, ipa) {
         ipaIndex += 3; 
         continue;
       }
+
+
+    if (ipaChar === 'ɲ' {
+        result.push(`gn(${ipaChar})`);  
+        i += 2;  
+        ipaIndex += 1;  
+        continue;
+    
+    }
     
     
 
@@ -487,6 +495,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
