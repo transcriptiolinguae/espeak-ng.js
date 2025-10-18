@@ -420,7 +420,7 @@ function applyG2PMapping(text, ipa) {
         ipaIndex += 2;  // Skip the corresponding IPA characters
         continue;
       }
-    } else if (ipaChar === 't' && ipa[ipaIndex + 1] === 's' && ipa[ipaIndex + 2] === 'ː') {
+    } else (ipaChar === 't' && ipa[ipaIndex + 1] === 's' && ipa[ipaIndex + 2] === 'ː') {
         result.push(`zz(${ipaChar}${ipa[ipaIndex + 1]}ː)`);  // Map dʒː to ggi
         i += 2;  // Skip 'dʒː'
         ipaIndex += 2;  // Skip the corresponding IPA characters
@@ -468,6 +468,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
