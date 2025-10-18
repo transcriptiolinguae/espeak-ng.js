@@ -420,13 +420,13 @@ function applyG2PMapping(text, ipa) {
         ipaIndex += 2;  // Skip the corresponding IPA characters
         continue;
       }
-    } else (ipaChar === 't' && ipa[ipaIndex + 1] === 's' && ipa[ipaIndex + 2] === 'ː') {
+    } else if (ipaChar === 't' && ipa[ipaIndex + 1] === 's' && ipa[ipaIndex + 2] === 'ː') {
         result.push(`zz(${ipaChar}${ipa[ipaIndex + 1]}ː)`);  // Map dʒː to ggi
         i += 2;  // Skip 'dʒː'
         ipaIndex += 2;  // Skip the corresponding IPA characters
         continue;
       }
-    }
+    
 
     // Check for predefined G2P mapping (e.g., bb -> bː, cc -> kː, etc.)
     const mappedIpa = g2pMappings[lowerText.slice(i, i + 2)];
@@ -468,6 +468,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
