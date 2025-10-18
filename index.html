@@ -677,7 +677,7 @@ if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' 
 
       if (/i|ˈi|j|ˈj|e|ˈe|ɛ|ˈɛ/.test(nextIpa)) { // If "tʃ" is followed by "i", "ˈi", "j", or "ˈj"
         result.push(`${letter}${text[i + 1]}(ʃ)`); // map c(tʃ)
-        i += 1; // Skip past "ci"
+        i += 2; // Skip past "ci"
         ipaIndex += 1; // Skip past the "tʃ" in IPA
         continue; // Skip the rest of the processing for this "ci"
       }
@@ -773,6 +773,7 @@ if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' 
 
 </body>
 </html>
+
 
 
 
