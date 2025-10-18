@@ -474,7 +474,7 @@ function applyG2PMapping(text, ipa) {
 
     
     if (ipaChar === 't' && ipa[ipaIndex + 1] === 's') {
-        result.push(`z(${ipaChar}{$ipa[ipaIndex + 1]})`);  
+        result.push(`z(${ipaChar}${ipa[ipaIndex + 1]})`);  
         i += 1;  
         ipaIndex += 2;  
         continue;
@@ -550,5 +550,6 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
