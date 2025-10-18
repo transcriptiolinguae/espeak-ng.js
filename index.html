@@ -427,7 +427,7 @@ function applyG2PMapping(text, ipa) {
       }
 
 
-            if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'i') {
+            if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ') && ipa[ipaIndex + 2] === 'i') {
         result.push(`cch(${ipaChar}${ipa[ipaIndex + 1]})`);  
         i += 3;  
         ipaIndex += 3;  
@@ -482,6 +482,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
