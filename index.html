@@ -246,7 +246,7 @@
       return;
     }
 
-    const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+(?:'[A-Za-z]+)?|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+    const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
     if (!tokens) {
       setOutput('[No valid input]');
       return;
@@ -302,7 +302,7 @@
       return;
     }
 
-    const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+(?:'[A-Za-z]+)?|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+    const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
     if (!tokens) {
       setOutput('[No valid input]');
       return;
@@ -334,8 +334,7 @@
       }
     }
 
-    
-let fixedOutput = '';
+    let fixedOutput = '';
 for (let i = 0; i < g2pOutput.length; i++) {
   const token = g2pOutput[i];
   if (i === 0) {
@@ -542,18 +541,3 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
