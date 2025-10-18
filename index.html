@@ -346,7 +346,6 @@ function applyG2PMapping(text, ipa) {
   // Predefined mappings for G2P
   const g2pMappings = {
     "bb": "bː",
-    "cc": "tʃː",
     "dd": "dː",
     "ff": "fː",
     "ll": "ː",   // Handling ll(ː) as per your example
@@ -433,7 +432,12 @@ function applyG2PMapping(text, ipa) {
         ipaIndex += 2;  
         continue;
     
-    } 
+    } else if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː') {
+        result.push(`cc(${ipaChar}${ipa[ipaIndex + 1]})`); 
+        i += 2; 
+        ipaIndex += 2; 
+        continue;
+      }
     
     
 
@@ -477,6 +481,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
