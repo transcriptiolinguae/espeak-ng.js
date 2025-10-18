@@ -757,6 +757,18 @@ if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' 
     }
 
 
+
+                // cq(kː)
+    if (lowerText[i] === 'c' && lowerText[i + 1] === 'q') { 
+    if (ipa[ipaIndex] === 'k' && ipa[ipaIndex + 1] === 'ː') {
+        result.push(`${letter}${text[i + 1]}(kː)`); // map c(tʃ)
+        i += 2; // Skip past "ci"
+        ipaIndex += 2; // Skip past the "tʃ" in IPA
+        continue; // Skip the rest of the processing for this "ci"
+      }
+    }
+
+
     // gg(gː)
                 if (lowerText[i] === 'g' && lowerText[i + 1] === 'g') {
       // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
@@ -827,6 +839,7 @@ if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' 
 
 </body>
 </html>
+
 
 
 
