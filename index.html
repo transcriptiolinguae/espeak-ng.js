@@ -474,7 +474,9 @@ function applyG2PMapping(text, ipa) {
           continue; // Skip the rest of the processing for this "ci"
         }
       }
+    }
         // If "c" followed by "tʃ" in IPA
+    if (lowerText[i] === 'c') { 
     if (ipa[ipaIndex] === 't' && ipa[ipaIndex + 1] === 'ʃ') {
       const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4); // Check the next IPA chars
 
@@ -483,7 +485,7 @@ function applyG2PMapping(text, ipa) {
         ipaIndex++; // Skip past 'ʃ'
       } else {
         result.push(`${letter}(tʃ)`); // Map as c(tʃ)
-        i += 2; // Skip past "ci"
+        i += 1; // Skip past "ci"
         ipaIndex += 2; // Skip past the "tʃ" in IPA
         continue; // Skip the rest of the processing for this "ci"
       }
@@ -529,6 +531,7 @@ function applyG2PMapping(text, ipa) {
 
 </body>
 </html>
+
 
 
 
