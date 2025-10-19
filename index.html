@@ -409,6 +409,18 @@ function applyG2PMapping(text, ipa) {
         continue;
       }
 
+   // i(ˈiː)
+    
+        if (lowerText[i] === 'i') {
+      // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
+      if (ipa[ipaIndex] === 'ˈ' && ipa[ipaIndex + 1] === 'i' && ipa[ipaIndex + 2] === 'ː') {
+        const nextIpa = ipa.slice(ipaIndex + 3, ipaIndex + 5); // Check the next two IPA chars
+          result.push(`${letter}(ˈiː)`);
+          i += 1; // Skip past "ci"
+          ipaIndex += 3; // Skip past the "tʃ" in IPA
+          continue; // Skip the rest of the processing for this "ci"
+      }
+    }
 
 
     // z(ts)
@@ -881,6 +893,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
