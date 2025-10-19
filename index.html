@@ -888,14 +888,15 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
     i++;
   }
 
-  
-  return result.join('');
-}
+  }
 // After your loop finishes
 for (let j = 0; j < result.length; j++) {
   // Replace i() with i(i)
   result[j] = result[j].replace(/\bi\(\)\b/g, 'i(i)');
 }
+  
+  return result.join('');
+
 
 
 </script>
@@ -905,6 +906,7 @@ for (let j = 0; j < result.length; j++) {
 
 </body>
 </html>
+
 
 
 
