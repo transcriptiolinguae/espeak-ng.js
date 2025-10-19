@@ -873,6 +873,15 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
       result.push(`${letter}(${ipaChar})`);
     }
 
+
+    // Default: map letter to itself if it matches the IPA
+if (lowerText[i] === ipa[ipaIndex]) {
+  result.push(`${text[i]}(${ipa[ipaIndex]})`);
+  i += 1;
+  ipaIndex += 1;
+  continue;
+}
+
     ipaIndex++;
     i++;
   }
@@ -895,6 +904,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
