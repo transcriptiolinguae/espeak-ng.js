@@ -868,7 +868,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
       ipaChar = ipa[ipaIndex];
       result.push(`${letter}('${ipaChar})`);
     } else {
-            ipaIndex--;
+            ipaIndex++;
       result.push(`${letter}(${ipaChar})`);
     }
 
@@ -899,6 +899,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
