@@ -822,6 +822,32 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
       }
     }
 
+    // Default behavior: Process the IPA character normally
+    if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
+      ipaIndex++;
+      ipaChar = ipa[ipaIndex];
+      result.push(`${letter}('${ipaChar})`);
+    } else {
+      result.push(`${letter}(${ipaChar})`);
+    }
+
+
+
+   // h
+    
+        if (lowerText[i] === 'h' && lowerText[i + 1] === 'a' || lowerText[i + 1] === 'o') {
+      // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
+      if (ipa[ipaIndex] === 'ˈ') {
+           ipaIndex++;
+           ipaChar = ipa[ipaIndex];
+           result.push(`${letter}${text[i + 1]}('${ipaChar})`);
+        } else {
+           result.push(`${letter}${text[i + 1]}('${ipaChar})`);
+        i += 1; // Skip past "ha or ho"
+        continue;
+         }
+     
+
 
 
 
@@ -946,15 +972,11 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
       ipaChar = ipa[ipaIndex];
       result.push(`${letter}('${ipaChar})`);
     } else {
-        
       result.push(`${letter}(${ipaChar})`);
     }
 
 
-   
-
-
-
+          
     ipaIndex++;
     i++;
   }
@@ -980,6 +1002,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
