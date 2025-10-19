@@ -890,13 +890,9 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
   
 
-  
-  // ←–– **INSERT REPLACEMENT PASS HERE** ––→
-  for (let j = 0; j < result.length; j++) {
-    result[j] = result[j].replace(/i\(\)/g, 'i(i)');
-  }
 
-  return result.join('');
+
+return result.join('').replace(/\bi\(\)/g, 'i(i)');
 
 }
   
@@ -907,6 +903,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
