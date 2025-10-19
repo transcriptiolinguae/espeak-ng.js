@@ -347,8 +347,11 @@ for (let i = 0; i < g2pOutput.length; i++) {
     fixedOutput += ' ' + token;
   }
 }
-// Fix i() → i(i) before displaying
+
+// Fix i() → i(i)
 fixedOutput = fixedOutput.replace(/\bi\(\)/g, 'i(i)');
+
+  
 setOutput(fixedOutput);
 
   });
@@ -905,6 +908,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
