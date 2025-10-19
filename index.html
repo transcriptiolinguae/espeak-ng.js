@@ -348,9 +348,7 @@ for (let i = 0; i < g2pOutput.length; i++) {
   }
 }
 
-console.log('Before replacement:', fixedOutput);
-fixedOutput = fixedOutput.replace(/\bi\(\)/g, 'i(i)');
-console.log('After replacement:', fixedOutput);
+fixedOutput = fixedOutput.replace(/i\([\u200B-\u200D\uFEFF]*\)/g, 'i(i)');
   
 setOutput(fixedOutput);
 
@@ -908,6 +906,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
