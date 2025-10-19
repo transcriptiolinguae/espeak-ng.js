@@ -423,8 +423,8 @@ function applyG2PMapping(text, ipa) {
   
    // i(i) dei mai
     
-       if (lowerText[i] === 'd' || (lowerText[i] === 'm' && ipa[ipaIndex + 1] === 'e' || ipa[ipaIndex + 1] === 'a' && ipa[ipaIndex + 2] === 'i') {
-          result.push(`${letter}(i)`);
+       if (lowerText[i] === 'd' || (lowerText[i] === 'm' && lowerText[i + 1] === 'e' || lowerText[i + 1] === 'a' && lowerText[i + 2] === 'i') {
+          result.push(`${text[i + 2]}(i)`);
           i += 3; // Skip past "ci"
           ipaIndex += 1; // Skip past the "tʃ" in IPA
           continue; // Skip the rest of the processing for this "ci"
@@ -908,4 +908,5 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
