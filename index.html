@@ -396,6 +396,23 @@ function applyG2PMapping(text, ipa) {
 
 
 
+// Check for diphthongs: ai, ei, oi
+if (['a', 'e', 'o'].includes(lowerText[i]) && lowerText[i + 1] === 'i') {
+  const diphthong = lowerText.slice(i, i + 2);
+  const diphthongIPA = ipa.slice(ipaIndex, ipaIndex + 2);
+
+  // Map the diphthong
+  result.push(`${diphthong}(${diphthongIPA})`);
+  i += 2;
+  ipaIndex += 2;
+  continue;
+}
+
+
+
+
+    
+
         if (ipaChar === 'd' && ipa[ipaIndex + 1] === 'z' && ipa[ipaIndex + 2] === 'ː') {
         result.push(`zz(${ipaChar}${ipa[ipaIndex + 1]}ː)`);  
         i += 2;  
@@ -901,6 +918,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
