@@ -864,10 +864,11 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
     
     // Default behavior: Process the IPA character normally
     if (ipaChar === 'ˈ' || ipaChar === 'ˌ') {
-      //ipaIndex++;
+      ipaIndex++;
       ipaChar = ipa[ipaIndex];
       result.push(`${letter}('${ipaChar})`);
     } else {
+            ipaIndex--;
       result.push(`${letter}(${ipaChar})`);
     }
 
@@ -898,6 +899,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
