@@ -676,22 +676,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
     
     
-// gi(dʒ)
-    
-        if (lowerText[i] === 'g' && lowerText[i + 1] === 'i') {
-      // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
-      if (ipa[ipaIndex] === 'd' && ipa[ipaIndex + 1] === 'ʒ') {
-        const nextIpa = ipa.slice(ipaIndex + 2, ipaIndex + 4); // Check the next two IPA chars
 
-        if (!/i|ˈi|j|ˈj/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
-          // map "ci" with "tʃ" to "ci(tʃ)"
-          result.push(`${letter}${text[i + 1]}(dʒ)`);
-          i += 2; // Skip past "ci"
-          ipaIndex += 2; // Skip past the "tʃ" in IPA
-          continue; // Skip the rest of the processing for this "ci"
-        }
-      }
-    }
 
 
 
@@ -861,6 +846,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
