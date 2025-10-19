@@ -347,6 +347,8 @@ for (let i = 0; i < g2pOutput.length; i++) {
     fixedOutput += ' ' + token;
   }
 }
+// Fix i() → i(i) before displaying
+fixedOutput = fixedOutput.replace(/\bi\(\)/g, 'i(i)');
 setOutput(fixedOutput);
 
   });
@@ -892,7 +894,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 
 
-return result.join('').replace(/\bi\(\)/g, 'i(i)');
+  return result.join('');
 
 }
   
@@ -903,6 +905,7 @@ return result.join('').replace(/\bi\(\)/g, 'i(i)');
 
 </body>
 </html>
+
 
 
 
