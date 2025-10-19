@@ -893,7 +893,11 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
   
   return result.join('');
 
-result = result.map(entry => entry.replace(/\bi\(\)\b/g, 'i(i)'));
+  
+// After building result array but before return:
+for (let j = 0; j < result.length; j++) {
+  result[j] = result[j].replace(/(\bi\(\))/g, 'i(i)');
+}
 
 }
   
@@ -904,6 +908,7 @@ result = result.map(entry => entry.replace(/\bi\(\)\b/g, 'i(i)'));
 
 </body>
 </html>
+
 
 
 
