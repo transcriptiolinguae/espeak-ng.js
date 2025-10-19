@@ -836,7 +836,8 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
            result.push(`${letter}${text[i + 1]}('${ipaChar})`);
         } else {
            result.push(`${letter}${text[i + 1]}(${ipaChar})`);
-     //   i += 1; // Skip past "ha or ho"
+         i += 2; // Skip past "ha or ho"
+         ipaIndex++;
          }}
      
 
@@ -994,6 +995,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
