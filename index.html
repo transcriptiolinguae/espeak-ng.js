@@ -189,6 +189,7 @@
       .replace(/ɪ/g, 'i')
       .replace(/ʊ/g, 'u')
       .replace(/ɡ/g, 'g')
+        .replace(/[\u0300-\u036F\u200B-\u200D\uFEFF]/g, '') // <--- strip hidden chars
       .trim();
   }
 
@@ -339,7 +340,6 @@ for (const token of tokens) {
   index += token.length;
 }
     
-reconstructed = reconstructed.replace(/i\([\u200B-\u200D\uFEFF]*\)/g, 'i(i)');
 
 setOutput(reconstructed);
 
@@ -1015,4 +1015,5 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
