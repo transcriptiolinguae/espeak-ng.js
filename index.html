@@ -272,9 +272,13 @@ const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-
 
       if (i > 0) {
         const prev = tokens[i - 1];
-        if (![')', ',', '.', ';', ':', '!', '?'].includes(token) && prev !== '(') {
-          result.push(' ');
-        }
+if (
+  ![')', ',', '.', ';', ':', '!', '?', '"', "'", '”', '’'].includes(token) &&
+  !['(', '"', "'", '“', '‘'].includes(prev)
+) {
+  result.push(' ');
+}
+
       }
 
       if (isWord) {
@@ -1023,6 +1027,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
