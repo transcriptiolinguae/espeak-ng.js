@@ -172,6 +172,7 @@
     });
 
     return ipaOutput
+      .replace(/[\u0300-\u036F\u200B-\u200D\uFEFF]/g, '') // <--- strip hidden chars
       .replace(/rɾ/g, 'rː')
       .replace(/mm/g, 'mː')
       .replace(/ff/g, 'fː')
@@ -181,15 +182,13 @@
       .replace(/nn/g, 'nː')
       .replace(/ɲɲ/g, 'ɲː')
       .replace(/oo/g, 'oː')      
-      .replace(/s\u200Ds/g, 'sː')
       .replace(/ss/g, 'sː')
-      .replace(/t\u200D/g, 't')
-      .replace(/d\u200D/g, 'd')
+      .replace(/tt/g, 't')
+      .replace(/dd/g, 'd')
       .replace(/ɾ/g, 'r')
       .replace(/ɪ/g, 'i')
       .replace(/ʊ/g, 'u')
       .replace(/ɡ/g, 'g')
-        .replace(/[\u0300-\u036F\u200B-\u200D\uFEFF]/g, '') // <--- strip hidden chars
       .trim();
   }
 
@@ -1015,5 +1014,6 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
