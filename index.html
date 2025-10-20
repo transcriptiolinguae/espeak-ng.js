@@ -247,14 +247,14 @@
       return;
     }
 
-const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+(?:'[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+    const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
     if (!tokens) {
       setOutput('[No valid input]');
       return;
     }
 
     const ipaMap = new Map();
-const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
 
     try {
       for (const word of uniqueWords) {
@@ -265,14 +265,27 @@ const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-ž
       console.error('Error during IPA conversion:', e);
     }
 
-    let result = rawInput;
-for (const [word, ipa] of ipaMap.entries()) {
-  const safeWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex
-  const re = new RegExp(`\\b${safeWord}\\b`, 'g');
-  result = result.replace(re, `${word} (${ipa})`);
-}
-setOutput(result);
+    const result = [];
+    for (let i = 0; i < tokens.length; i++) {
+      const token = tokens[i];
+      const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
 
+      if (i > 0) {
+        const prev = tokens[i - 1];
+        if (![')', ',', '.', ';', ':', '!', '?'].includes(token) && prev !== '(') {
+          result.push(' ');
+        }
+      }
+
+      if (isWord) {
+        const ipa = ipaMap.get(token) || '';
+        result.push(`${token} (${ipa})`);
+      } else {
+        result.push(token);
+      }
+    }
+
+    setOutput(result.join(''));
   });
 
   // G2P button
@@ -290,14 +303,14 @@ setOutput(result);
       return;
     }
 
-const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+(?:'[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+    const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
     if (!tokens) {
       setOutput('[No valid input]');
       return;
     }
 
     const ipaMap = new Map();
-const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+    const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
 
     try {
       for (const word of uniqueWords) {
@@ -311,7 +324,7 @@ const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-ž
     const g2pOutput = [];
 
     for (const token of tokens) {
-const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+      const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
 
       if (isWord) {
         const ipa = ipaMap.get(token) || '';
@@ -322,25 +335,22 @@ const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-
       }
     }
 
-    // Reconstruct output by aligning tokens with raw input spacing
-let reconstructed = '';
-let index = 0;
-
-for (const token of tokens) {
-  // Skip any spaces in original text before this token
-  while (rawInput[index] && /\s/.test(rawInput[index])) {
-    reconstructed += rawInput[index++];
+    let fixedOutput = '';
+for (let i = 0; i < g2pOutput.length; i++) {
+  const token = g2pOutput[i];
+  if (i === 0) {
+    fixedOutput += token;
+  } else if (/^[.,;!?]$/.test(token)) {
+    // no space before punctuation
+    fixedOutput += token;
+  } else {
+    fixedOutput += ' ' + token;
   }
-
-  const nextToken = g2pOutput.shift();
-  reconstructed += nextToken;
-
-  // Advance index past the original token length
-  index += token.length;
 }
 
-setOutput(reconstructed);
-
+fixedOutput = fixedOutput.replace(/i\([\u200B-\u200D\uFEFF]*\)/g, 'i(i)');
+  
+setOutput(fixedOutput);
 
   });
 
@@ -978,15 +988,6 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
     }
 
 
-    
-    
-    // Default behavior: Process the IPA character normally
-    if (lowerText[i] === "'") {
-      i++;
-     
-    }
-
-
           
     ipaIndex++;
     i++;
@@ -1013,3 +1014,13 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
