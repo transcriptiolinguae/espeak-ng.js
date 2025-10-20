@@ -266,24 +266,26 @@ const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-ž
     }
 
     const result = [];
-    for (let i = 0; i < tokens.length; i++) {
-      const token = tokens[i];
-const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+for (let i = 0; i < tokens.length; i++) {
+  const token = tokens[i];
+  const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
 
-      if (i > 0) {
-        const prev = tokens[i - 1];
-        if (![')', ',', '.', ';', ':', '!', '?'].includes(token) && prev !== '(') {
-          result.push(' ');
-        }
-      }
-
-      if (isWord) {
-        const ipa = ipaMap.get(token) || '';
-        result.push(`${token} (${ipa})`);
-      } else {
-        result.push(token);
-      }
+  if (i > 0) {
+    const prev = tokens[i - 1];
+    const isPunctuation = /^[.,;:!?]$/.test(token);
+    if (!isPunctuation && prev !== '(') {
+      result.push(' ');
     }
+  }
+
+  if (isWord) {
+    const ipa = ipaMap.get(token) || '';
+    result.push(`${token} (${ipa})`);
+  } else {
+    result.push(token);
+  }
+}
+
 
     setOutput(result.join(''));
   });
@@ -335,18 +337,21 @@ const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-
       }
     }
 
-    let fixedOutput = '';
+let fixedOutput = '';
 for (let i = 0; i < g2pOutput.length; i++) {
   const token = g2pOutput[i];
-  if (i === 0) {
+  const isPunctuation = /^[.,;:!?)]$/.test(token);
+  const isOpening = /^[(]$/.test(token);
+
+  if (i === 0 || isPunctuation) {
     fixedOutput += token;
-  } else if (/^[.,;!?]$/.test(token)) {
-    // no space before punctuation
-    fixedOutput += token;
+  } else if (isOpening) {
+    fixedOutput += token; // no space before opening bracket
   } else {
     fixedOutput += ' ' + token;
   }
 }
+
 
 fixedOutput = fixedOutput.replace(/i\([\u200B-\u200D\uFEFF]*\)/g, 'i(i)');
   
@@ -1023,3 +1028,4 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
