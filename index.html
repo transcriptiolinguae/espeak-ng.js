@@ -872,7 +872,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
       if (ipa[ipaIndex] === 'a') {
           result.push(`${letter}${text[i + 1]}(a)`);
           i += 2; // Skip past "ci"
-          ipaIndex += 2; // Skip past the "tʃ" in IPA
+          ipaIndex += 1; // Skip past the "tʃ" in IPA
           continue; // Skip the rest of the processing for this "ci"
         }
       }
@@ -883,7 +883,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
       if (ipa[ipaIndex] === 'o') {
           result.push(`${letter}${text[i + 1]}(o)`);
           i += 2; // Skip past "ci"
-          ipaIndex += 2; // Skip past the "tʃ" in IPA
+          ipaIndex += 1; // Skip past the "tʃ" in IPA
           continue; // Skip the rest of the processing for this "ci"
         }
       }
@@ -893,7 +893,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
       if (ipa[ipaIndex] === 'ɔ') {
           result.push(`${letter}${text[i + 1]}(ɔ)`);
           i += 2; // Skip past "ci"
-          ipaIndex += 2; // Skip past the "tʃ" in IPA
+          ipaIndex += 1; // Skip past the "tʃ" in IPA
           continue; // Skip the rest of the processing for this "ci"
         }
       }
@@ -1061,6 +1061,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
