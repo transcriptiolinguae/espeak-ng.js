@@ -172,6 +172,7 @@
     });
 
     return ipaOutput
+      .replace(/[\u0300-\u036F\u200B-\u200D\uFEFF]/g, '') // <--- strip hidden chars
       .replace(/rɾ/g, 'rː')
       .replace(/mm/g, 'mː')
       .replace(/ff/g, 'fː')
@@ -181,10 +182,9 @@
       .replace(/nn/g, 'nː')
       .replace(/ɲɲ/g, 'ɲː')
       .replace(/oo/g, 'oː')      
-      .replace(/s\u200Ds/g, 'sː')
       .replace(/ss/g, 'sː')
-      .replace(/t\u200D/g, 't')
-      .replace(/d\u200D/g, 'd')
+      .replace(/tt/g, 't')
+      .replace(/dd/g, 'd')
       .replace(/ɾ/g, 'r')
       .replace(/ɪ/g, 'i')
       .replace(/ʊ/g, 'u')
@@ -254,7 +254,7 @@ const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+(?:'[A-Za-zÀ
     }
 
     const ipaMap = new Map();
-const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]*$/u.test(t)))];
 
     try {
       for (const word of uniqueWords) {
@@ -265,27 +265,14 @@ const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-ž
       console.error('Error during IPA conversion:', e);
     }
 
-    const result = [];
-    for (let i = 0; i < tokens.length; i++) {
-      const token = tokens[i];
-const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+    let result = rawInput;
+for (const [word, ipa] of ipaMap.entries()) {
+  const safeWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex
+  const re = new RegExp(`\\b${safeWord}\\b`, 'g');
+  result = result.replace(re, `${word} (${ipa})`);
+}
+setOutput(result);
 
-      if (i > 0) {
-        const prev = tokens[i - 1];
-        if (![')', ',', '.', ';', ':', '!', '?'].includes(token) && prev !== '(') {
-          result.push(' ');
-        }
-      }
-
-      if (isWord) {
-        const ipa = ipaMap.get(token) || '';
-        result.push(`${token} (${ipa})`);
-      } else {
-        result.push(token);
-      }
-    }
-
-    setOutput(result.join(''));
   });
 
   // G2P button
@@ -310,7 +297,7 @@ const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+(?:'[A-Za-zÀ
     }
 
     const ipaMap = new Map();
-const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(t)))];
+const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]*$/u.test(t)))];
 
     try {
       for (const word of uniqueWords) {
@@ -324,7 +311,7 @@ const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-ž
     const g2pOutput = [];
 
     for (const token of tokens) {
-const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+$/u.test(token);
+const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]*$/u.test(token);
 
       if (isWord) {
         const ipa = ipaMap.get(token) || '';
@@ -335,22 +322,26 @@ const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-
       }
     }
 
-    let fixedOutput = '';
-for (let i = 0; i < g2pOutput.length; i++) {
-  const token = g2pOutput[i];
-  if (i === 0) {
-    fixedOutput += token;
-  } else if (/^[.,;!?]$/.test(token)) {
-    // no space before punctuation
-    fixedOutput += token;
-  } else {
-    fixedOutput += ' ' + token;
-  }
-}
+    // Reconstruct output by aligning tokens with raw input spacing
+let reconstructed = '';
+let index = 0;
 
-fixedOutput = fixedOutput.replace(/i\([\u200B-\u200D\uFEFF]*\)/g, 'i(i)');
-  
-setOutput(fixedOutput);
+for (const token of tokens) {
+  // Skip any spaces in original text before this token
+  while (rawInput[index] && /\s/.test(rawInput[index])) {
+    reconstructed += rawInput[index++];
+  }
+
+  const nextToken = g2pOutput.shift();
+  reconstructed += nextToken;
+
+  // Advance index past the original token length
+  index += token.length;
+}
+    
+
+setOutput(reconstructed);
+
 
   });
 
@@ -554,6 +545,20 @@ if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' 
 
 
 
+ } else if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' && ipa[ipaIndex + 3] === 'j') {
+        result.push(`cch(${ipaChar}${ipa[ipaIndex + 1]})`);  
+        i += 3;  
+        ipaIndex += 2;  
+        continue;
+
+    } else if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'j') {
+        result.push(`cch(${ipaChar}${ipa[ipaIndex + 1]})`);  
+        i += 3;  
+        ipaIndex += 2;  
+        continue;
+
+
+
                  } else if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' && ipa[ipaIndex + 3] === 'e') {
         result.push(`cch(${ipaChar}${ipa[ipaIndex + 1]})`);  
         i += 3;  
@@ -572,6 +577,7 @@ if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ˈ' 
         i += 3;  
         ipaIndex += 2;  
         continue;
+  
 
     } else if (ipaChar === 'k' && ipa[ipaIndex + 1] === 'ː' && ipa[ipaIndex + 2] === 'ɛ') {
         result.push(`cch(${ipaChar}${ipa[ipaIndex + 1]})`);  
@@ -651,7 +657,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
       if (ipa[ipaIndex] === 't' && ipa[ipaIndex + 1] === 'ʃ' && ipa[ipaIndex + 2] === 'ː') {
         const nextIpa = ipa.slice(ipaIndex + 3, ipaIndex + 5); // Check the next two IPA chars
 
-        if (/a|ˈa|e|ˈe|ɛ|ˈɛ/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
+        if (/ɔ|ˈɔ|o|ˈo|a|ˈa|e|ˈe|ɛ|ˈɛ/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
           // map "ci" with "tʃ" to "ci(tʃ)"
           result.push(`${letter}${text[i + 1]}${text[i + 2]}(tʃː)`);
           i += 3; // Skip past "ci"
@@ -1023,3 +1029,8 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
+
+
+
+
