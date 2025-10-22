@@ -315,7 +315,7 @@ document.getElementById('convertInline').addEventListener('click', async () => {
       return;
     }
 
-    const rawInput = inputElem.value.trim();
+const rawInput = normalizeCurlyApostrophes(inputElem.value.trim());
     if (!rawInput) {
       showPlaceholder();
       return;
@@ -1195,10 +1195,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 }
 
-  const testStr = "L’amico";  // Note: this contains a curly apostrophe
-const normalized = testStr.replace(/[‘’‚‛❛❜❟]/g, "'");
-console.log(normalized);  // Should output: L'amico
-  
+
 </script>
 
 
@@ -1206,6 +1203,7 @@ console.log(normalized);  // Should output: L'amico
 
 </body>
 </html>
+
 
 
 
