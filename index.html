@@ -316,8 +316,9 @@ document.getElementById('convertInline').addEventListener('click', async () => {
       return;
     }
 
-      // Normalize curly apostrophes to straight ones for consistency
-  const normalizedInput = rawInput.replace(/[’‘]/g, "'");
+    
+const rawInput = inputElem.value.trim().replace(/[’‘]/g, "'");
+
 
 const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+(?:'[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
     if (!tokens) {
@@ -1193,6 +1194,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
