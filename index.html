@@ -389,7 +389,7 @@ function applyG2PMapping(text, ipa) {
   let i = 0;
   const lowerText = text.toLowerCase();
 
-if (char === "'") {
+if (text[i] === "'") {
       // Preserve the apostrophe without mapping it to IPA
       result.push("'");
     }
@@ -1219,6 +1219,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
