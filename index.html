@@ -526,9 +526,9 @@ function applyG2PMapping(text, ipa) {
       }}
 
   
-          if (lowerText[i] === "'" && lowerText[i + 1] !== undefined) {
+          if (lowerText[i] === "'" && lowerText[i + 1] === 'u') {
       // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
-      if (ipa[ipaIndex] !== undefined) {
+      if (ipa[ipaIndex] === 'u') {
           result.push(`${text[i+1]}(${ipa[ipaIndex]})`);
           i += 2; // Skip past "ci"
           ipaIndex += 3; // Skip past the "tʃ" in IPA
@@ -1250,6 +1250,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
