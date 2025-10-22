@@ -377,7 +377,14 @@ setOutput(reconstructed);
 
   });
 
+
+function normalizeApostrophes(text) {
+  return text.replace(/[\u2018\u2019\u02BC\u2032`´]/g, "'");
+}
+  
 function applyG2PMapping(text, ipa) {
+
+    text = normalizeApostrophes(text);
   const result = [];
   let ipaIndex = 0;
   let i = 0;
@@ -1196,6 +1203,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
