@@ -526,15 +526,25 @@ function applyG2PMapping(text, ipa) {
       }}
 
   
-          if (lowerText[i] === "'" && lowerText[i + 1] === 'u') {
+   //       if (lowerText[i] === "'" && lowerText[i + 1] === 'u') {
       // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
-      if (ipa[ipaIndex] === 'w') {
+  //    if (ipa[ipaIndex] === 'w') {
+   //       result.push(`'${text[i+1]}(${ipa[ipaIndex]})`);
+    //      i += 2; // Skip past "ci"
+    //      ipaIndex += 1; // Skip past the "tʃ" in IPA
+    //      continue; // Skip the rest of the processing for this "ci"
+   //   }}
+
+
+
+              if (lowerText[i] === "'" && /[a-z]/i.test(lowerText[i + 1])) {
+      // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
+      if (/[\u0250-\u02AF\u1D00-\u1D7F\u1D80-\u1DBF]/.test(ipa[ipaIndex])) {
           result.push(`'${text[i+1]}(${ipa[ipaIndex]})`);
           i += 2; // Skip past "ci"
           ipaIndex += 1; // Skip past the "tʃ" in IPA
           continue; // Skip the rest of the processing for this "ci"
       }}
-    
        
        
 
