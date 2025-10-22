@@ -130,6 +130,11 @@
 <script type="module">
   import initESpeak from './espeak-ng.js';
 
+  // Normalize curly apostrophes to straight apostrophes
+function normalizeCurlyApostrophes(text) {
+  return text.replace(/[’‘]/g, "'");
+}
+  
   const outputElem = document.getElementById('output');
   const inputElem = document.getElementById('input');
 
@@ -317,9 +322,7 @@ document.getElementById('convertInline').addEventListener('click', async () => {
     }
 
     
-function normalizeCurlyApostrophes(text) {
-  return text.replace(/[’‘]/g, "'");
-}
+
 
 
 const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+(?:'[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
@@ -381,8 +384,6 @@ setOutput(reconstructed);
 
 function applyG2PMapping(text, ipa) {
   
-  text = text.replace(/[\u2018\u2019\u201A\u201B\u275B\u275C\u275D\u275E]/g, "'");
-
   const result = [];
   let ipaIndex = 0;
   let i = 0;
@@ -1205,6 +1206,7 @@ console.log(normalized);  // Should output: L'amico
 
 </body>
 </html>
+
 
 
 
