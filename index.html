@@ -389,23 +389,6 @@ function applyG2PMapping(text, ipa) {
   let i = 0;
   const lowerText = text.toLowerCase();
 
-
-
-  
- for (let i = 0; i < text.length; i++) {
-    const char = text[i];
-
-    // Skip apostrophe in IPA mapping, but preserve in output
-    if (char === "'") {
-      result.push("'");
-      continue; // do NOT advance ipaIndex
-    }}
-
-
-
-
-
-  
   // Predefined mappings for G2P
   const g2pMappings = {
     "bb": "bː",
@@ -518,6 +501,39 @@ function applyG2PMapping(text, ipa) {
           continue; // Skip the rest of the processing for this "ci"
         }
       }
+
+
+
+
+                 // ' any (ˈɛː)
+    
+       if (lowerText[i] === "'" && lowerText[i + 1] !== undefined) {
+      // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
+      if (ipa[ipaIndex] === 'ˈ' && ipa[ipaIndex + 1] !== undefined && ipa[ipaIndex + 2] === 'ː') {
+          result.push(`${text[i+1]}(ˈ${ipa[ipaIndex + 1]})`);
+          i += 2; // Skip past "ci"
+          ipaIndex += 3; // Skip past the "tʃ" in IPA
+          continue; // Skip the rest of the processing for this "ci"
+        } else if {
+          if (lowerText[i] === "'" && lowerText[i + 1] !== undefined) {
+      // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
+      if (ipa[ipaIndex] === 'ˈ' && ipa[ipaIndex + 1] !== undefined) {
+          result.push(`${text[i+1]}(ˈ${ipa[ipaIndex + 1]})`);
+          i += 2; // Skip past "ci"
+          ipaIndex += 3; // Skip past the "tʃ" in IPA
+          continue; // Skip the rest of the processing for this "ci"
+      }}} else if {
+          if (lowerText[i] === "'" && lowerText[i + 1] !== undefined) {
+      // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
+      if (ipa[ipaIndex] !== undefined) {
+          result.push(`${text[i+1]}(${ipa[ipaIndex]})`);
+          i += 2; // Skip past "ci"
+          ipaIndex += 3; // Skip past the "tʃ" in IPA
+          continue; // Skip the rest of the processing for this "ci"
+      }}}}
+    
+       
+       
 
 
          // o(ˈoː)
@@ -1231,6 +1247,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
