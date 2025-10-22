@@ -1193,6 +1193,10 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
   return result.join('');
 
 }
+
+  const testStr = "L’amico";  // Note: this contains a curly apostrophe
+const normalized = testStr.replace(/[‘’‚‛❛❜❟]/g, "'");
+console.log(normalized);  // Should output: L'amico
   
 </script>
 
@@ -1201,6 +1205,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
