@@ -381,7 +381,8 @@ setOutput(reconstructed);
 
 function applyG2PMapping(text, ipa) {
   
-  text = text.replace(/[‘’‚‛❛❜❟]/g, "'");
+  text = text.replace(/[\u2018\u2019\u201A\u201B\u275B\u275C\u275D\u275E]/g, "'");
+
   const result = [];
   let ipaIndex = 0;
   let i = 0;
@@ -1200,6 +1201,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
