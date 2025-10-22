@@ -222,7 +222,6 @@
       return;
     }
 
-     const normalizedInput = rawInput.replace(/[’‘]/g, "'");
 
     const markedInput = rawInput.replace(/\s+/g, '|');
 
@@ -249,7 +248,7 @@
       return;
     }
 
-      const normalizedInput = rawInput.replace(/[’‘]/g, "'");
+   
 
 
 const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+(?:'[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
@@ -1034,6 +1033,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
