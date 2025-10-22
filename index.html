@@ -1185,7 +1185,10 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
       result.push(`${letter}(${ipaChar})`);
     }
 
-
+   // Default behavior: Process the IPA character normally
+    if (lowerText[i] === "'") {
+      i++;
+    } 
 
 
           
@@ -1215,6 +1218,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
