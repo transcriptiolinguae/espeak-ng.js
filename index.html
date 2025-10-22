@@ -402,14 +402,6 @@ function applyG2PMapping(text, ipa) {
     }
 
 
-    // Get next IPA symbol (if any)
-    const ipaChar = ipaIndex < ipa.length ? ipa[ipaIndex] : '';
-
-    result.push(`${char}(${ipaChar})`);
-
-    ipaIndex++;
-  }
-
 
 
 
@@ -1239,6 +1231,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
