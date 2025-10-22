@@ -995,8 +995,8 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
           if (lowerText[i] === "'" && lowerText[i + 1] === 'e') {
       // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
-      if (ipa[ipaIndex] === 'ˈ' && ipa[ipaIndex + 1] === 'ˈɛ') {
-          result.push(`${letter}${text[i + 1]}(ɛ)`);
+      if (ipa[ipaIndex] === 'ˈ' && ipa[ipaIndex + 1] === 'ɛ') {
+          result.push(`${letter}${text[i + 1]}(ˈɛ)`);
           i += 2; // Skip past "ci"
           ipaIndex += 1; // Skip past the "tʃ" in IPA
           continue; // Skip the rest of the processing for this "ci"
@@ -1006,8 +1006,8 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
              if (lowerText[i] === "'" && lowerText[i + 1] === 'o') {
       // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
-      if (ipa[ipaIndex] === 'ˈ' && ipa[ipaIndex + 1] === 'ˈɔ') {
-          result.push(`${letter}${text[i + 1]}(ɔ)`);
+      if (ipa[ipaIndex] === 'ˈ' && ipa[ipaIndex + 1] === 'ɔ') {
+          result.push(`${letter}${text[i + 1]}(ˈɔ)`);
           i += 2; // Skip past "ci"
           ipaIndex += 1; // Skip past the "tʃ" in IPA
           continue; // Skip the rest of the processing for this "ci"
@@ -1018,8 +1018,8 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
   
              if (lowerText[i] === "'" && lowerText[i + 1] === 'i') {
       // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
-      if (ipa[ipaIndex] === 'ˈ' && ipa[ipaIndex + 1] === 'ˈi') {
-          result.push(`${letter}${text[i + 1]}(i)`);
+      if (ipa[ipaIndex] === 'ˈ' && ipa[ipaIndex + 1] === 'i') {
+          result.push(`${letter}${text[i + 1]}(ˈi)`);
           i += 2; // Skip past "ci"
           ipaIndex += 1; // Skip past the "tʃ" in IPA
           continue; // Skip the rest of the processing for this "ci"
@@ -1029,8 +1029,8 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
                 if (lowerText[i] === "'" && lowerText[i + 1] === 'u') {
       // Check if the IPA contains "tʃ" and if it is followed by "i", "ˈi", "j", or "ˈj"
-      if (ipa[ipaIndex] === 'ˈ' && ipa[ipaIndex + 1] === 'ˈu') {
-          result.push(`${letter}${text[i + 1]}(u)`);
+      if (ipa[ipaIndex] === 'ˈ' && ipa[ipaIndex + 1] === 'u') {
+          result.push(`${letter}${text[i + 1]}(ˈu)`);
           i += 2; // Skip past "ci"
           ipaIndex += 1; // Skip past the "tʃ" in IPA
           continue; // Skip the rest of the processing for this "ci"
@@ -1190,6 +1190,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
