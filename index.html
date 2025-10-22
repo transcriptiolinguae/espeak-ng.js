@@ -233,51 +233,51 @@
   });
 
   // Testo e AFI button
-  document.getElementById('convertInline').addEventListener('click', async () => {
-    showProgressPlaceholder();
+document.getElementById('convertInline').addEventListener('click', async () => {
+  showProgressPlaceholder();
 
-    if (!wasmReady) {
-      alert('Please wait, WASM is still loading...');
-      return;
+  if (!wasmReady) {
+    alert('Please wait, WASM is still loading...');
+    return;
+  }
+
+  const rawInput = inputElem.value.trim();
+  if (!rawInput) {
+    showPlaceholder();
+    return;
+  }
+
+  const normalizedInput = rawInput.replace(/[’‘]/g, "'");
+
+  const tokens = normalizedInput.match(/(?:[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+[''][A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+)|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+  if (!tokens) {
+    setOutput('[No valid input]');
+    return;
+  }
+
+  const ipaMap = new Map();
+  const uniqueWords = [...new Set(tokens.filter(t =>
+    /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+(?:'[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+)?$/u.test(t)
+  ))];
+
+  try {
+    for (const word of uniqueWords) {
+      const ipa = await runESpeak(word);
+      ipaMap.set(word, ipa);
     }
+  } catch (e) {
+    console.error('Error during IPA conversion:', e);
+  }
 
-    const rawInput = inputElem.value.trim();
-    if (!rawInput) {
-      showPlaceholder();
-      return;
-    }
+  let result = normalizedInput;
+  for (const [word, ipa] of ipaMap.entries()) {
+    const safeWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex
+    const re = new RegExp(`\\b${safeWord}\\b`, 'g');
+    result = result.replace(re, `${word} (${ipa})`);
+  }
 
-    const normalizedInput = rawInput.replace(/[’‘]/g, "'"); // Normalize apostrophes
-
-const tokens = rawInput.match(/(?:[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+['’][A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+|[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+)|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-
-    if (!tokens) {
-      setOutput('[No valid input]');
-      return;
-    }
-
-    const ipaMap = new Map();
-const uniqueWords = [...new Set(tokens.filter(t =>
-  /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+(?:['’][A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+)?$/u.test(t)))];
-
-    try {
-      for (const word of uniqueWords) {
-        const ipa = await runESpeak(word);
-        ipaMap.set(word, ipa);
-      }
-    } catch (e) {
-      console.error('Error during IPA conversion:', e);
-    }
-
-    let result = rawInput;
-for (const [word, ipa] of ipaMap.entries()) {
-  const safeWord = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Escape regex
-  const re = new RegExp(`\\b${safeWord}\\b`, 'g');
-  result = result.replace(re, `${word} (${ipa})`);
-}
-setOutput(result);
-
-  });
+  setOutput(result);
+});
 
   // G2P button
   document.getElementById('g2p').addEventListener('click', async () => {
@@ -1065,6 +1065,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
