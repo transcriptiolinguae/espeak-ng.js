@@ -389,6 +389,11 @@ function applyG2PMapping(text, ipa) {
   let i = 0;
   const lowerText = text.toLowerCase();
 
+if (char === "'") {
+      // Preserve the apostrophe without mapping it to IPA
+      result.push("'");
+    }
+  
   // Predefined mappings for G2P
   const g2pMappings = {
     "bb": "bː",
@@ -1214,6 +1219,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
