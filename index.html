@@ -222,6 +222,8 @@
       return;
     }
 
+     const normalizedInput = rawInput.replace(/[’‘]/g, "'");
+
     const markedInput = rawInput.replace(/\s+/g, '|');
 
     try {
@@ -1032,6 +1034,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
