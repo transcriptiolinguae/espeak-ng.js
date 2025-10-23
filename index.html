@@ -166,29 +166,28 @@
     }
 
 // ===============================
-// ✅ RUN eSpeak PER WORD (reuses module)
+// ⚡ HIGH-SPEED BATCHED eSpeak
 // ===============================
-async function runESpeakBatch(words) {
+async function runESpeakBatch(words, chunkSize = 50) {
   if (!words.length) return new Map();
 
   const map = new Map();
+  const SEP = '###SEP###'; // unique separator unlikely to appear in Italian
 
-  for (const word of words) {
+  for (let i = 0; i < words.length; i += chunkSize) {
+    const chunk = words.slice(i, i + chunkSize);
+    const joined = chunk.join(` ${SEP} `); // keep spaces so eSpeak sees word boundaries
+
     let ipaOutput = '';
     await initESpeak({
-      arguments: ['-v', 'it', '--ipa=3', word],
+      arguments: ['-v', 'it', '--ipa=3', joined],
       print: (line) => { ipaOutput += line + '\n'; },
       printErr: printErrFiltered,
     });
 
-    // eSpeak outputs may contain multiple lines — take first non-empty
-    const ipa = ipaOutput
-      .split('\n')
-      .map(l => l.trim())
-      .filter(Boolean)[0] || '';
-
-    const cleaned = ipa
-      .replace(/[\u0300-\u036F\u200B-\u200D\uFEFF]/g, '')
+    // Get raw IPA output
+    const ipaText = ipaOutput
+      .replace(/[\u0300-\u036F\u200B-\u200D\uFEFF]/g, '') // strip diacritics
       .replace(/rɾ/g, 'rː')
       .replace(/mm/g, 'mː')
       .replace(/ff/g, 'fː')
@@ -205,11 +204,19 @@ async function runESpeakBatch(words) {
       .replace(/ɡ/g, 'g')
       .trim();
 
-    map.set(word, cleaned);
+    // Split IPA result by separator back into per-word
+    const ipaParts = ipaText.split(new RegExp(`${SEP}`, 'g')).map(s => s.trim());
+
+    for (let j = 0; j < chunk.length; j++) {
+      const word = chunk[j];
+      const ipa = ipaParts[j] || '';
+      map.set(word, ipa);
+    }
   }
 
   return map;
 }
+
 
 
     function showPlaceholder() {
@@ -1252,6 +1259,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
