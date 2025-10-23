@@ -525,7 +525,7 @@ function applyG2PMapping(text, ipa) {
       if (ipa[ipaIndex] === 'ˈ' && ipaRegex.test(ipa[ipaIndex])) {
           result.push(`${text[i+1]}(ˈ${ipa[ipaIndex + 1]})`);
           i += 2; // Skip past "ci"
-          ipaIndex += 3; // Skip past the "tʃ" in IPA
+          ipaIndex += 2; // Skip past the "tʃ" in IPA
           continue; // Skip the rest of the processing for this "ci"
       }}
 
@@ -1266,6 +1266,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
