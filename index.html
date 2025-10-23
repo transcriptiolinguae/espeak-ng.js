@@ -166,53 +166,56 @@
     }
 
 // ===============================
-// ⚡ HIGH-SPEED BATCHED eSpeak
+// ⚡ FAST + ACCURATE PER-WORD eSpeak
 // ===============================
-async function runESpeakBatch(words, chunkSize = 50) {
+async function runESpeakBatch(words, concurrency = 10) {
   if (!words.length) return new Map();
 
   const map = new Map();
-  const SEP = '###SEP###'; // unique separator unlikely to appear in Italian
+  const queue = [...words];
 
-  for (let i = 0; i < words.length; i += chunkSize) {
-    const chunk = words.slice(i, i + chunkSize);
-    const joined = chunk.join(` ${SEP} `); // keep spaces so eSpeak sees word boundaries
+  // Limit concurrency (run up to `concurrency` words in parallel)
+  async function worker() {
+    while (queue.length) {
+      const word = queue.shift();
+      let ipaOutput = '';
 
-    let ipaOutput = '';
-    await initESpeak({
-      arguments: ['-v', 'it', '--ipa=3', joined],
-      print: (line) => { ipaOutput += line + '\n'; },
-      printErr: printErrFiltered,
-    });
+      await initESpeak({
+        arguments: ['-v', 'it', '--ipa=3', word],
+        print: (line) => { ipaOutput += line + '\n'; },
+        printErr: printErrFiltered,
+      });
 
-    // Get raw IPA output
-    const ipaText = ipaOutput
-      .replace(/[\u0300-\u036F\u200B-\u200D\uFEFF]/g, '') // strip diacritics
-      .replace(/rɾ/g, 'rː')
-      .replace(/mm/g, 'mː')
-      .replace(/ff/g, 'fː')
-      .replace(/vv/g, 'vː')
-      .replace(/ll/g, 'lː')
-      .replace(/kk/g, 'kː')
-      .replace(/nn/g, 'nː')
-      .replace(/ɲɲ/g, 'ɲː')
-      .replace(/oo/g, 'oː')
-      .replace(/ss/g, 'sː')
-      .replace(/ɾ/g, 'r')
-      .replace(/ɪ/g, 'i')
-      .replace(/ʊ/g, 'u')
-      .replace(/ɡ/g, 'g')
-      .trim();
+      const ipa = ipaOutput
+        .split('\n')
+        .map(l => l.trim())
+        .filter(Boolean)[0] || '';
 
-    // Split IPA result by separator back into per-word
-    const ipaParts = ipaText.split(new RegExp(`${SEP}`, 'g')).map(s => s.trim());
+      const cleaned = ipa
+        .replace(/[\u0300-\u036F\u200B-\u200D\uFEFF]/g, '')
+        .replace(/rɾ/g, 'rː')
+        .replace(/mm/g, 'mː')
+        .replace(/ff/g, 'fː')
+        .replace(/vv/g, 'vː')
+        .replace(/ll/g, 'lː')
+        .replace(/kk/g, 'kː')
+        .replace(/nn/g, 'nː')
+        .replace(/ɲɲ/g, 'ɲː')
+        .replace(/oo/g, 'oː')
+        .replace(/ss/g, 'sː')
+        .replace(/ɾ/g, 'r')
+        .replace(/ɪ/g, 'i')
+        .replace(/ʊ/g, 'u')
+        .replace(/ɡ/g, 'g')
+        .trim();
 
-    for (let j = 0; j < chunk.length; j++) {
-      const word = chunk[j];
-      const ipa = ipaParts[j] || '';
-      map.set(word, ipa);
+      map.set(word, cleaned);
     }
   }
+
+  // Start N parallel workers
+  const workers = Array.from({ length: concurrency }, worker);
+  await Promise.all(workers);
 
   return map;
 }
@@ -1259,6 +1262,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
 
 
