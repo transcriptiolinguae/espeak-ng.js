@@ -281,44 +281,43 @@ document.getElementById('convertInline').addEventListener('click', async () => {
 
   
 function alignTextAndIPA(originalText, ipaOutput) {
-  const ipaWords = ipaOutput
-    .replace(/\s+/g, ' ')
-    .replace(/\|/g, ' ')
-    .trim()
-    .split(' ')
-    .filter(Boolean);
+  const ipaWords = ipaOutput.trim().split(/\s+/);
 
   const tokens = originalText.match(
-    /([A-Za-z]\.)+|[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
+    /[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
   ) || [];
 
   let result = '';
   let ipaIndex = 0;
+  let indexInOriginal = 0;
 
   for (const token of tokens) {
-    // Preserve spaces before this token
-    const matchSpaces = originalText.match(/\s*/y);
-    if (matchSpaces) {
-      result += matchSpaces[0];
+    // Preserve original spaces
+    while (indexInOriginal < originalText.length && /\s/.test(originalText[indexInOriginal])) {
+      result += originalText[indexInOriginal++];
     }
+
+    const tokenStart = indexInOriginal;
+    const tokenEnd = indexInOriginal + token.length;
+    const originalToken = originalText.slice(tokenStart, tokenEnd);
 
     const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
-    const isAbbreviation = /^([A-Za-z]\.)+$/.test(token);
-    const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
-    const isPunctuation = /^[^\p{L}\p{M}0-9]+$/u.test(token);
 
-    if ((isWord || isAbbreviation) && !isNumber) {
+    if (isWord) {
       const ipaWord = ipaWords[ipaIndex] || '';
-      result += `${token} (${ipaWord})`;
+      result += `${originalToken} (${ipaWord})`;
       ipaIndex++;
     } else {
-      // Numbers or punctuation remain unchanged
-      result += token;
+      // Punctuation or numbers remain unchanged
+      result += originalToken;
     }
+
+    indexInOriginal = tokenEnd;
   }
 
   return result;
 }
+
 
 
 
