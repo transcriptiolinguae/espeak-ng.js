@@ -241,74 +241,48 @@ function normalizeCurlyApostrophes(text) {
   // Testo e AFI button
 document.getElementById('convertInline').addEventListener('click', async () => {
   showProgressPlaceholder();
-
-  if (!wasmReady) {
-    alert('WASM still loading...');
-    return;
-  }
+  if (!wasmReady) return alert('Please wait, WASM is still loading...');
 
   const rawInput = inputElem.value;
-  if (!rawInput) {
-    showPlaceholder();
-    return;
-  }
+  if (!rawInput) return showPlaceholder();
 
   try {
-    // Normalize curly apostrophes
+    // Normalize apostrophes
     const normalized = rawInput.replace(/[’‘]/g, "'");
 
-    // Tokenize preserving words (with apostrophes), abbreviations, numbers, punctuation
-    const tokenRegex = /[\p{L}]+(?:'[\p{L}]+)*|[\p{L}]+\.(?=\S)|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu;
+    // Match words (letters + apostrophes), abbreviations, everything else separately
+    const tokenRegex = /[\p{L}]+(?:'[\p{L}]+)*|[\p{L}]+\.(?=\S)|[^\p{L}]+/gu;
     const tokens = normalized.match(tokenRegex);
-    if (!tokens) {
-      setOutput('[No valid input]');
-      return;
-    }
 
-    // Only words for IPA
+    if (!tokens) return setOutput('[No valid input]');
+
+    // Collect only word tokens for IPA
     const wordTokens = tokens.filter(t => /^[\p{L}]+(?:'[\p{L}]+)*$|^[\p{L}]+\.(?=\S)$/u.test(t));
-    if (wordTokens.length === 0) {
-      setOutput(rawInput + '\n\n[No words to transcribe]');
-      return;
-    }
 
-    // Join words with a separator for eSpeak
-    const markedInput = wordTokens.join('|');
-    const ipaRaw = await runESpeak(markedInput);
+    if (wordTokens.length === 0) return setOutput(rawInput + '\n\n[No words to transcribe]');
+
+    // Single eSpeak call
+    const ipaRaw = await runESpeak(wordTokens.join('|'));
     const ipaWords = ipaRaw.split('|').map(w => w.trim());
 
-    // Map words → IPA
+    // Build word → IPA map
     const ipaMap = new Map();
     wordTokens.forEach((word, i) => ipaMap.set(word, ipaWords[i] || ''));
 
-    // Reconstruct text with IPA after words
-    let result = '';
-    let idx = 0;
-
-    for (const token of tokens) {
-      // Preserve spaces from original input
-      while (rawInput[idx] && /\s/.test(rawInput[idx])) {
-        result += rawInput[idx++];
-      }
-
-      const originalToken = rawInput.slice(idx, idx + token.length);
-      idx += token.length;
-
-      if (ipaMap.has(token)) {
-        const ipa = ipaMap.get(token);
-        result += `${originalToken}${ipa ? ' (' + ipa + ')' : ''}`;
-      } else {
-        // Numbers and punctuation: preserve
-        result += originalToken;
-      }
-    }
+    // Rebuild final text
+    const result = tokens.map(t => {
+      if (ipaMap.has(t)) return `${t} (${ipaMap.get(t)})`;
+      return t; // punctuation, numbers, spaces, etc.
+    }).join('');
 
     setOutput(result);
+
   } catch (e) {
     console.error(e);
     setOutput('Error during IPA conversion: ' + e.message);
   }
 });
+
 
 
 
