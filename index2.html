@@ -239,7 +239,6 @@ function normalizeCurlyApostrophes(text) {
   });
 
   // Testo e AFI button
-// Word-by-word inline IPA mapping (like G2P, but one WASM call)
 document.getElementById('convertInline').addEventListener('click', async () => {
   showProgressPlaceholder();
 
@@ -248,8 +247,8 @@ document.getElementById('convertInline').addEventListener('click', async () => {
     return;
   }
 
-  const rawInput = inputElem.value.trim();
-  if (!rawInput) {
+  const rawInput = inputElem.value;
+  if (!rawInput.trim()) {
     showPlaceholder();
     return;
   }
@@ -258,56 +257,59 @@ document.getElementById('convertInline').addEventListener('click', async () => {
     // Normalize curly apostrophes
     const normalized = rawInput.replace(/[’‘]/g, "'");
 
-    // Tokenize input into words, numbers, punctuation
-    const tokens = normalized.match(/[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-    if (!tokens) {
-      setOutput('[No valid input]');
-      return;
+    // Split text into "words" and "non-words" while preserving everything
+    // Words: letters + optional apostrophe for contractions or abbreviations
+    const wordRegex = /[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*/gu;
+    const tokens = [];
+    let lastIndex = 0;
+
+    for (const match of normalized.matchAll(wordRegex)) {
+      const start = match.index;
+      const end = start + match[0].length;
+
+      // Push non-word text (spaces, punctuation, numbers) before this word
+      if (start > lastIndex) {
+        tokens.push({ text: normalized.slice(lastIndex, start), type: 'nonword' });
+      }
+
+      // Push the word itself
+      tokens.push({ text: match[0], type: 'word' });
+
+      lastIndex = end;
     }
 
-    // Extract only letter tokens (skip numbers/punctuation)
-    const wordTokens = tokens.filter(t => /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(t));
+    // Push any remaining non-word text after the last word
+    if (lastIndex < normalized.length) {
+      tokens.push({ text: normalized.slice(lastIndex), type: 'nonword' });
+    }
+
+    // Extract only word texts for IPA
+    const wordTokens = tokens.filter(t => t.type === 'word').map(t => t.text);
+
     if (wordTokens.length === 0) {
       setOutput(`${rawInput}\n\n[No words to transcribe]`);
       return;
     }
 
-    // Prepare text for eSpeak: separate by pipe for easy mapping
-    const markedInput = wordTokens.join('|');
-    const ipaRaw = await runESpeak(markedInput);
-    const ipaClean = ipaRaw.replace(/\|/g, ' ').trim();
+    // Prepare eSpeak input: join words with '|' for easy mapping
+    const ipaRaw = await runESpeak(wordTokens.join('|'));
+    const ipaWords = ipaRaw.replace(/\|/g, ' ').trim().split(/\s+/);
 
-    // Split back into word-level IPA tokens
-    const ipaWords = ipaClean.split(/\s+/);
-
-    // Build a map word → IPA
+    // Map each word → IPA
     const ipaMap = new Map();
-    for (let i = 0; i < wordTokens.length; i++) {
-      ipaMap.set(wordTokens[i], ipaWords[i] || '');
-    }
+    wordTokens.forEach((w, i) => ipaMap.set(w, ipaWords[i] || ''));
 
-    // Reconstruct full text, adding (IPA) after each word
-    let result = '';
-    let idx = 0;
-
-    for (const token of tokens) {
-      // Preserve spaces from original
-      while (rawInput[idx] && /\s/.test(rawInput[idx])) {
-        result += rawInput[idx++];
-      }
-
-      const originalToken = rawInput.slice(idx, idx + token.length);
-      idx += token.length;
-
-      if (/^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token)) {
-        // Word: add IPA in parentheses
-        const ipa = ipaMap.get(token) || '';
-        result += `${originalToken}${ipa ? ' (' + ipa + ')' : ''}`;
-      } else {
-        // Numbers and punctuation: keep as-is
-        result += originalToken;
-      }
-    }
+    // Rebuild final text
+    const result = tokens
+      .map(t => {
+        if (t.type === 'word') {
+          const ipa = ipaMap.get(t.text);
+          return ipa ? `${t.text} (${ipa})` : t.text;
+        } else {
+          return t.text; // preserve punctuation, numbers, spaces
+        }
+      })
+      .join('');
 
     setOutput(result);
   } catch (e) {
@@ -315,7 +317,6 @@ document.getElementById('convertInline').addEventListener('click', async () => {
     setOutput('Error during IPA conversion: ' + e.message);
   }
 });
-
 
 
 
