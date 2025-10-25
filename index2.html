@@ -313,18 +313,20 @@ function alignTextAndIPA(originalText, ipaOutput) {
     const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
 
     if ((isWord || isAbbreviation) && !isNumber) {
-      // Collect IPA chunks for this word until next word/punctuation
       let ipaWord = '';
-      while (ipaIndex < ipaChunks.length) {
-        // Append the chunk
-        ipaWord += (ipaWord ? ' ' : '') + ipaChunks[ipaIndex];
+      if (isAbbreviation) {
+        // For abbreviations, combine IPA chunks until the next punctuation or space
+        let combined = '';
+        while (ipaIndex < ipaChunks.length && !/^[.,;:!?]$/.test(ipaChunks[ipaIndex])) {
+          combined += (combined ? ' ' : '') + ipaChunks[ipaIndex];
+          ipaIndex++;
+        }
+        ipaWord = combined;
+      } else {
+        // Normal words: take only the first IPA chunk
+        ipaWord = ipaChunks[ipaIndex] ? ipaChunks[ipaIndex].split(' ')[0] : '';
         ipaIndex++;
-
-        // Heuristic: stop at next punctuation or next original token starting with letter
-        // (we assume IPA chunks correspond roughly one-to-one to words)
-        break; // take only one IPA “unit” per word
       }
-
       result += `${originalToken} (${ipaWord})`;
     } else {
       // Numbers and punctuation remain unchanged
@@ -341,6 +343,7 @@ function alignTextAndIPA(originalText, ipaOutput) {
 
   return result.trim();
 }
+
 
 
 
