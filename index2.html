@@ -239,7 +239,7 @@ function normalizeCurlyApostrophes(text) {
   });
 
   // Testo e AFI button
-// Testo e AFI button (original text + complete IPA in one call)
+// Testo e AFI button (original text + complete IPA, skipping numbers)
 document.getElementById('convertInline').addEventListener('click', async () => {
   showProgressPlaceholder();
 
@@ -255,23 +255,57 @@ document.getElementById('convertInline').addEventListener('click', async () => {
   }
 
   try {
-    // Replace multiple spaces with | for clearer token separation
-    const markedInput = rawInput.replace(/\s+/g, '|');
-    
-    // Run eSpeak once for the whole text
-    const ipa = await runESpeak(markedInput);
+    // Normalize curly apostrophes
+    const normalized = rawInput.replace(/[’‘]/g, "'");
 
-    // Clean up and reinsert spaces
-    const finalIPA = ipa.replace(/\|/g, ' ').trim();
+    // Tokenize input (words, numbers, punctuation)
+    const tokens = normalized.match(/[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+    if (!tokens) {
+      setOutput('[No valid input]');
+      return;
+    }
 
-    // Display: original text first, then IPA underneath
+    // Prepare a version of the text for IPA where numbers are replaced with placeholders
+    const forIPA = tokens
+      .map(t => (/^[0-9]+(?:[.,][0-9]+)?$/.test(t) ? ' ' : t)) // replace numbers with space
+      .join(' ')
+      .replace(/\s+/g, '|'); // mark spacing
+
+    // Run eSpeak ONCE on all words (numbers replaced)
+    const ipaRaw = await runESpeak(forIPA);
+    const ipaClean = ipaRaw.replace(/\|/g, ' ').trim();
+
+    // Split IPA back into word-like tokens (approximation)
+    const ipaTokens = ipaClean.split(/\s+/);
+
+    // Build IPA output aligned to tokens (skip numbers)
+    let ipaIndex = 0;
+    const ipaOutputParts = [];
+
+    for (const token of tokens) {
+      if (/^[0-9]+(?:[.,][0-9]+)?$/.test(token)) {
+        ipaOutputParts.push(token); // keep number as-is
+      } else if (/^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token)) {
+        ipaOutputParts.push(ipaTokens[ipaIndex++] || token); // add next IPA word
+      } else {
+        ipaOutputParts.push(token); // punctuation etc.
+      }
+    }
+
+    // Join everything back into continuous text
+    const finalIPA = ipaOutputParts.join(' ').replace(/\s+([.,!?;:])/g, '$1');
+
+    // Output original + IPA
     const combinedOutput = `${rawInput}\n\n${finalIPA}`;
     setOutput(combinedOutput);
+
   } catch (e) {
     console.error('Error during IPA conversion:', e);
     setOutput('Error during IPA conversion: ' + e.message);
   }
 });
+
+
 
 
 
