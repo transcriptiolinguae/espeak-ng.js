@@ -277,16 +277,15 @@ document.getElementById('convertInline').addEventListener('click', async () => {
 // ------------------ ALIGNMENT FUNCTION ------------------
 
 function alignTextAndIPA(originalText, ipaOutput) {
-  // Normalize separators and split IPA into per-word chunks
-  // Replace multiple spaces with one, split on spaces or pipes
+  // Normalize and split IPA text into individual chunks
   const ipaWords = ipaOutput
-    .replace(/\s+/g, ' ')     // normalize multiple spaces
-    .replace(/\|/g, ' ')      // convert pipes to spaces
+    .replace(/\s+/g, ' ')   // collapse multiple spaces
+    .replace(/\|/g, ' ')    // replace pipes with spaces
     .trim()
     .split(' ')
-    .filter(Boolean);         // remove empty strings
+    .filter(Boolean);
 
-  // Tokenize original text into words + punctuation
+  // Tokenize the original text into words, numbers, punctuation
   const tokens = originalText.match(
     /[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
   ) || [];
@@ -296,7 +295,7 @@ function alignTextAndIPA(originalText, ipaOutput) {
   let indexInOriginal = 0;
 
   for (const token of tokens) {
-    // Preserve spacing from original text
+    // Preserve spaces from original text
     while (indexInOriginal < originalText.length && /\s/.test(originalText[indexInOriginal])) {
       result += originalText[indexInOriginal++];
     }
@@ -306,18 +305,21 @@ function alignTextAndIPA(originalText, ipaOutput) {
     const originalToken = originalText.slice(tokenStart, tokenEnd);
 
     const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
+    const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
 
-    if (isWord) {
+    if (isWord && !isNumber) {
       const ipaWord = ipaWords[ipaIndex] || '';
       result += `${originalToken} (${ipaWord})`;
       ipaIndex++;
     } else {
+      // Numbers and punctuation remain unchanged
       result += originalToken;
     }
 
     indexInOriginal = tokenEnd;
   }
 
+  // Append any trailing spaces or text
   if (indexInOriginal < originalText.length) {
     result += originalText.slice(indexInOriginal);
   }
