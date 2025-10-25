@@ -281,7 +281,7 @@ document.getElementById('convertInline').addEventListener('click', async () => {
 
   
 function alignTextAndIPA(originalText, ipaOutput) {
-  // Normalize IPA into words
+  // Normalize and split IPA text into chunks
   const ipaWords = ipaOutput
     .replace(/\s+/g, ' ')
     .replace(/\|/g, ' ')
@@ -289,49 +289,37 @@ function alignTextAndIPA(originalText, ipaOutput) {
     .split(' ')
     .filter(Boolean);
 
-  // Tokenize: words, abbreviations, numbers, punctuation
-  const tokens = originalText.match(
-    /([A-Za-z]\.)+|[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
+  // Tokenize: words, abbreviations, numbers
+  const wordTokens = originalText.match(
+    /([\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*)/gu
   ) || [];
 
   let result = '';
   let ipaIndex = 0;
-  let indexInOriginal = 0;
+  let lastIndex = 0;
 
-  for (const token of tokens) {
-    // Preserve spaces
-    while (indexInOriginal < originalText.length && /\s/.test(originalText[indexInOriginal])) {
-      result += originalText[indexInOriginal++];
-    }
+  for (const token of wordTokens) {
+    // Find token in original text
+    const start = originalText.indexOf(token, lastIndex);
+    const end = start + token.length;
 
-    const tokenStart = indexInOriginal;
-    const tokenEnd = indexInOriginal + token.length;
-    const originalToken = originalText.slice(tokenStart, tokenEnd);
+    // Append everything before this token (spaces, punctuation)
+    result += originalText.slice(lastIndex, start);
 
-    const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
-    const isAbbreviation = /^([A-Za-z]\.)+$/.test(token);
-    const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
+    // Append token with IPA
+    const ipa = ipaWords[ipaIndex] || '';
+    result += `${token}(${ipa})`;
 
-    if ((isWord || isAbbreviation) && !isNumber) {
-      // Take the next IPA word
-      const ipaWord = ipaWords[ipaIndex] || '';
-      result += `${originalToken} (${ipaWord})`;
-      ipaIndex++; // increment only for words
-    } else {
-      // Punctuation and numbers just get added without IPA
-      result += originalToken;
-    }
-
-    indexInOriginal = tokenEnd;
+    lastIndex = end;
+    ipaIndex++;
   }
 
-  // Append trailing spaces
-  if (indexInOriginal < originalText.length) {
-    result += originalText.slice(indexInOriginal);
-  }
+  // Append any remaining characters after the last word
+  result += originalText.slice(lastIndex);
 
-  return result.trim();
+  return result;
 }
+
 
 
 
