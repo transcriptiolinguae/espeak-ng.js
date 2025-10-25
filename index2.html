@@ -283,8 +283,8 @@ document.getElementById('convertInline').addEventListener('click', async () => {
 function alignTextAndIPA(originalText, ipaOutput) {
   // Normalize and split IPA text into chunks
   const ipaWords = ipaOutput
-    .replace(/\s+/g, ' ')   // collapse multiple spaces
-    .replace(/\|/g, ' ')    // replace pipes with spaces
+    .replace(/\s+/g, ' ')
+    .replace(/\|/g, ' ')
     .trim()
     .split(' ')
     .filter(Boolean);
@@ -312,16 +312,8 @@ function alignTextAndIPA(originalText, ipaOutput) {
     const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
     const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
 
-    if (isAbbreviation) {
-      // Take as many IPA chunks as letters in abbreviation
-      const lettersCount = token.replace(/\./g, '').length;
-      let ipaForAbbrev = [];
-      while (ipaIndex < ipaWords.length && ipaForAbbrev.length < lettersCount) {
-        ipaForAbbrev.push(ipaWords[ipaIndex]);
-        ipaIndex++;
-      }
-      result += `${originalToken} (${ipaForAbbrev.join(' ')})`;
-    } else if (isWord && !isNumber) {
+    if ((isWord || isAbbreviation) && !isNumber) {
+      // Take **one IPA word** for normal words or abbreviation
       const ipaWord = ipaWords[ipaIndex] || '';
       result += `${originalToken} (${ipaWord})`;
       ipaIndex++;
@@ -340,6 +332,7 @@ function alignTextAndIPA(originalText, ipaOutput) {
 
   return result.trim();
 }
+
 
 
   // G2P button
