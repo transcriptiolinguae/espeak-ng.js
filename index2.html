@@ -272,8 +272,6 @@ for (const token of tokens) {
   }
 }
 
-const alignedOutput = alignTextAndIPA(rawInput, ipaWords.join(' '));
-setOutput(alignedOutput);
 
     // Remove IPA chunks that correspond to numbers
     // eSpeak transcribes digits as words (e.g., "due" for "2"), but we want to strip those.
