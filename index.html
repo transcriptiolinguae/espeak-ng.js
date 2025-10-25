@@ -239,8 +239,6 @@ function normalizeCurlyApostrophes(text) {
   });
 
   // Testo e AFI button
-// ------------------ NEW "Testo e AFI" HANDLER ------------------
-
 document.getElementById('convertInline').addEventListener('click', async () => {
   showProgressPlaceholder();
 
@@ -255,73 +253,58 @@ document.getElementById('convertInline').addEventListener('click', async () => {
     return;
   }
 
-  // Insert a word boundary marker (|) before sending to eSpeak
-  const markedInput = rawInput.replace(/\s+/g, '|');
+  // Normalize curly apostrophes to straight ones for consistency
+  const normalizedInput = rawInput.replace(/[’‘]/g, "'");
+
+  // Match sequences of letters and apostrophes (like dell'antichità), numbers, and punctuation
+  const tokens = normalizedInput.match(/[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+  if (!tokens) {
+    setOutput('[No valid input]');
+    return;
+  }
+
+  // Collect unique word tokens
+  const wordTokens = tokens.filter(t => /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(t));
+  const uniqueWords = [...new Set(wordTokens)];
+
+  const ipaMap = new Map();
 
   try {
-    // One single call to WASM (fast!)
-    const ipaOutput = await runESpeak(markedInput);
-
-    // Align text and IPA
-    const aligned = alignTextAndIPA(rawInput, ipaOutput);
-
-    // Show the result
-    setOutput(aligned);
+    for (const word of uniqueWords) {
+      const ipa = await runESpeak(word);
+      ipaMap.set(word, ipa);
+    }
   } catch (e) {
     console.error('Error during IPA conversion:', e);
     setOutput('Error during IPA conversion');
+    return;
   }
-});
 
-
-// ------------------ ALIGNMENT FUNCTION ------------------
-
-function alignTextAndIPA(originalText, ipaOutput) {
-  // Split IPA output on the markers (pipes)
-  const ipaWords = ipaOutput.split('|').map(s => s.trim()).filter(Boolean);
-
-  // Tokenize original text: words, numbers, and punctuation separately
-  const tokens = originalText.match(
-    /[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
-  ) || [];
-
-  let result = '';
-  let ipaIndex = 0;
-  let indexInOriginal = 0;
+  // Reconstruct output with IPA annotations
+  let output = '';
+  let idx = 0;
 
   for (const token of tokens) {
-    // Preserve all original spaces before each token
-    while (indexInOriginal < originalText.length && /\s/.test(originalText[indexInOriginal])) {
-      result += originalText[indexInOriginal++];
+    // Preserve original spacing
+    while (rawInput[idx] && /\s/.test(rawInput[idx])) {
+      output += rawInput[idx++];
     }
 
-    const tokenStart = indexInOriginal;
-    const tokenEnd = indexInOriginal + token.length;
-    const originalToken = originalText.slice(tokenStart, tokenEnd);
+    const originalToken = rawInput.slice(idx, idx + token.length);
+    const normalizedToken = token;
 
-    // Word check: only attach IPA to words, not punctuation
-    const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
-
-    if (isWord) {
-      const ipaWord = ipaWords[ipaIndex] || '';
-      result += `${originalToken} (${ipaWord})`;
-      ipaIndex++;
+    if (ipaMap.has(normalizedToken)) {
+      const ipa = ipaMap.get(normalizedToken);
+      output += `${originalToken} (${ipa})`;
     } else {
-      result += originalToken;
+      output += originalToken;
     }
 
-    indexInOriginal = tokenEnd;
+    idx += token.length;
   }
 
-  // Add any trailing text (if exists)
-  if (indexInOriginal < originalText.length) {
-    result += originalText.slice(indexInOriginal);
-  }
-
-  return result.trim();
-}
-
-
+  setOutput(output);
+});
 
   // G2P button
   document.getElementById('g2p').addEventListener('click', async () => {
@@ -1283,5 +1266,3 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
-
-
