@@ -257,21 +257,7 @@ document.getElementById('convertInline').addEventListener('click', async () => {
 
   try {
     // Run eSpeak once with the whole text
-const tokens = rawInput.match(
-  /([A-Za-z]\.)+|[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
-) || [];
-
-const ipaWords = [];
-
-for (const token of tokens) {
-  if (/^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token)) {
-    const ipa = await runESpeak(token);
-    ipaWords.push(ipa);
-  } else {
-    ipaWords.push('');
-  }
-}
-
+    const ipaOutput = await runESpeak(rawInput);
 
     // Remove IPA chunks that correspond to numbers
     // eSpeak transcribes digits as words (e.g., "due" for "2"), but we want to strip those.
@@ -338,7 +324,6 @@ function alignTextAndIPA(originalText, ipaOutput) {
 
   return result.trim();
 }
-
 
 
 
