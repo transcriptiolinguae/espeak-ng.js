@@ -239,6 +239,8 @@ function normalizeCurlyApostrophes(text) {
   });
 
   // Testo e AFI button
+// ------------------ NEW "Testo e AFI" HANDLER ------------------
+
 document.getElementById('convertInline').addEventListener('click', async () => {
   showProgressPlaceholder();
 
@@ -253,18 +255,72 @@ document.getElementById('convertInline').addEventListener('click', async () => {
     return;
   }
 
-  // Insert markers before calling eSpeak
+  // Insert a word boundary marker (|) before sending to eSpeak
   const markedInput = rawInput.replace(/\s+/g, '|');
 
   try {
-    const ipa = await runESpeak(markedInput);
-    const aligned = alignTextAndIPA(rawInput, ipa);
+    // One single call to WASM (fast!)
+    const ipaOutput = await runESpeak(markedInput);
+
+    // Align text and IPA
+    const aligned = alignTextAndIPA(rawInput, ipaOutput);
+
+    // Show the result
     setOutput(aligned);
   } catch (e) {
     console.error('Error during IPA conversion:', e);
-    setOutput('Error during alignment');
+    setOutput('Error during IPA conversion');
   }
 });
+
+
+// ------------------ ALIGNMENT FUNCTION ------------------
+
+function alignTextAndIPA(originalText, ipaOutput) {
+  // Split IPA output on the markers (pipes)
+  const ipaWords = ipaOutput.split('|').map(s => s.trim()).filter(Boolean);
+
+  // Tokenize original text: words, numbers, and punctuation separately
+  const tokens = originalText.match(
+    /[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
+  ) || [];
+
+  let result = '';
+  let ipaIndex = 0;
+  let indexInOriginal = 0;
+
+  for (const token of tokens) {
+    // Preserve all original spaces before each token
+    while (indexInOriginal < originalText.length && /\s/.test(originalText[indexInOriginal])) {
+      result += originalText[indexInOriginal++];
+    }
+
+    const tokenStart = indexInOriginal;
+    const tokenEnd = indexInOriginal + token.length;
+    const originalToken = originalText.slice(tokenStart, tokenEnd);
+
+    // Word check: only attach IPA to words, not punctuation
+    const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
+
+    if (isWord) {
+      const ipaWord = ipaWords[ipaIndex] || '';
+      result += `${originalToken} (${ipaWord})`;
+      ipaIndex++;
+    } else {
+      result += originalToken;
+    }
+
+    indexInOriginal = tokenEnd;
+  }
+
+  // Add any trailing text (if exists)
+  if (indexInOriginal < originalText.length) {
+    result += originalText.slice(indexInOriginal);
+  }
+
+  return result.trim();
+}
+
 
 
   // G2P button
@@ -1227,4 +1283,5 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
 
