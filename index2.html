@@ -281,10 +281,17 @@ document.getElementById('convertInline').addEventListener('click', async () => {
 
   
 function alignTextAndIPA(originalText, ipaOutput) {
-  const ipaWords = ipaOutput.trim().split(/\s+/);
+  // Normalize and split IPA text into chunks
+  const ipaWords = ipaOutput
+    .replace(/\s+/g, ' ')
+    .replace(/\|/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean);
 
+  // Tokenize: words, abbreviations, numbers, punctuation
   const tokens = originalText.match(
-    /[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
+    /([A-Za-z]\.)+|[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
   ) || [];
 
   let result = '';
@@ -292,7 +299,7 @@ function alignTextAndIPA(originalText, ipaOutput) {
   let indexInOriginal = 0;
 
   for (const token of tokens) {
-    // Preserve original spaces
+    // Preserve spaces from original text
     while (indexInOriginal < originalText.length && /\s/.test(originalText[indexInOriginal])) {
       result += originalText[indexInOriginal++];
     }
@@ -301,23 +308,30 @@ function alignTextAndIPA(originalText, ipaOutput) {
     const tokenEnd = indexInOriginal + token.length;
     const originalToken = originalText.slice(tokenStart, tokenEnd);
 
+    const isAbbreviation = /^([A-Za-z]\.)+$/.test(token);
     const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
+    const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
 
-    if (isWord) {
+    if ((isWord || isAbbreviation) && !isNumber) {
+      // Take **one IPA word** for normal words or abbreviation
       const ipaWord = ipaWords[ipaIndex] || '';
       result += `${originalToken} (${ipaWord})`;
       ipaIndex++;
     } else {
-      // Punctuation or numbers remain unchanged
+      // Numbers and punctuation remain unchanged
       result += originalToken;
     }
 
     indexInOriginal = tokenEnd;
   }
 
-  return result;
-}
+  // Append any trailing spaces
+  if (indexInOriginal < originalText.length) {
+    result += originalText.slice(indexInOriginal);
+  }
 
+  return result.trim();
+}
 
 
 
