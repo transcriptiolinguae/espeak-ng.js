@@ -281,10 +281,15 @@ document.getElementById('convertInline').addEventListener('click', async () => {
 
   
 function alignTextAndIPA(originalText, ipaOutput) {
-  // Normalize IPA and split into chunks
-  const ipaWords = ipaOutput.trim().split(/\s+/);
+  // Normalize and split IPA text into chunks
+  const ipaWords = ipaOutput
+    .replace(/\s+/g, ' ')
+    .replace(/\|/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean);
 
-  // Tokenize original text: words, numbers, punctuation
+  // Tokenize: words, abbreviations, numbers, punctuation
   const tokens = originalText.match(
     /([A-Za-z]\.)+|[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
   ) || [];
@@ -293,10 +298,8 @@ function alignTextAndIPA(originalText, ipaOutput) {
   let ipaIndex = 0;
   let indexInOriginal = 0;
 
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i];
-
-    // Preserve spaces
+  for (const token of tokens) {
+    // Preserve spaces from original text
     while (indexInOriginal < originalText.length && /\s/.test(originalText[indexInOriginal])) {
       result += originalText[indexInOriginal++];
     }
@@ -305,39 +308,35 @@ function alignTextAndIPA(originalText, ipaOutput) {
     const tokenEnd = indexInOriginal + token.length;
     const originalToken = originalText.slice(tokenStart, tokenEnd);
 
-    const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
     const isAbbreviation = /^([A-Za-z]\.)+$/.test(token);
+    const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
     const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
-    const isPunctuation = /^[^\p{L}\p{M}0-9\s]+$/u.test(token);
+    const isPunctuation = /^[^\p{L}\p{M}0-9]+$/u.test(token);
 
     if ((isWord || isAbbreviation) && !isNumber) {
-      // Map a single IPA word
+      // Take **one IPA word** for normal words or abbreviation
       const ipaWord = ipaWords[ipaIndex] || '';
       result += `${originalToken} (${ipaWord})`;
       ipaIndex++;
-    } else if (isPunctuation) {
-      // Append punctuation directly
+    } else if (isNumber) {
+      // Numbers remain unchanged
       result += originalToken;
-
-      // If punctuation is followed by space, move to next IPA
-      if (i + 1 < tokens.length && /\s/.test(originalText[tokenEnd])) {
-        ipaIndex++;
-      }
-    } else {
-      // Numbers or other tokens remain unchanged
+    } else if (isPunctuation) {
+      // Skip punctuation from IPA alignment, just append
       result += originalToken;
     }
 
     indexInOriginal = tokenEnd;
   }
 
-  // Append any remaining trailing spaces
+  // Append any trailing spaces
   if (indexInOriginal < originalText.length) {
     result += originalText.slice(indexInOriginal);
   }
 
   return result.trim();
 }
+
 
 
 
