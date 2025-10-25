@@ -300,9 +300,14 @@ function alignTextAndIPA(originalText, ipaOutput) {
 
   for (const token of tokens) {
     // Preserve spaces from original text
-    while (indexInOriginal < originalText.length && /\s/.test(originalText[indexInOriginal])) {
-      result += originalText[indexInOriginal++];
-    }
+// Preserve spaces AND punctuation before each token
+while (
+  indexInOriginal < originalText.length &&
+  !/[\p{L}\p{M}0-9]/u.test(originalText[indexInOriginal])
+) {
+  result += originalText[indexInOriginal++];
+}
+
 
     const tokenStart = indexInOriginal;
     const tokenEnd = indexInOriginal + token.length;
