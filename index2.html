@@ -270,6 +270,16 @@ document.getElementById('convertInline').addEventListener('click', async () => {
 // ------------------ ALIGNMENT FUNCTION ------------------
 
     // Align the IPA with the original text
+    const alignedOutput = alignTextAndIPA(rawInput, ipaCleaned);
+
+    setOutput(alignedOutput);
+  } catch (e) {
+    console.error('Error during IPA conversion:', e);
+    setOutput('Error during IPA conversion');
+  }
+});
+
+  
 function alignTextAndIPA(originalText, ipaOutput) {
   // Normalize IPA text into separate words
   const ipaWords = ipaOutput
@@ -314,6 +324,7 @@ function alignTextAndIPA(originalText, ipaOutput) {
 
   return result.trim();
 }
+
 
 
 
