@@ -281,42 +281,61 @@ document.getElementById('convertInline').addEventListener('click', async () => {
 
   
 function alignTextAndIPA(originalText, ipaOutput) {
-  // Normalize and split IPA text into chunks
-  const ipaWords = ipaOutput
-    .replace(/\s+/g, ' ')
+  // Normalize IPA output
+  const ipaCleaned = ipaOutput
     .replace(/\|/g, ' ')
-    .trim()
-    .split(' ')
-    .filter(Boolean);
+    .replace(/\s+/g, ' ')
+    .trim();
 
-  // Tokenize original text
+  // Tokenize original text: words, abbreviations, numbers, punctuation
   const tokens = originalText.match(
     /([A-Za-z]\.)+|[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
   ) || [];
 
+  // Split IPA by spaces
+  const ipaWords = ipaCleaned.split(' ').filter(Boolean);
+
   let result = '';
   let ipaIndex = 0;
+  let indexInOriginal = 0;
 
   for (const token of tokens) {
-    const isAbbreviation = /^([A-Za-z]\.)+$/.test(token);
+    // Preserve spaces from original text
+    while (indexInOriginal < originalText.length && /\s/.test(originalText[indexInOriginal])) {
+      result += originalText[indexInOriginal++];
+    }
+
+    const tokenStart = indexInOriginal;
+    const tokenEnd = indexInOriginal + token.length;
+    const originalToken = originalText.slice(tokenStart, tokenEnd);
+
     const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
+    const isAbbreviation = /^([A-Za-z]\.)+$/.test(token);
     const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
-    const isPunctuation = /^[^\p{L}\p{M}0-9]+$/u.test(token);
 
     if ((isWord || isAbbreviation) && !isNumber) {
-      // Assign IPA only to words or abbreviations
-      const ipaWord = ipaWords[ipaIndex] || '';
-      result += `${token} (${ipaWord})`;
-      ipaIndex++;
+      // Take the next IPA chunk(s) for this word
+      let ipaChunk = '';
+      if (ipaIndex < ipaWords.length) {
+        ipaChunk = ipaWords[ipaIndex];
+        ipaIndex++;
+      }
+      result += `${originalToken} (${ipaChunk})`;
     } else {
       // Numbers and punctuation remain unchanged
-      result += token;
+      result += originalToken;
     }
+
+    indexInOriginal = tokenEnd;
   }
 
-  return result;
-}
+  // Append trailing spaces if any
+  if (indexInOriginal < originalText.length) {
+    result += originalText.slice(indexInOriginal);
+  }
 
+  return result.trim();
+}
 
 
 
