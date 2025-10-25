@@ -239,74 +239,7 @@ function normalizeCurlyApostrophes(text) {
   });
 
   // Testo e AFI button
-// ------------------ NEW "Testo e AFI" HANDLER ------------------
-// Testo e AFI button
-document.getElementById('convertInline').addEventListener('click', async () => {
-  showProgressPlaceholder();
 
-  if (!wasmReady) {
-    alert('Please wait, WASM is still loading...');
-    return;
-  }
-
-  const rawInput = inputElem.value.trim();
-  if (!rawInput) {
-    showPlaceholder();
-    return;
-  }
-
-  try {
-    // Run eSpeak once with the whole text
-    const ipaOutput = await runESpeak(rawInput);
-
-    // Remove IPA chunks that correspond to numbers
-    // eSpeak transcribes digits as words (e.g., "due" for "2"), but we want to strip those.
-    // We'll just remove numeric-like tokens and their following IPA chunk.
-    const ipaCleaned = ipaOutput
-      .replace(/[0-9]+(?:[.,][0-9]+)?/g, '') // remove direct numeric IPA pieces
-      .replace(/\s+/g, ' ') // clean extra spaces
-      .trim();
-    
-// ------------------ ALIGNMENT FUNCTION ------------------
-
-    // Align the IPA with the original text
-    const alignedOutput = alignTextAndIPA(rawInput, ipaCleaned);
-
-    setOutput(alignedOutput);
-  } catch (e) {
-    console.error('Error during IPA conversion:', e);
-    setOutput('Error during IPA conversion');
-  }
-});
-
-  
-function alignTextAndIPA(text, ipa) {
-  // Split text into tokens (words, letters, punctuation)
-  const tokens = text.match(/[\p{L}]+|[.,;!?]/gu) || [];
-  // Split IPA transcription into words
-  const ipaWords = ipa.split(/\s+/);
-  
-  let result = '';
-  let ipaIndex = 0;
-
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i];
-
-    // Match letters/words
-    const isWord = /^[\p{L}]+$/u.test(token);
-    
-    if (isWord) {
-      const ipaWord = ipaWords[ipaIndex] || '';
-      result += `${token} (${ipaWord})`;
-      ipaIndex++;
-    } else {
-      // Keep punctuation unchanged
-      result += token;
-    }
-  }
-
-  return result;
-}
 
 
 
