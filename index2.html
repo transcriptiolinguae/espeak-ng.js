@@ -277,10 +277,16 @@ document.getElementById('convertInline').addEventListener('click', async () => {
 // ------------------ ALIGNMENT FUNCTION ------------------
 
 function alignTextAndIPA(originalText, ipaOutput) {
-  // Split IPA output on the markers (pipes)
-  const ipaWords = ipaOutput.split('|').map(s => s.trim()).filter(Boolean);
+  // Normalize separators and split IPA into per-word chunks
+  // Replace multiple spaces with one, split on spaces or pipes
+  const ipaWords = ipaOutput
+    .replace(/\s+/g, ' ')     // normalize multiple spaces
+    .replace(/\|/g, ' ')      // convert pipes to spaces
+    .trim()
+    .split(' ')
+    .filter(Boolean);         // remove empty strings
 
-  // Tokenize original text: words, numbers, and punctuation separately
+  // Tokenize original text into words + punctuation
   const tokens = originalText.match(
     /[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
   ) || [];
@@ -290,7 +296,7 @@ function alignTextAndIPA(originalText, ipaOutput) {
   let indexInOriginal = 0;
 
   for (const token of tokens) {
-    // Preserve all original spaces before each token
+    // Preserve spacing from original text
     while (indexInOriginal < originalText.length && /\s/.test(originalText[indexInOriginal])) {
       result += originalText[indexInOriginal++];
     }
@@ -299,7 +305,6 @@ function alignTextAndIPA(originalText, ipaOutput) {
     const tokenEnd = indexInOriginal + token.length;
     const originalToken = originalText.slice(tokenStart, tokenEnd);
 
-    // Word check: only attach IPA to words, not punctuation
     const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
 
     if (isWord) {
@@ -313,7 +318,6 @@ function alignTextAndIPA(originalText, ipaOutput) {
     indexInOriginal = tokenEnd;
   }
 
-  // Add any trailing text (if exists)
   if (indexInOriginal < originalText.length) {
     result += originalText.slice(indexInOriginal);
   }
