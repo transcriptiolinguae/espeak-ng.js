@@ -239,49 +239,83 @@ function normalizeCurlyApostrophes(text) {
   });
 
   // Testo e AFI button
+// Word-by-word inline IPA mapping (like G2P, but one WASM call)
 document.getElementById('convertInline').addEventListener('click', async () => {
   showProgressPlaceholder();
-  if (!wasmReady) return alert('Please wait, WASM is still loading...');
 
-  const rawInput = inputElem.value;
-  if (!rawInput) return showPlaceholder();
+  if (!wasmReady) {
+    alert('Please wait, WASM is still loading...');
+    return;
+  }
+
+  const rawInput = inputElem.value.trim();
+  if (!rawInput) {
+    showPlaceholder();
+    return;
+  }
 
   try {
-    // Normalize apostrophes
+    // Normalize curly apostrophes
     const normalized = rawInput.replace(/[’‘]/g, "'");
 
-    // Match words (letters + apostrophes), abbreviations, everything else separately
-    const tokenRegex = /[\p{L}]+(?:'[\p{L}]+)*|[\p{L}]+\.(?=\S)|[^\p{L}]+/gu;
-    const tokens = normalized.match(tokenRegex);
+    // Tokenize input into words, numbers, punctuation
+    const tokens = normalized.match(/[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+    if (!tokens) {
+      setOutput('[No valid input]');
+      return;
+    }
 
-    if (!tokens) return setOutput('[No valid input]');
+    // Extract only letter tokens (skip numbers/punctuation)
+    const wordTokens = tokens.filter(t => /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(t));
+    if (wordTokens.length === 0) {
+      setOutput(`${rawInput}\n\n[No words to transcribe]`);
+      return;
+    }
 
-    // Collect only word tokens for IPA
-    const wordTokens = tokens.filter(t => /^[\p{L}]+(?:'[\p{L}]+)*$|^[\p{L}]+\.(?=\S)$/u.test(t));
+    // Prepare text for eSpeak: separate by pipe for easy mapping
+    const markedInput = wordTokens.join('|');
+    const ipaRaw = await runESpeak(markedInput);
+    const ipaClean = ipaRaw.replace(/\|/g, ' ').trim();
 
-    if (wordTokens.length === 0) return setOutput(rawInput + '\n\n[No words to transcribe]');
+    // Split back into word-level IPA tokens
+    const ipaWords = ipaClean.split(/\s+/);
 
-    // Single eSpeak call
-    const ipaRaw = await runESpeak(wordTokens.join('|'));
-    const ipaWords = ipaRaw.split('|').map(w => w.trim());
-
-    // Build word → IPA map
+    // Build a map word → IPA
     const ipaMap = new Map();
-    wordTokens.forEach((word, i) => ipaMap.set(word, ipaWords[i] || ''));
+    for (let i = 0; i < wordTokens.length; i++) {
+      ipaMap.set(wordTokens[i], ipaWords[i] || '');
+    }
 
-    // Rebuild final text
-    const result = tokens.map(t => {
-      if (ipaMap.has(t)) return `${t} (${ipaMap.get(t)})`;
-      return t; // punctuation, numbers, spaces, etc.
-    }).join('');
+    // Reconstruct full text, adding (IPA) after each word
+    let result = '';
+    let idx = 0;
+
+    for (const token of tokens) {
+      // Preserve spaces from original
+      while (rawInput[idx] && /\s/.test(rawInput[idx])) {
+        result += rawInput[idx++];
+      }
+
+      const originalToken = rawInput.slice(idx, idx + token.length);
+      idx += token.length;
+
+      if (/^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token)) {
+        // Word: add IPA in parentheses
+        const ipa = ipaMap.get(token) || '';
+        result += `${originalToken}${ipa ? ' (' + ipa + ')' : ''}`;
+      } else {
+        // Numbers and punctuation: keep as-is
+        result += originalToken;
+      }
+    }
 
     setOutput(result);
-
   } catch (e) {
-    console.error(e);
+    console.error('Error during IPA conversion:', e);
     setOutput('Error during IPA conversion: ' + e.message);
   }
 });
+
 
 
 
