@@ -281,19 +281,18 @@ document.getElementById('convertInline').addEventListener('click', async () => {
 
   
 function alignTextAndIPA(originalText, ipaOutput) {
-  // Normalize IPA output
-  const ipaCleaned = ipaOutput
-    .replace(/\|/g, ' ')
+  // Normalize and split IPA text into chunks
+  const ipaWords = ipaOutput
     .replace(/\s+/g, ' ')
-    .trim();
+    .replace(/\|/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean);
 
-  // Tokenize original text: words, abbreviations, numbers, punctuation
+  // Tokenize: words, abbreviations, numbers, punctuation
   const tokens = originalText.match(
     /([A-Za-z]\.)+|[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
   ) || [];
-
-  // Split IPA by spaces
-  const ipaWords = ipaCleaned.split(' ').filter(Boolean);
 
   let result = '';
   let ipaIndex = 0;
@@ -309,18 +308,15 @@ function alignTextAndIPA(originalText, ipaOutput) {
     const tokenEnd = indexInOriginal + token.length;
     const originalToken = originalText.slice(tokenStart, tokenEnd);
 
-    const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
     const isAbbreviation = /^([A-Za-z]\.)+$/.test(token);
+    const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
     const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
 
     if ((isWord || isAbbreviation) && !isNumber) {
-      // Take the next IPA chunk(s) for this word
-      let ipaChunk = '';
-      if (ipaIndex < ipaWords.length) {
-        ipaChunk = ipaWords[ipaIndex];
-        ipaIndex++;
-      }
-      result += `${originalToken} (${ipaChunk})`;
+      // Take **one IPA word** for normal words or abbreviation
+      const ipaWord = ipaWords[ipaIndex] || '';
+      result += `${originalToken} (${ipaWord})`;
+      ipaIndex++;
     } else {
       // Numbers and punctuation remain unchanged
       result += originalToken;
@@ -329,16 +325,13 @@ function alignTextAndIPA(originalText, ipaOutput) {
     indexInOriginal = tokenEnd;
   }
 
-  // Append trailing spaces if any
+  // Append any trailing spaces
   if (indexInOriginal < originalText.length) {
     result += originalText.slice(indexInOriginal);
   }
 
   return result.trim();
 }
-
-
-
 
 
 
