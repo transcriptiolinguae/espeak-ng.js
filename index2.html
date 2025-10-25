@@ -281,15 +281,15 @@ document.getElementById('convertInline').addEventListener('click', async () => {
 
   
 function alignTextAndIPA(originalText, ipaOutput) {
-  // Normalize and split IPA chunks
-  const ipaChunks = ipaOutput
+  // Normalize and split IPA text into chunks
+  const ipaWords = ipaOutput
     .replace(/\s+/g, ' ')
     .replace(/\|/g, ' ')
     .trim()
     .split(' ')
     .filter(Boolean);
 
-  // Tokenize: abbreviations, words, numbers, punctuation
+  // Tokenize: words, abbreviations, numbers, punctuation
   const tokens = originalText.match(
     /([A-Za-z]\.)+|[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
   ) || [];
@@ -299,7 +299,7 @@ function alignTextAndIPA(originalText, ipaOutput) {
   let indexInOriginal = 0;
 
   for (const token of tokens) {
-    // Preserve spaces
+    // Preserve spaces from original text
     while (indexInOriginal < originalText.length && /\s/.test(originalText[indexInOriginal])) {
       result += originalText[indexInOriginal++];
     }
@@ -313,21 +313,10 @@ function alignTextAndIPA(originalText, ipaOutput) {
     const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
 
     if ((isWord || isAbbreviation) && !isNumber) {
-      let ipaWord = '';
-      if (isAbbreviation) {
-        // For abbreviations, combine IPA chunks until the next punctuation or space
-        let combined = '';
-        while (ipaIndex < ipaChunks.length && !/^[.,;:!?]$/.test(ipaChunks[ipaIndex])) {
-          combined += (combined ? ' ' : '') + ipaChunks[ipaIndex];
-          ipaIndex++;
-        }
-        ipaWord = combined;
-      } else {
-        // Normal words: take only the first IPA chunk
-        ipaWord = ipaChunks[ipaIndex] ? ipaChunks[ipaIndex].split(' ')[0] : '';
-        ipaIndex++;
-      }
+      // Take **one IPA word** for normal words or abbreviation
+      const ipaWord = ipaWords[ipaIndex] || '';
       result += `${originalToken} (${ipaWord})`;
+      ipaIndex++;
     } else {
       // Numbers and punctuation remain unchanged
       result += originalToken;
@@ -343,6 +332,7 @@ function alignTextAndIPA(originalText, ipaOutput) {
 
   return result.trim();
 }
+
 
 
 
