@@ -270,18 +270,8 @@ document.getElementById('convertInline').addEventListener('click', async () => {
 // ------------------ ALIGNMENT FUNCTION ------------------
 
     // Align the IPA with the original text
-    const alignedOutput = alignTextAndIPA(rawInput, ipaCleaned);
-
-    setOutput(alignedOutput);
-  } catch (e) {
-    console.error('Error during IPA conversion:', e);
-    setOutput('Error during IPA conversion');
-  }
-});
-
-  
-function alignTextAndIPA(originalText, ipaOutput) {
-  // Normalize and split IPA text into chunks
+ function alignTextAndIPA(originalText, ipaOutput) {
+  // Normalize IPA text into separate words
   const ipaWords = ipaOutput
     .replace(/\s+/g, ' ')
     .replace(/\|/g, ' ')
@@ -289,50 +279,37 @@ function alignTextAndIPA(originalText, ipaOutput) {
     .split(' ')
     .filter(Boolean);
 
-  // Tokenize: words, abbreviations, numbers, punctuation
+  // Tokenize the original text (words, punctuation, numbers)
   const tokens = originalText.match(
-    /([A-Za-z]\.)+|[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
+    /([A-Za-z]\.)+|[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\p{L}\p{M}0-9\s]+|\s+/gu
   ) || [];
 
   let result = '';
   let ipaIndex = 0;
-  let indexInOriginal = 0;
 
   for (const token of tokens) {
-    // Preserve spaces from original text
-// Preserve spaces AND punctuation before each token
-while (
-  indexInOriginal < originalText.length &&
-  !/[\p{L}\p{M}0-9]/u.test(originalText[indexInOriginal])
-) {
-  result += originalText[indexInOriginal++];
-}
-
-
-    const tokenStart = indexInOriginal;
-    const tokenEnd = indexInOriginal + token.length;
-    const originalToken = originalText.slice(tokenStart, tokenEnd);
-
-    const isAbbreviation = /^([A-Za-z]\.)+$/.test(token);
-    const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
-    const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
-
-    if ((isWord || isAbbreviation) && !isNumber) {
-      // Take **one IPA word** for normal words or abbreviation
-      const ipaWord = ipaWords[ipaIndex] || '';
-      result += `${originalToken} (${ipaWord})`;
-      ipaIndex++;
-    } else {
-      // Numbers and punctuation remain unchanged
-      result += originalToken;
+    // Handle spaces
+    if (/^\s+$/.test(token)) {
+      result += token;
+      continue;
     }
 
-    indexInOriginal = tokenEnd;
-  }
+    // Handle punctuation
+    if (/^[^\p{L}\p{M}0-9]+$/u.test(token)) {
+      result += token;
+      continue;
+    }
 
-  // Append any trailing spaces
-  if (indexInOriginal < originalText.length) {
-    result += originalText.slice(indexInOriginal);
+    // Handle numbers (no IPA)
+    if (/^[0-9]+(?:[.,][0-9]+)?$/.test(token)) {
+      result += token;
+      continue;
+    }
+
+    // Handle abbreviations or regular words
+    const ipaWord = ipaWords[ipaIndex] || '';
+    result += `${token} (${ipaWord})`;
+    ipaIndex++;
   }
 
   return result.trim();
