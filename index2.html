@@ -289,52 +289,32 @@ function alignTextAndIPA(originalText, ipaOutput) {
     .split(' ')
     .filter(Boolean);
 
-  // Tokenize: words, abbreviations, numbers, punctuation
+  // Tokenize original text
   const tokens = originalText.match(
     /([A-Za-z]\.)+|[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
   ) || [];
 
   let result = '';
   let ipaIndex = 0;
-  let indexInOriginal = 0;
 
   for (const token of tokens) {
-    // Preserve spaces from original text
-    while (indexInOriginal < originalText.length && /\s/.test(originalText[indexInOriginal])) {
-      result += originalText[indexInOriginal++];
-    }
-
-    const tokenStart = indexInOriginal;
-    const tokenEnd = indexInOriginal + token.length;
-    const originalToken = originalText.slice(tokenStart, tokenEnd);
-
     const isAbbreviation = /^([A-Za-z]\.)+$/.test(token);
     const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
     const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
     const isPunctuation = /^[^\p{L}\p{M}0-9]+$/u.test(token);
 
     if ((isWord || isAbbreviation) && !isNumber) {
-      // Take **one IPA word** for normal words or abbreviation
+      // Assign IPA only to words or abbreviations
       const ipaWord = ipaWords[ipaIndex] || '';
-      result += `${originalToken} (${ipaWord})`;
+      result += `${token} (${ipaWord})`;
       ipaIndex++;
-    } else if (isNumber) {
-      // Numbers remain unchanged
-      result += originalToken;
-    } else if (isPunctuation) {
-      // Skip punctuation from IPA alignment, just append
-      result += originalToken;
+    } else {
+      // Numbers and punctuation remain unchanged
+      result += token;
     }
-
-    indexInOriginal = tokenEnd;
   }
 
-  // Append any trailing spaces
-  if (indexInOriginal < originalText.length) {
-    result += originalText.slice(indexInOriginal);
-  }
-
-  return result.trim();
+  return result;
 }
 
 
