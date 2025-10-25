@@ -289,35 +289,49 @@ function alignTextAndIPA(originalText, ipaOutput) {
     .split(' ')
     .filter(Boolean);
 
-  // Tokenize: words, abbreviations, numbers
-  const wordTokens = originalText.match(
-    /([\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*)/gu
+  // Tokenize: words, abbreviations, numbers, punctuation
+  const tokens = originalText.match(
+    /([A-Za-z]\.)+|[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
   ) || [];
 
   let result = '';
   let ipaIndex = 0;
-  let lastIndex = 0;
+  let indexInOriginal = 0;
 
-  for (const token of wordTokens) {
-    // Find token in original text
-    const start = originalText.indexOf(token, lastIndex);
-    const end = start + token.length;
+  for (const token of tokens) {
+    // Preserve spaces from original text
+    while (indexInOriginal < originalText.length && /\s/.test(originalText[indexInOriginal])) {
+      result += originalText[indexInOriginal++];
+    }
 
-    // Append everything before this token (spaces, punctuation)
-    result += originalText.slice(lastIndex, start);
+    const tokenStart = indexInOriginal;
+    const tokenEnd = indexInOriginal + token.length;
+    const originalToken = originalText.slice(tokenStart, tokenEnd);
 
-    // Append token with IPA
-    const ipa = ipaWords[ipaIndex] || '';
-    result += `${token}(${ipa})`;
+    const isAbbreviation = /^([A-Za-z]\.)+$/.test(token);
+    const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
+    const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
+    const isPunctuation = /^[^\p{L}\p{M}0-9]+$/u.test(token);
 
-    lastIndex = end;
-    ipaIndex++;
+    if ((isWord || isAbbreviation) && !isNumber) {
+      // Take **one IPA word** for normal words or abbreviation
+      const ipaWord = ipaWords[ipaIndex] || '';
+      result += `${originalToken} (${ipaWord})`;
+      ipaIndex++;
+    } else if (isNumber || isPunctuation) {
+      // Numbers and punctuation remain unchanged
+      result += originalToken;
+    }
+
+    indexInOriginal = tokenEnd;
   }
 
-  // Append any remaining characters after the last word
-  result += originalText.slice(lastIndex);
+  // Append any trailing spaces
+  if (indexInOriginal < originalText.length) {
+    result += originalText.slice(indexInOriginal);
+  }
 
-  return result;
+  return result.trim();
 }
 
 
