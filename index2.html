@@ -239,8 +239,7 @@ function normalizeCurlyApostrophes(text) {
   });
 
   // Testo e AFI button
-// ------------------ NEW "Testo e AFI" HANDLER ------------------
-// Testo e AFI button
+// ------------------ FIXED "Testo e AFI" HANDLER ------------------
 document.getElementById('convertInline').addEventListener('click', async () => {
   showProgressPlaceholder();
 
@@ -256,22 +255,7 @@ document.getElementById('convertInline').addEventListener('click', async () => {
   }
 
   try {
-    // Run eSpeak once with the whole text
-    const ipaOutput = await runESpeak(rawInput);
-
-    // Remove IPA chunks that correspond to numbers
-    // eSpeak transcribes digits as words (e.g., "due" for "2"), but we want to strip those.
-    // We'll just remove numeric-like tokens and their following IPA chunk.
-    const ipaCleaned = ipaOutput
-      .replace(/[0-9]+(?:[.,][0-9]+)?/g, '') // remove direct numeric IPA pieces
-      .replace(/\s+/g, ' ') // clean extra spaces
-      .trim();
-    
-// ------------------ ALIGNMENT FUNCTION ------------------
-
-    // Align the IPA with the original text
-    const alignedOutput = alignTextAndIPA(rawInput, ipaCleaned);
-
+    const alignedOutput = await generateTextWithIPA(rawInput);
     setOutput(alignedOutput);
   } catch (e) {
     console.error('Error during IPA conversion:', e);
@@ -279,52 +263,48 @@ document.getElementById('convertInline').addEventListener('click', async () => {
   }
 });
 
-  
-function alignTextAndIPA(originalText, ipaOutput) {
-  // Normalize IPA text into separate words
-  const ipaWords = ipaOutput
-    .replace(/\s+/g, ' ')
-    .replace(/\|/g, ' ')
-    .trim()
-    .split(' ')
-    .filter(Boolean);
 
-  // Tokenize the original text (words, punctuation, numbers)
+// ------------------ FIXED HELPER FUNCTIONS ------------------
+
+async function generateTextWithIPA(originalText) {
+  // Tokenize input into words, punctuation, numbers, spaces
   const tokens = originalText.match(
     /([A-Za-z]\.)+|[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\p{L}\p{M}0-9\s]+|\s+/gu
   ) || [];
 
   let result = '';
-  let ipaIndex = 0;
 
   for (const token of tokens) {
-    // Handle spaces
+    // Keep whitespace exactly as is
     if (/^\s+$/.test(token)) {
       result += token;
       continue;
     }
 
-    // Handle punctuation
+    // Punctuation stays unchanged
     if (/^[^\p{L}\p{M}0-9]+$/u.test(token)) {
       result += token;
       continue;
     }
 
-    // Handle numbers (no IPA)
+    // Numbers: leave them without IPA
     if (/^[0-9]+(?:[.,][0-9]+)?$/.test(token)) {
       result += token;
       continue;
     }
 
-    // Handle abbreviations or regular words
-    const ipaWord = ipaWords[ipaIndex] || '';
-    result += `${token} (${ipaWord})`;
-    ipaIndex++;
+    // Otherwise — word or abbreviation → transcribe
+    try {
+      const ipa = await runESpeak(token);
+      result += `${token} (${ipa.trim()})`;
+    } catch (err) {
+      console.error('IPA error for token:', token, err);
+      result += `${token} ()`;
+    }
   }
 
   return result.trim();
 }
-
 
 
 
