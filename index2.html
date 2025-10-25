@@ -281,7 +281,7 @@ document.getElementById('convertInline').addEventListener('click', async () => {
 
   
 function alignTextAndIPA(originalText, ipaOutput) {
-  // Normalize and split IPA text into chunks
+  // Normalize IPA into words
   const ipaWords = ipaOutput
     .replace(/\s+/g, ' ')
     .replace(/\|/g, ' ')
@@ -299,7 +299,7 @@ function alignTextAndIPA(originalText, ipaOutput) {
   let indexInOriginal = 0;
 
   for (const token of tokens) {
-    // Preserve spaces from original text
+    // Preserve spaces
     while (indexInOriginal < originalText.length && /\s/.test(originalText[indexInOriginal])) {
       result += originalText[indexInOriginal++];
     }
@@ -308,30 +308,31 @@ function alignTextAndIPA(originalText, ipaOutput) {
     const tokenEnd = indexInOriginal + token.length;
     const originalToken = originalText.slice(tokenStart, tokenEnd);
 
-    const isAbbreviation = /^([A-Za-z]\.)+$/.test(token);
     const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
+    const isAbbreviation = /^([A-Za-z]\.)+$/.test(token);
     const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
 
     if ((isWord || isAbbreviation) && !isNumber) {
-      // Take **one IPA word** for normal words or abbreviation
+      // Take the next IPA word
       const ipaWord = ipaWords[ipaIndex] || '';
       result += `${originalToken} (${ipaWord})`;
-      ipaIndex++;
+      ipaIndex++; // increment only for words
     } else {
-      // Numbers and punctuation remain unchanged
+      // Punctuation and numbers just get added without IPA
       result += originalToken;
     }
 
     indexInOriginal = tokenEnd;
   }
 
-  // Append any trailing spaces
+  // Append trailing spaces
   if (indexInOriginal < originalText.length) {
     result += originalText.slice(indexInOriginal);
   }
 
   return result.trim();
 }
+
 
 
 
