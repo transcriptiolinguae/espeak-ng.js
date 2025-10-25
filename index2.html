@@ -240,7 +240,7 @@ function normalizeCurlyApostrophes(text) {
 
   // Testo e AFI button
 // ------------------ NEW "Testo e AFI" HANDLER ------------------
-
+// Testo e AFI button
 document.getElementById('convertInline').addEventListener('click', async () => {
   showProgressPlaceholder();
 
@@ -255,27 +255,31 @@ document.getElementById('convertInline').addEventListener('click', async () => {
     return;
   }
 
-  // Insert a word boundary marker (|) before sending to eSpeak
-  const markedInput = rawInput.replace(/\s+/g, '|');
-
   try {
-    // One single call to WASM (fast!)
-    const ipaOutput = await runESpeak(markedInput);
+    // Run eSpeak once with the whole text
+    const ipaOutput = await runESpeak(rawInput);
 
-    // Align text and IPA
-    const aligned = alignTextAndIPA(rawInput, ipaOutput);
+    // Remove IPA chunks that correspond to numbers
+    // eSpeak transcribes digits as words (e.g., "due" for "2"), but we want to strip those.
+    // We'll just remove numeric-like tokens and their following IPA chunk.
+    const ipaCleaned = ipaOutput
+      .replace(/[0-9]+(?:[.,][0-9]+)?/g, '') // remove direct numeric IPA pieces
+      .replace(/\s+/g, ' ') // clean extra spaces
+      .trim();
+    
+// ------------------ ALIGNMENT FUNCTION ------------------
 
-    // Show the result
-    setOutput(aligned);
+    // Align the IPA with the original text
+    const alignedOutput = alignTextAndIPA(rawInput, ipaCleaned);
+
+    setOutput(alignedOutput);
   } catch (e) {
     console.error('Error during IPA conversion:', e);
     setOutput('Error during IPA conversion');
   }
 });
 
-
-// ------------------ ALIGNMENT FUNCTION ------------------
-
+  
 function alignTextAndIPA(originalText, ipaOutput) {
   // Normalize and split IPA text into individual chunks
   const ipaWords = ipaOutput
