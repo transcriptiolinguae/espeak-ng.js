@@ -253,58 +253,19 @@ document.getElementById('convertInline').addEventListener('click', async () => {
     return;
   }
 
-  // Normalize curly apostrophes to straight ones for consistency
-  const normalizedInput = rawInput.replace(/[’‘]/g, "'");
-
-  // Match sequences of letters and apostrophes (like dell'antichità), numbers, and punctuation
-  const tokens = normalizedInput.match(/[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-  if (!tokens) {
-    setOutput('[No valid input]');
-    return;
-  }
-
-  // Collect unique word tokens
-  const wordTokens = tokens.filter(t => /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(t));
-  const uniqueWords = [...new Set(wordTokens)];
-
-  const ipaMap = new Map();
+  // Insert markers before calling eSpeak
+  const markedInput = rawInput.replace(/\s+/g, '|');
 
   try {
-    for (const word of uniqueWords) {
-      const ipa = await runESpeak(word);
-      ipaMap.set(word, ipa);
-    }
+    const ipa = await runESpeak(markedInput);
+    const aligned = alignTextAndIPA(rawInput, ipa);
+    setOutput(aligned);
   } catch (e) {
     console.error('Error during IPA conversion:', e);
-    setOutput('Error during IPA conversion');
-    return;
+    setOutput('Error during alignment');
   }
-
-  // Reconstruct output with IPA annotations
-  let output = '';
-  let idx = 0;
-
-  for (const token of tokens) {
-    // Preserve original spacing
-    while (rawInput[idx] && /\s/.test(rawInput[idx])) {
-      output += rawInput[idx++];
-    }
-
-    const originalToken = rawInput.slice(idx, idx + token.length);
-    const normalizedToken = token;
-
-    if (ipaMap.has(normalizedToken)) {
-      const ipa = ipaMap.get(normalizedToken);
-      output += `${originalToken} (${ipa})`;
-    } else {
-      output += originalToken;
-    }
-
-    idx += token.length;
-  }
-
-  setOutput(output);
 });
+
 
   // G2P button
   document.getElementById('g2p').addEventListener('click', async () => {
@@ -1266,3 +1227,4 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
+
