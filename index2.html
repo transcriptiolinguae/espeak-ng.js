@@ -289,10 +289,10 @@ function alignTextAndIPA(originalText, ipaOutput) {
     .split(' ')
     .filter(Boolean);
 
-  // Tokenize: split words and punctuation separately
-  const tokens = Array.from(originalText.matchAll(
-    /([\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*)|([0-9]+(?:[.,][0-9]+)?)|([^\s\p{L}\p{M}0-9])/gu
-  ), m => m[0]);
+  // Tokenize: words, abbreviations, numbers, punctuation
+  const tokens = originalText.match(
+    /([A-Za-z]\.)+|[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
+  ) || [];
 
   let result = '';
   let ipaIndex = 0;
@@ -308,12 +308,15 @@ function alignTextAndIPA(originalText, ipaOutput) {
     const tokenEnd = indexInOriginal + token.length;
     const originalToken = originalText.slice(tokenStart, tokenEnd);
 
+    const isAbbreviation = /^([A-Za-z]\.)+$/.test(token);
     const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
     const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
 
-    if (isWord && ipaIndex < ipaWords.length) {
-      const ipaWord = ipaWords[ipaIndex++];
+    if ((isWord || isAbbreviation) && !isNumber) {
+      // Take **one IPA word** for normal words or abbreviation
+      const ipaWord = ipaWords[ipaIndex] || '';
       result += `${originalToken} (${ipaWord})`;
+      ipaIndex++;
     } else {
       // Numbers and punctuation remain unchanged
       result += originalToken;
@@ -327,8 +330,11 @@ function alignTextAndIPA(originalText, ipaOutput) {
     result += originalText.slice(indexInOriginal);
   }
 
-  return result;
+  return result.trim();
 }
+
+
+
 
 
 
@@ -1292,4 +1298,3 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
 
 </body>
 </html>
-
