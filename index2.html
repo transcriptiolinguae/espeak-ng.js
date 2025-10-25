@@ -239,7 +239,8 @@ function normalizeCurlyApostrophes(text) {
   });
 
   // Testo e AFI button
-// Testo e AFI button (original text + IPA, skipping and omitting numbers)
+// ------------------ NEW "Testo e AFI" HANDLER ------------------
+// Testo e AFI button
 document.getElementById('convertInline').addEventListener('click', async () => {
   showProgressPlaceholder();
 
@@ -255,39 +256,84 @@ document.getElementById('convertInline').addEventListener('click', async () => {
   }
 
   try {
-    // Normalize apostrophes
-    const normalized = rawInput.replace(/[’‘]/g, "'");
+    // Run eSpeak once with the whole text
+    const ipaOutput = await runESpeak(rawInput);
 
-    // Tokenize input: words, numbers, punctuation
-    const tokens = normalized.match(/[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-    if (!tokens) {
-      setOutput('[No valid input]');
-      return;
-    }
+    // Remove IPA chunks that correspond to numbers
+    // eSpeak transcribes digits as words (e.g., "due" for "2"), but we want to strip those.
+    // We'll just remove numeric-like tokens and their following IPA chunk.
+    const ipaCleaned = ipaOutput
+      .replace(/[0-9]+(?:[.,][0-9]+)?/g, '') // remove direct numeric IPA pieces
+      .replace(/\s+/g, ' ') // clean extra spaces
+      .trim();
+    
+// ------------------ ALIGNMENT FUNCTION ------------------
 
-    // Keep only the word tokens (omit numbers and punctuation)
-    const wordsForIPA = tokens.filter(t => /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(t));
-    if (wordsForIPA.length === 0) {
-      setOutput(`${rawInput}\n\n[No words to transcribe]`);
-      return;
-    }
+    // Align the IPA with the original text
+    const alignedOutput = alignTextAndIPA(rawInput, ipaCleaned);
 
-    // Prepare joined text for eSpeak (with spacing markers)
-    const markedInput = wordsForIPA.join('|');
-
-    // Run eSpeak once for all words
-    const ipaRaw = await runESpeak(markedInput);
-    const ipaClean = ipaRaw.replace(/\|/g, ' ').trim();
-
-    // Output original + IPA (numbers omitted in IPA)
-    const combinedOutput = `${rawInput}\n\n${ipaClean}`;
-    setOutput(combinedOutput);
-
+    setOutput(alignedOutput);
   } catch (e) {
     console.error('Error during IPA conversion:', e);
-    setOutput('Error during IPA conversion: ' + e.message);
+    setOutput('Error during IPA conversion');
   }
 });
+
+  
+function alignTextAndIPA(originalText, ipaOutput) {
+  // Normalize and split IPA text into chunks
+  const ipaWords = ipaOutput
+    .replace(/\s+/g, ' ')
+    .replace(/\|/g, ' ')
+    .trim()
+    .split(' ')
+    .filter(Boolean);
+
+  // Tokenize: words, abbreviations, numbers, punctuation
+  const tokens = originalText.match(
+    /([A-Za-z]\.)+|[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
+  ) || [];
+
+  let result = '';
+  let ipaIndex = 0;
+  let indexInOriginal = 0;
+
+  for (const token of tokens) {
+    // Preserve spaces from original text
+    while (indexInOriginal < originalText.length && /\s/.test(originalText[indexInOriginal])) {
+      result += originalText[indexInOriginal++];
+    }
+
+    const tokenStart = indexInOriginal;
+    const tokenEnd = indexInOriginal + token.length;
+    const originalToken = originalText.slice(tokenStart, tokenEnd);
+
+    const isAbbreviation = /^([A-Za-z]\.)+$/.test(token);
+    const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
+    const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
+
+    if ((isWord || isAbbreviation) && !isNumber) {
+      // Take **one IPA word** for normal words or abbreviation
+      const ipaWord = ipaWords[ipaIndex] || '';
+      result += `${originalToken} (${ipaWord})`;
+      ipaIndex++;
+    } else {
+      // Numbers and punctuation remain unchanged
+      result += originalToken;
+    }
+
+    indexInOriginal = tokenEnd;
+  }
+
+  // Append any trailing spaces
+  if (indexInOriginal < originalText.length) {
+    result += originalText.slice(indexInOriginal);
+  }
+
+  return result.trim();
+}
+
+
 
 
 
