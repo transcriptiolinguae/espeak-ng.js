@@ -213,14 +213,18 @@ function normalizeCurlyApostrophes(text) {
   }
 
   // AFI button
- // Helper: Split text into chunks of max length
+// ------------------------
+// AFI button + helper
+// ------------------------
+
+// Helper: Split text into manageable chunks (max 500 characters)
 function splitTextByLength(text, maxLength = 500) {
   const chunks = [];
   let start = 0;
   while (start < text.length) {
     let end = start + maxLength;
 
-    // Try to avoid splitting in the middle of a word
+    // Try not to cut off words in the middle
     if (end < text.length) {
       const lastSpace = text.lastIndexOf(' ', end);
       if (lastSpace > start) {
@@ -234,9 +238,9 @@ function splitTextByLength(text, maxLength = 500) {
   return chunks;
 }
 
-// AFI button handler
+// AFI button handler (preserves punctuation, numbers, and sentence structure)
 document.getElementById('convert').addEventListener('click', async () => {
-  showPlaceholder();
+  showProgressPlaceholder();
 
   if (!wasmReady) {
     alert('Please wait, WASM is still loading...');
@@ -251,20 +255,67 @@ document.getElementById('convert').addEventListener('click', async () => {
 
   try {
     const chunks = splitTextByLength(rawInput, 500);
-    let ipaOutput = '';
+    let finalResult = '';
 
     for (const chunk of chunks) {
-      // Replace spaces with "|" for eSpeak
-      const markedChunk = chunk.replace(/\s+/g, '|');
-      const ipaChunk = await runESpeak(markedChunk);
-      ipaOutput += ipaChunk.replace(/\|/g, ' ') + ' ';
+      // Tokenize text into words, numbers, punctuation, etc.
+      const tokens = chunk.match(
+        /[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
+      );
+      if (!tokens) {
+        finalResult += chunk;
+        continue;
+      }
+
+      // Get only the actual words for eSpeak
+      const wordTokens = tokens.filter(t =>
+        /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(t)
+      );
+
+      // Send all words to eSpeak at once, separated by "|"
+      const markedInput = wordTokens.join('|');
+      const ipaRaw = await runESpeak(markedInput);
+      const ipaClean = ipaRaw.replace(/\|/g, ' ').trim();
+      const ipaWords = ipaClean.split(/\s+/);
+
+      // Map each word → IPA result
+      const ipaMap = new Map();
+      for (let i = 0; i < wordTokens.length; i++) {
+        ipaMap.set(wordTokens[i], ipaWords[i] || '');
+      }
+
+      // Rebuild the original text, replacing words with their IPA equivalents
+      let reconstructed = '';
+      let charIndex = 0;
+
+      for (const token of tokens) {
+        // Preserve all spaces exactly as they appear
+        while (chunk[charIndex] && /\s/.test(chunk[charIndex])) {
+          reconstructed += chunk[charIndex++];
+        }
+
+        const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
+        if (isWord) {
+          // Replace with IPA if available
+          reconstructed += ipaMap.get(token) || token;
+        } else {
+          // Leave punctuation, numbers, symbols untouched
+          reconstructed += token;
+        }
+
+        charIndex += token.length;
+      }
+
+      finalResult += reconstructed;
     }
 
-    setOutput(ipaOutput.trim() || '[No output generated]');
+    setOutput(finalResult.trim() || '[No output generated]');
   } catch (e) {
-    setOutput('Error during transcription: ' + e.message);
+    console.error('Error during AFI transcription:', e);
+    setOutput('Error during AFI transcription: ' + e.message);
   }
 });
+
 
 
   // Testo e AFI button
