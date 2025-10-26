@@ -239,7 +239,34 @@ function normalizeCurlyApostrophes(text) {
   });
 
   // Testo e AFI button
-// Testo e AFI button (original text + IPA, skipping and omitting numbers)
+// 🔹 Aligns IPA transcriptions word-by-word after each word in the original text
+function alignTextAndIPA(originalText, ipaText) {
+  // Extract words from the original text
+  const originalWords = originalText.match(/[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*/gu) || [];
+  const ipaWords = ipaText.split(/\s+/).filter(Boolean);
+
+  const alignedWords = [];
+  const len = Math.min(originalWords.length, ipaWords.length);
+
+  // Build word(ipa) pairs
+  for (let i = 0; i < len; i++) {
+    alignedWords.push(`${originalWords[i]}(${ipaWords[i]})`);
+  }
+
+  // Reconstruct the text with word(ipa)
+  let result = originalText;
+  for (let i = 0; i < len; i++) {
+    // Replace only the first occurrence of each word
+    const regex = new RegExp(`\\b${originalWords[i]}\\b`);
+    result = result.replace(regex, alignedWords[i]);
+  }
+
+  return result;
+}
+
+
+
+// 🔹 Testo e AFI button (original text + aligned IPA)
 document.getElementById('convertInline').addEventListener('click', async () => {
   showProgressPlaceholder();
 
@@ -272,23 +299,22 @@ document.getElementById('convertInline').addEventListener('click', async () => {
       return;
     }
 
-    // Prepare joined text for eSpeak (with spacing markers)
+    // Prepare text for eSpeak (join words with '|')
     const markedInput = wordsForIPA.join('|');
 
     // Run eSpeak once for all words
     const ipaRaw = await runESpeak(markedInput);
-    const ipaClean = ipaRaw.replace(/\|/g, ' ').trim();
+    const ipaCleaned = ipaRaw.replace(/\|/g, ' ').trim();
 
-    // Output original + IPA (numbers omitted in IPA)
-    const combinedOutput = `${rawInput}\n\n${ipaClean}`;
-    setOutput(combinedOutput);
+    // 🔹 Align text and IPA
+    const alignedOutput = alignTextAndIPA(rawInput, ipaCleaned);
 
+    setOutput(alignedOutput);
   } catch (e) {
     console.error('Error during IPA conversion:', e);
     setOutput('Error during IPA conversion: ' + e.message);
   }
 });
-
 
 
 
