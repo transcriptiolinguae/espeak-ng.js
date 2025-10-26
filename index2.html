@@ -124,6 +124,7 @@
   <textarea id="input" rows="6" cols="60" placeholder="Inserisci testo in italiano"></textarea><br />
   <button id="convert">AFI</button>
   <button id="convertInline">Testo e AFI</button>
+  <button id="mapWordsIPA">Allinea Parole e AFI</button>
   <button id="g2p">G2P</button>
   <pre id="output" class="placeholder">Trascrizione</pre>
 
@@ -288,6 +289,96 @@ document.getElementById('convertInline').addEventListener('click', async () => {
     setOutput('Error during IPA conversion: ' + e.message);
   }
 });
+
+
+
+
+
+  function mapWordsToIPA(originalText, ipaText) {
+    // Split IPA into tokens (IPA words are separated by spaces)
+    const ipaTokens = ipaText.trim().split(/\s+/);
+    let ipaIndex = 0;
+
+    // Tokenize original text into words, numbers, punctuation
+    const tokens = originalText.match(/[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+    if (!tokens) {
+      return originalText;
+    }
+
+    const result = [];
+
+    for (const token of tokens) {
+      if (/^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token)) {
+        // Word: attach IPA if available
+        const ipa = ipaTokens[ipaIndex++] || '';
+        result.push(`${token}(${ipa})`);
+      } else {
+        // Keep punctuation or numbers as‐is
+        result.push(token);
+      }
+    }
+
+    // Reconstruct output preserving original spaces
+    let reconstructed = '';
+    let index = 0;
+
+    for (const token of tokens) {
+      // preserve spaces in original text
+      while (originalText[index] && /\s/.test(originalText[index])) {
+        reconstructed += originalText[index++];
+      }
+      const mapped = result.shift();
+      reconstructed += mapped;
+      index += token.length;
+    }
+
+    // Append any leftover spaces at end
+    while (index < originalText.length) {
+      reconstructed += originalText[index++];
+    }
+
+    return reconstructed;
+  }
+
+  document.getElementById('mapWordsIPA').addEventListener('click', async () => {
+    if (!wasmReady) {
+      alert('Please wait, WASM is still loading...');
+      return;
+    }
+
+    const rawInput = inputElem.value.trim();
+    if (!rawInput) {
+      showPlaceholder();
+      return;
+    }
+
+    try {
+      // Normalize apostrophes
+      const normalized = rawInput.replace(/[’‘]/g, "'");
+
+      // Tokenize words (same logic as convertInline)
+      const tokens = normalized.match(/[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+      const words = tokens?.filter(t => /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(t)) || [];
+      if (words.length === 0) {
+        setOutput(`${rawInput}\n\n[No words to transcribe]`);
+        return;
+      }
+
+      // Get IPA for all words
+      const markedInput = words.join('|');
+      const ipaRaw = await runESpeak(markedInput);
+      const ipaClean = ipaRaw.replace(/\|/g, ' ').trim();
+
+      // Align each word with its IPA
+      const aligned = mapWordsToIPA(normalized, ipaClean);
+      setOutput(aligned);
+
+    } catch (e) {
+      console.error('Error during IPA alignment:', e);
+      setOutput('Error during IPA alignment: ' + e.message);
+    }
+  });
+
 
 
 
