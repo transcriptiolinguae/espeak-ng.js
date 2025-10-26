@@ -214,30 +214,59 @@ function normalizeCurlyApostrophes(text) {
   }
 
   // AFI button
-  document.getElementById('convert').addEventListener('click', async () => {
+// Helper: Split text into chunks of max length
+function splitTextByLength(text, maxLength = 500) {
+  const chunks = [];
+  let start = 0;
+  while (start < text.length) {
+    let end = start + maxLength;
+
+    // Try to avoid splitting in the middle of a word
+    if (end < text.length) {
+      const lastSpace = text.lastIndexOf(' ', end);
+      if (lastSpace > start) {
+        end = lastSpace;
+      }
+    }
+
+    chunks.push(text.slice(start, end));
+    start = end;
+  }
+  return chunks;
+}
+
+// AFI button handler
+document.getElementById('convert').addEventListener('click', async () => {
+  showPlaceholder();
+
+  if (!wasmReady) {
+    alert('Please wait, WASM is still loading...');
+    return;
+  }
+
+  const rawInput = inputElem.value.trim();
+  if (!rawInput) {
     showPlaceholder();
+    return;
+  }
 
-    if (!wasmReady) {
-      alert('Please wait, WASM is still loading...');
-      return;
+  try {
+    const chunks = splitTextByLength(rawInput, 500);
+    let ipaOutput = '';
+
+    for (const chunk of chunks) {
+      // Replace spaces with "|" for eSpeak
+      const markedChunk = chunk.replace(/\s+/g, '|');
+      const ipaChunk = await runESpeak(markedChunk);
+      ipaOutput += ipaChunk.replace(/\|/g, ' ') + ' ';
     }
 
-    const rawInput = inputElem.value.trim();
-    if (!rawInput) {
-      showPlaceholder();
-      return;
-    }
+    setOutput(ipaOutput.trim() || '[No output generated]');
+  } catch (e) {
+    setOutput('Error during transcription: ' + e.message);
+  }
+});
 
-
-    const markedInput = rawInput.replace(/\s+/g, '|');
-
-    try {
-      const ipa = await runESpeak(markedInput);
-      setOutput(ipa.replace(/\|/g, ' ') || '[No output generated]');
-    } catch (e) {
-      setOutput('Error during transcription: ' + e.message);
-    }
-  });
 
   // Testo e AFI button
 // Testo e AFI button (original text + IPA, skipping and omitting numbers)
