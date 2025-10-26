@@ -239,7 +239,7 @@ function normalizeCurlyApostrophes(text) {
   });
 
   // Testo e AFI button
-// Testo e AFI (safe alignment, excludes numbers & abbreviations)
+// Testo e AFI button (original text + IPA, skipping and omitting numbers)
 document.getElementById('convertInline').addEventListener('click', async () => {
   showProgressPlaceholder();
 
@@ -255,65 +255,40 @@ document.getElementById('convertInline').addEventListener('click', async () => {
   }
 
   try {
-    // Tokenize text into words, abbreviations, numbers, punctuation
-    const tokens = rawInput.match(
-      /([A-Za-z]\.)+|[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
-    ) || [];
+    // Normalize apostrophes
+    const normalized = rawInput.replace(/[’‘]/g, "'");
 
-    let result = '';
-    let indexInOriginal = 0;
-
-    // Build IPA map word-by-word for stability
-    const ipaMap = new Map();
-    const words = [...new Set(
-      tokens.filter(t =>
-        /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(t)
-      )
-    )];
-
-    // Compute IPA for each unique word separately
-    for (const word of words) {
-      const ipa = await runESpeak(word);
-      ipaMap.set(word, ipa.trim());
+    // Tokenize input: words, numbers, punctuation
+    const tokens = normalized.match(/[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+    if (!tokens) {
+      setOutput('[No valid input]');
+      return;
     }
 
-    // Reconstruct text + IPA with exact spacing
-    for (const token of tokens) {
-      // Preserve spaces from the original text
-      while (indexInOriginal < rawInput.length && /\s/.test(rawInput[indexInOriginal])) {
-        result += rawInput[indexInOriginal++];
-      }
-
-      const tokenStart = indexInOriginal;
-      const tokenEnd = indexInOriginal + token.length;
-      const originalToken = rawInput.slice(tokenStart, tokenEnd);
-
-      const isAbbreviation = /^([A-Za-z]\.)+$/.test(token);
-      const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
-      const isNumber = /^[0-9]+(?:[.,][0-9]+)?$/.test(token);
-
-      if (isWord && !isAbbreviation && !isNumber) {
-        const ipa = ipaMap.get(token) || '';
-        result += `${originalToken} (${ipa})`;
-      } else {
-        // Keep punctuation, numbers, abbreviations unchanged
-        result += originalToken;
-      }
-
-      indexInOriginal = tokenEnd;
+    // Keep only the word tokens (omit numbers and punctuation)
+    const wordsForIPA = tokens.filter(t => /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(t));
+    if (wordsForIPA.length === 0) {
+      setOutput(`${rawInput}\n\n[No words to transcribe]`);
+      return;
     }
 
-    // Append any trailing spaces
-    if (indexInOriginal < rawInput.length) {
-      result += rawInput.slice(indexInOriginal);
-    }
+    // Prepare joined text for eSpeak (with spacing markers)
+    const markedInput = wordsForIPA.join('|');
 
-    setOutput(result.trim());
+    // Run eSpeak once for all words
+    const ipaRaw = await runESpeak(markedInput);
+    const ipaClean = ipaRaw.replace(/\|/g, ' ').trim();
+
+    // Output original + IPA (numbers omitted in IPA)
+    const combinedOutput = `${rawInput}\n\n${ipaClean}`;
+    setOutput(combinedOutput);
+
   } catch (e) {
-    console.error('Error during aligned IPA conversion:', e);
-    setOutput('Error during aligned IPA conversion: ' + e.message);
+    console.error('Error during IPA conversion:', e);
+    setOutput('Error during IPA conversion: ' + e.message);
   }
 });
+
 
 
 
