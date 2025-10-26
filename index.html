@@ -213,30 +213,59 @@ function normalizeCurlyApostrophes(text) {
   }
 
   // AFI button
-  document.getElementById('convert').addEventListener('click', async () => {
+ // Helper: Split text into chunks of max length
+function splitTextByLength(text, maxLength = 500) {
+  const chunks = [];
+  let start = 0;
+  while (start < text.length) {
+    let end = start + maxLength;
+
+    // Try to avoid splitting in the middle of a word
+    if (end < text.length) {
+      const lastSpace = text.lastIndexOf(' ', end);
+      if (lastSpace > start) {
+        end = lastSpace;
+      }
+    }
+
+    chunks.push(text.slice(start, end));
+    start = end;
+  }
+  return chunks;
+}
+
+// AFI button handler
+document.getElementById('convert').addEventListener('click', async () => {
+  showPlaceholder();
+
+  if (!wasmReady) {
+    alert('Please wait, WASM is still loading...');
+    return;
+  }
+
+  const rawInput = inputElem.value.trim();
+  if (!rawInput) {
     showPlaceholder();
+    return;
+  }
 
-    if (!wasmReady) {
-      alert('Please wait, WASM is still loading...');
-      return;
+  try {
+    const chunks = splitTextByLength(rawInput, 500);
+    let ipaOutput = '';
+
+    for (const chunk of chunks) {
+      // Replace spaces with "|" for eSpeak
+      const markedChunk = chunk.replace(/\s+/g, '|');
+      const ipaChunk = await runESpeak(markedChunk);
+      ipaOutput += ipaChunk.replace(/\|/g, ' ') + ' ';
     }
 
-    const rawInput = inputElem.value.trim();
-    if (!rawInput) {
-      showPlaceholder();
-      return;
-    }
+    setOutput(ipaOutput.trim() || '[No output generated]');
+  } catch (e) {
+    setOutput('Error during transcription: ' + e.message);
+  }
+});
 
-
-    const markedInput = rawInput.replace(/\s+/g, '|');
-
-    try {
-      const ipa = await runESpeak(markedInput);
-      setOutput(ipa.replace(/\|/g, ' ') || '[No output generated]');
-    } catch (e) {
-      setOutput('Error during transcription: ' + e.message);
-    }
-  });
 
   // Testo e AFI button
 document.getElementById('convertInline').addEventListener('click', async () => {
@@ -253,132 +282,154 @@ document.getElementById('convertInline').addEventListener('click', async () => {
     return;
   }
 
-  // Normalize curly apostrophes to straight ones for consistency
-  const normalizedInput = rawInput.replace(/[’‘]/g, "'");
-
-  // Match sequences of letters and apostrophes (like dell'antichità), numbers, and punctuation
-  const tokens = normalizedInput.match(/[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-  if (!tokens) {
-    setOutput('[No valid input]');
-    return;
-  }
-
-  // Collect unique word tokens
-  const wordTokens = tokens.filter(t => /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(t));
-  const uniqueWords = [...new Set(wordTokens)];
-
-  const ipaMap = new Map();
-
   try {
-    for (const word of uniqueWords) {
-      const ipa = await runESpeak(word);
-      ipaMap.set(word, ipa);
+    // Normalize curly apostrophes
+    const normalized = rawInput.replace(/[’‘]/g, "'");
+
+    // Split input into 500-character chunks
+    const chunks = splitTextByLength(normalized, 500);
+    let finalResult = '';
+    let charIndex = 0;
+
+    for (const chunk of chunks) {
+      // Tokenize the chunk into words, numbers, punctuation
+      const tokens = chunk.match(/[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+      if (!tokens) {
+        finalResult += chunk; // fallback
+        continue;
+      }
+
+      const wordTokens = tokens.filter(t => /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(t));
+      const markedInput = wordTokens.join('|');
+
+      const ipaRaw = await runESpeak(markedInput);
+      const ipaClean = ipaRaw.replace(/\|/g, ' ').trim();
+      const ipaWords = ipaClean.split(/\s+/);
+
+      // Build word → IPA map
+      const ipaMap = new Map();
+      for (let i = 0; i < wordTokens.length; i++) {
+        ipaMap.set(wordTokens[i], ipaWords[i] || '');
+      }
+
+      // Reconstruct chunk with inline IPA
+      let chunkResult = '';
+      let idx = 0;
+      for (const token of tokens) {
+        while (chunk[idx] && /\s/.test(chunk[idx])) {
+          chunkResult += chunk[idx++];
+        }
+
+        const originalToken = chunk.slice(idx, idx + token.length);
+        idx += token.length;
+
+        if (/^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token)) {
+          const ipa = ipaMap.get(token) || '';
+          chunkResult += `${originalToken}${ipa ? ' (' + ipa + ')' : ''}`;
+        } else {
+          chunkResult += originalToken;
+        }
+      }
+
+      // Maintain spacing with previous chunks
+      while (rawInput[charIndex] && /\s/.test(rawInput[charIndex])) {
+        chunkResult = rawInput[charIndex++] + chunkResult;
+      }
+      charIndex += chunk.length;
+
+      finalResult += chunkResult;
     }
+
+    setOutput(finalResult);
   } catch (e) {
     console.error('Error during IPA conversion:', e);
-    setOutput('Error during IPA conversion');
+    setOutput('Error during IPA conversion: ' + e.message);
+  }
+});
+
+
+
+
+
+  // G2P button
+// G2P button
+document.getElementById('g2p').addEventListener('click', async () => {
+  showProgressPlaceholder();
+
+  if (!wasmReady) {
+    alert('Please wait, WASM is still loading...');
     return;
   }
 
-  // Reconstruct output with IPA annotations
-  let output = '';
-  let idx = 0;
-
-  for (const token of tokens) {
-    // Preserve original spacing
-    while (rawInput[idx] && /\s/.test(rawInput[idx])) {
-      output += rawInput[idx++];
-    }
-
-    const originalToken = rawInput.slice(idx, idx + token.length);
-    const normalizedToken = token;
-
-    if (ipaMap.has(normalizedToken)) {
-      const ipa = ipaMap.get(normalizedToken);
-      output += `${originalToken} (${ipa})`;
-    } else {
-      output += originalToken;
-    }
-
-    idx += token.length;
+  const rawInput = normalizeCurlyApostrophes(inputElem.value.trim());
+  if (!rawInput) {
+    showPlaceholder();
+    return;
   }
 
-  setOutput(output);
+  try {
+    const chunks = splitTextByLength(rawInput, 500);
+    let finalResult = '';
+
+    for (const chunk of chunks) {
+      const tokens = chunk.match(
+        /[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+(?:'[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
+      );
+      if (!tokens) {
+        finalResult += chunk;
+        continue;
+      }
+
+      // Collect unique words for batch IPA generation
+      const uniqueWords = [...new Set(
+        tokens.filter(t =>
+          /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]*$/u.test(t)
+        )
+      )];
+
+      // Build marked string for eSpeak
+      const markedInput = uniqueWords.join('|');
+      const ipaRaw = await runESpeak(markedInput);
+      const ipaClean = ipaRaw.replace(/\|/g, ' ').trim();
+      const ipaWords = ipaClean.split(/\s+/);
+
+      // Create map word → IPA
+      const ipaMap = new Map();
+      for (let i = 0; i < uniqueWords.length; i++) {
+        ipaMap.set(uniqueWords[i], ipaWords[i] || '');
+      }
+
+      // Apply G2P mapping for each token
+      const g2pTokens = tokens.map(token => {
+        const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]*$/u.test(token);
+        if (isWord) {
+          const ipa = ipaMap.get(token) || '';
+          return applyG2PMapping(token, ipa);
+        } else {
+          return token;
+        }
+      });
+
+      // Reconstruct chunk preserving spaces
+      let reconstructed = '';
+      let index = 0;
+      for (const token of tokens) {
+        while (chunk[index] && /\s/.test(chunk[index])) {
+          reconstructed += chunk[index++];
+        }
+        reconstructed += g2pTokens.shift();
+        index += token.length;
+      }
+
+      finalResult += reconstructed;
+    }
+
+    setOutput(finalResult.trim());
+  } catch (e) {
+    console.error('Error during G2P processing:', e);
+    setOutput('Error during G2P processing: ' + e.message);
+  }
 });
-
-  // G2P button
-  document.getElementById('g2p').addEventListener('click', async () => {
-    showProgressPlaceholder();
-
-    if (!wasmReady) {
-      alert('Please wait, WASM is still loading...');
-      return;
-    }
-
-const rawInput = normalizeCurlyApostrophes(inputElem.value.trim());
-    if (!rawInput) {
-      showPlaceholder();
-      return;
-    }
-
-    
-
-
-
-const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+(?:'[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-    if (!tokens) {
-      setOutput('[No valid input]');
-      return;
-    }
-
-    const ipaMap = new Map();
-const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]*$/u.test(t)))];
-
-    try {
-      for (const word of uniqueWords) {
-        const ipa = await runESpeak(word);
-        ipaMap.set(word, ipa);
-      }
-    } catch (e) {
-      console.error('Error during IPA conversion:', e);
-    }
-
-    const g2pOutput = [];
-
-    for (const token of tokens) {
-const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]*$/u.test(token);
-
-      if (isWord) {
-        const ipa = ipaMap.get(token) || '';
-        const g2pMapped = applyG2PMapping(token, ipa);
-        g2pOutput.push(g2pMapped);
-      } else {
-        g2pOutput.push(token);
-      }
-    }
-
-    // Reconstruct output by aligning tokens with raw input spacing
-let reconstructed = '';
-let index = 0;
-
-for (const token of tokens) {
-  // Skip any spaces in original text before this token
-  while (rawInput[index] && /\s/.test(rawInput[index])) {
-    reconstructed += rawInput[index++];
-  }
-
-  const nextToken = g2pOutput.shift();
-  reconstructed += nextToken;
-
-  // Advance index past the original token length
-  index += token.length;
-}
-    
-
-setOutput(reconstructed);
-
-
-  });
 
 
 
