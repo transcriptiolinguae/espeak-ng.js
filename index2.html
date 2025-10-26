@@ -268,7 +268,6 @@ document.getElementById('convert').addEventListener('click', async () => {
 
 
   // Testo e AFI button
-// Word-by-word inline IPA mapping (like G2P, but one WASM call)
 document.getElementById('convertInline').addEventListener('click', async () => {
   showProgressPlaceholder();
 
@@ -287,58 +286,61 @@ document.getElementById('convertInline').addEventListener('click', async () => {
     // Normalize curly apostrophes
     const normalized = rawInput.replace(/[’‘]/g, "'");
 
-    // Tokenize input into words, numbers, punctuation
-    const tokens = normalized.match(/[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-    if (!tokens) {
-      setOutput('[No valid input]');
-      return;
-    }
+    // Split input into 500-character chunks
+    const chunks = splitTextByLength(normalized, 500);
+    let finalResult = '';
+    let charIndex = 0;
 
-    // Extract only letter tokens (skip numbers/punctuation)
-    const wordTokens = tokens.filter(t => /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(t));
-    if (wordTokens.length === 0) {
-      setOutput(`${rawInput}\n\n[No words to transcribe]`);
-      return;
-    }
-
-    // Prepare text for eSpeak: separate by pipe for easy mapping
-    const markedInput = wordTokens.join('|');
-    const ipaRaw = await runESpeak(markedInput);
-    const ipaClean = ipaRaw.replace(/\|/g, ' ').trim();
-
-    // Split back into word-level IPA tokens
-    const ipaWords = ipaClean.split(/\s+/);
-
-    // Build a map word → IPA
-    const ipaMap = new Map();
-    for (let i = 0; i < wordTokens.length; i++) {
-      ipaMap.set(wordTokens[i], ipaWords[i] || '');
-    }
-
-    // Reconstruct full text, adding (IPA) after each word
-    let result = '';
-    let idx = 0;
-
-    for (const token of tokens) {
-      // Preserve spaces from original
-      while (rawInput[idx] && /\s/.test(rawInput[idx])) {
-        result += rawInput[idx++];
+    for (const chunk of chunks) {
+      // Tokenize the chunk into words, numbers, punctuation
+      const tokens = chunk.match(/[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+      if (!tokens) {
+        finalResult += chunk; // fallback
+        continue;
       }
 
-      const originalToken = rawInput.slice(idx, idx + token.length);
-      idx += token.length;
+      const wordTokens = tokens.filter(t => /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(t));
+      const markedInput = wordTokens.join('|');
 
-      if (/^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token)) {
-        // Word: add IPA in parentheses
-        const ipa = ipaMap.get(token) || '';
-        result += `${originalToken}${ipa ? ' (' + ipa + ')' : ''}`;
-      } else {
-        // Numbers and punctuation: keep as-is
-        result += originalToken;
+      const ipaRaw = await runESpeak(markedInput);
+      const ipaClean = ipaRaw.replace(/\|/g, ' ').trim();
+      const ipaWords = ipaClean.split(/\s+/);
+
+      // Build word → IPA map
+      const ipaMap = new Map();
+      for (let i = 0; i < wordTokens.length; i++) {
+        ipaMap.set(wordTokens[i], ipaWords[i] || '');
       }
+
+      // Reconstruct chunk with inline IPA
+      let chunkResult = '';
+      let idx = 0;
+      for (const token of tokens) {
+        while (chunk[idx] && /\s/.test(chunk[idx])) {
+          chunkResult += chunk[idx++];
+        }
+
+        const originalToken = chunk.slice(idx, idx + token.length);
+        idx += token.length;
+
+        if (/^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token)) {
+          const ipa = ipaMap.get(token) || '';
+          chunkResult += `${originalToken}${ipa ? ' (' + ipa + ')' : ''}`;
+        } else {
+          chunkResult += originalToken;
+        }
+      }
+
+      // Maintain spacing with previous chunks
+      while (rawInput[charIndex] && /\s/.test(rawInput[charIndex])) {
+        chunkResult = rawInput[charIndex++] + chunkResult;
+      }
+      charIndex += chunk.length;
+
+      finalResult += chunkResult;
     }
 
-    setOutput(result);
+    setOutput(finalResult);
   } catch (e) {
     console.error('Error during IPA conversion:', e);
     setOutput('Error during IPA conversion: ' + e.message);
