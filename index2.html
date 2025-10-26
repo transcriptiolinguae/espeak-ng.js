@@ -352,78 +352,84 @@ document.getElementById('convertInline').addEventListener('click', async () => {
 
 
   // G2P button
-  document.getElementById('g2p').addEventListener('click', async () => {
-    showProgressPlaceholder();
+// G2P button
+document.getElementById('g2p').addEventListener('click', async () => {
+  showProgressPlaceholder();
 
-    if (!wasmReady) {
-      alert('Please wait, WASM is still loading...');
-      return;
-    }
-
-const rawInput = normalizeCurlyApostrophes(inputElem.value.trim());
-    if (!rawInput) {
-      showPlaceholder();
-      return;
-    }
-
-    
-
-
-
-const tokens = rawInput.match(/[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+(?:'[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
-    if (!tokens) {
-      setOutput('[No valid input]');
-      return;
-    }
-
-    const ipaMap = new Map();
-const uniqueWords = [...new Set(tokens.filter(t => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]*$/u.test(t)))];
-
-    try {
-      for (const word of uniqueWords) {
-        const ipa = await runESpeak(word);
-        ipaMap.set(word, ipa);
-      }
-    } catch (e) {
-      console.error('Error during IPA conversion:', e);
-    }
-
-    const g2pOutput = [];
-
-    for (const token of tokens) {
-const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]*$/u.test(token);
-
-      if (isWord) {
-        const ipa = ipaMap.get(token) || '';
-        const g2pMapped = applyG2PMapping(token, ipa);
-        g2pOutput.push(g2pMapped);
-      } else {
-        g2pOutput.push(token);
-      }
-    }
-
-    // Reconstruct output by aligning tokens with raw input spacing
-let reconstructed = '';
-let index = 0;
-
-for (const token of tokens) {
-  // Skip any spaces in original text before this token
-  while (rawInput[index] && /\s/.test(rawInput[index])) {
-    reconstructed += rawInput[index++];
+  if (!wasmReady) {
+    alert('Please wait, WASM is still loading...');
+    return;
   }
 
-  const nextToken = g2pOutput.shift();
-  reconstructed += nextToken;
+  const rawInput = normalizeCurlyApostrophes(inputElem.value.trim());
+  if (!rawInput) {
+    showPlaceholder();
+    return;
+  }
 
-  // Advance index past the original token length
-  index += token.length;
-}
-    
+  try {
+    const chunks = splitTextByLength(rawInput, 500);
+    let finalResult = '';
 
-setOutput(reconstructed);
+    for (const chunk of chunks) {
+      const tokens = chunk.match(
+        /[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+(?:'[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu
+      );
+      if (!tokens) {
+        finalResult += chunk;
+        continue;
+      }
 
+      // Collect unique words for batch IPA generation
+      const uniqueWords = [...new Set(
+        tokens.filter(t =>
+          /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]*$/u.test(t)
+        )
+      )];
 
-  });
+      // Build marked string for eSpeak
+      const markedInput = uniqueWords.join('|');
+      const ipaRaw = await runESpeak(markedInput);
+      const ipaClean = ipaRaw.replace(/\|/g, ' ').trim();
+      const ipaWords = ipaClean.split(/\s+/);
+
+      // Create map word → IPA
+      const ipaMap = new Map();
+      for (let i = 0; i < uniqueWords.length; i++) {
+        ipaMap.set(uniqueWords[i], ipaWords[i] || '');
+      }
+
+      // Apply G2P mapping for each token
+      const g2pTokens = tokens.map(token => {
+        const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]*$/u.test(token);
+        if (isWord) {
+          const ipa = ipaMap.get(token) || '';
+          return applyG2PMapping(token, ipa);
+        } else {
+          return token;
+        }
+      });
+
+      // Reconstruct chunk preserving spaces
+      let reconstructed = '';
+      let index = 0;
+      for (const token of tokens) {
+        while (chunk[index] && /\s/.test(chunk[index])) {
+          reconstructed += chunk[index++];
+        }
+        reconstructed += g2pTokens.shift();
+        index += token.length;
+      }
+
+      finalResult += reconstructed;
+    }
+
+    setOutput(finalResult.trim());
+  } catch (e) {
+    console.error('Error during G2P processing:', e);
+    setOutput('Error during G2P processing: ' + e.message);
+  }
+});
 
 
 
