@@ -213,30 +213,9 @@ function normalizeCurlyApostrophes(text) {
   }
 
   // AFI button
- // Helper: Split text into chunks of max length
-function splitTextByLength(text, maxLength = 500) {
-  const chunks = [];
-  let start = 0;
-  while (start < text.length) {
-    let end = start + maxLength;
-
-    // Try to avoid splitting in the middle of a word
-    if (end < text.length) {
-      const lastSpace = text.lastIndexOf(' ', end);
-      if (lastSpace > start) {
-        end = lastSpace;
-      }
-    }
-
-    chunks.push(text.slice(start, end));
-    start = end;
-  }
-  return chunks;
-}
-
-// AFI button handler
+// AFI button handler (preserves punctuation and structure)
 document.getElementById('convert').addEventListener('click', async () => {
-  showPlaceholder();
+  showProgressPlaceholder();
 
   if (!wasmReady) {
     alert('Please wait, WASM is still loading...');
@@ -251,18 +230,58 @@ document.getElementById('convert').addEventListener('click', async () => {
 
   try {
     const chunks = splitTextByLength(rawInput, 500);
-    let ipaOutput = '';
+    let finalResult = '';
 
     for (const chunk of chunks) {
-      // Replace spaces with "|" for eSpeak
-      const markedChunk = chunk.replace(/\s+/g, '|');
-      const ipaChunk = await runESpeak(markedChunk);
-      ipaOutput += ipaChunk.replace(/\|/g, ' ') + ' ';
+      // Tokenize into words, numbers, punctuation
+      const tokens = chunk.match(/[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*|[0-9]+(?:[.,][0-9]+)?|[^\s]/gu);
+      if (!tokens) {
+        finalResult += chunk;
+        continue;
+      }
+
+      // Collect word tokens only (for IPA conversion)
+      const wordTokens = tokens.filter(t => /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(t));
+
+      // Join with "|" so eSpeak can treat them as separate words
+      const markedInput = wordTokens.join('|');
+      const ipaRaw = await runESpeak(markedInput);
+      const ipaClean = ipaRaw.replace(/\|/g, ' ').trim();
+      const ipaWords = ipaClean.split(/\s+/);
+
+      // Build map word → IPA
+      const ipaMap = new Map();
+      for (let i = 0; i < wordTokens.length; i++) {
+        ipaMap.set(wordTokens[i], ipaWords[i] || '');
+      }
+
+      // Reconstruct the chunk with punctuation, numbers, and spacing
+      let reconstructed = '';
+      let charIndex = 0;
+
+      for (const token of tokens) {
+        // Preserve original whitespace
+        while (chunk[charIndex] && /\s/.test(chunk[charIndex])) {
+          reconstructed += chunk[charIndex++];
+        }
+
+        const isWord = /^[\p{L}\p{M}]+(?:'[\p{L}\p{M}]+)*$/u.test(token);
+        if (isWord) {
+          reconstructed += ipaMap.get(token) || token; // Replace word with IPA if available
+        } else {
+          reconstructed += token; // Keep punctuation/numbers unchanged
+        }
+
+        charIndex += token.length;
+      }
+
+      finalResult += reconstructed;
     }
 
-    setOutput(ipaOutput.trim() || '[No output generated]');
+    setOutput(finalResult.trim() || '[No output generated]');
   } catch (e) {
-    setOutput('Error during transcription: ' + e.message);
+    console.error('Error during AFI transcription:', e);
+    setOutput('Error during AFI transcription: ' + e.message);
   }
 });
 
