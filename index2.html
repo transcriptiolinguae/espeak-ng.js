@@ -530,13 +530,7 @@ function applyG2PMapping(text, ipa) {
     let ipaChar = ipa[ipaIndex];
 
 
-        // Reset IPA index at word boundaries (spaces, punctuation)
-        if (letter === ' ' || letter === '\n' || letter === '\t') {
-            result.push(letter);
-            i++;
-            ipaIndex = 0; // Reset IPA index for the next word
-            continue;
-        }
+
 
         if (ipaChar === 'd' && ipa[ipaIndex + 1] === 'z' && ipa[ipaIndex + 2] === 'ː') {
         result.push(`zz(${ipaChar}${ipa[ipaIndex + 1]}ː)`);  
