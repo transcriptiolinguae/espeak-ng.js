@@ -527,8 +527,17 @@ function applyG2PMapping(text, ipa) {
   // Process the word-by-word logic
   while (i < text.length && ipaIndex < ipa.length) {
     const letter = text[i];
-    let ipaChar = ipa[ipaIndex];
+   
 
+    // 🔸 Handle word boundaries (spaces, punctuation)
+    if (/\s|[.,!?;:()]/.test(letter)) {
+      result.push(letter);
+      i++;
+      // Reset IPA index to start fresh for the next word
+      ipaIndex = 0;
+      continue;
+    }
+    const ipaChar = ipa[ipaIndex];
 
 
 
