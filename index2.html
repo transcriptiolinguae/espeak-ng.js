@@ -487,9 +487,8 @@ for (let i = 0; i < uniqueWords.length; i++) {
 
 
 function applyG2PMapping(text, ipa) {
-    if (!ipa || ipa.trim() === '' || ipa.split('').length < text.length) {
-    return text;
-  }
+    if (!ipa || ipa.trim() === '' || ipa.length < text.length) return text;
+
   const result = [];
   let ipaIndex = 0;
   let i = 0;
