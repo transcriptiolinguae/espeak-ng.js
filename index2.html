@@ -448,9 +448,9 @@ document.getElementById('g2p').addEventListener('click', async () => {
 
       // Create map word → IPA
       const ipaMap = new Map();
-for (let i = 0; i < uniqueWords.length; i++) {
-  ipaMap.set(uniqueWords[i], ipaWords[i] ?? ''); // keep it, but don't consume IPA if mapping fails
-}
+      for (let i = 0; i < uniqueWords.length; i++) {
+        ipaMap.set(uniqueWords[i], ipaWords[i] || '');
+      }
 
       // Apply G2P mapping for each token
       const g2pTokens = tokens.map(token => {
@@ -487,8 +487,7 @@ for (let i = 0; i < uniqueWords.length; i++) {
 
 
 function applyG2PMapping(text, ipa) {
-    if (!ipa || ipa.trim() === '' || ipa.length < text.length) return text;
-
+  
   const result = [];
   let ipaIndex = 0;
   let i = 0;
@@ -1403,12 +1402,7 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
     i++;
   }
 
-
-  // If we could not fully align the IPA with the word, return the original text
-  if (i < text.length) {
-    return text;
-  }
-
+  
 
 
 
