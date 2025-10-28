@@ -487,7 +487,9 @@ document.getElementById('g2p').addEventListener('click', async () => {
 
 
 function applyG2PMapping(text, ipa) {
-  
+    if (!ipa || ipa.trim() === '' || ipa.split('').length < text.length) {
+    return text;
+  }
   const result = [];
   let ipaIndex = 0;
   let i = 0;
