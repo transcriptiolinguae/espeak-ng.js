@@ -448,9 +448,9 @@ document.getElementById('g2p').addEventListener('click', async () => {
 
       // Create map word → IPA
       const ipaMap = new Map();
-      for (let i = 0; i < uniqueWords.length; i++) {
-        ipaMap.set(uniqueWords[i], ipaWords[i] || '');
-      }
+for (let i = 0; i < uniqueWords.length; i++) {
+  ipaMap.set(uniqueWords[i], ipaWords[i] ?? ''); // keep it, but don't consume IPA if mapping fails
+}
 
       // Apply G2P mapping for each token
       const g2pTokens = tokens.map(token => {
