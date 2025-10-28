@@ -488,10 +488,7 @@ document.getElementById('g2p').addEventListener('click', async () => {
 
 function applyG2PMapping(text, ipa) {
   
-  const result = [];
-  let ipaIndex = 0;
-  let i = 0;
-  const lowerText = text.toLowerCase();
+  let result = [];
 
   // Predefined mappings for G2P
   const g2pMappings = {
