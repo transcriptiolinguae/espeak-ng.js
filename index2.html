@@ -1405,6 +1405,11 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
   }
 
 
+  // If we could not fully align the IPA with the word, return the original text
+  if (i < text.length) {
+    return text;
+  }
+
 
 
 
