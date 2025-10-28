@@ -1402,7 +1402,11 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
     i++;
   }
 
-  
+    // ===== NEW Fallback check =====
+  // If IPA wasn't fully consumed or text wasn't fully processed, fallback to original text
+  if (i < text.length || ipaIndex < ipa.length) {
+    return text;
+  }
 
 
 
