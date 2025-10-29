@@ -451,13 +451,12 @@ document.getElementById('g2p').addEventListener('click', async () => {
       for (let i = 0; i < uniqueWords.length; i++) {
         ipaMap.set(uniqueWords[i], ipaWords[i] || '');
       }
-const g2pTokens = [];
 
+  const g2pTokens = [];
 for (let t = 0; t < tokens.length; t++) {
   const token = tokens[t];
   const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]*$/u.test(token);
 
-  // Non-word tokens (punctuation, numbers, etc.) — just keep them
   if (!isWord) {
     g2pTokens.push(token);
     continue;
@@ -466,39 +465,33 @@ for (let t = 0; t < tokens.length; t++) {
   const ipa = ipaMap.get(token) || '';
   const mapped = applyG2PMapping(token, ipa);
 
-  // ⛔ If mapping fails — keep original word, skip IPA, and re-sync from next word
+  // If mapping failed or incomplete — stop here, recall eSpeak for next word
   if (mapped === null) {
-    console.warn(`G2P mapping failed for "${token}" → keeping original and resyncing IPA`);
+    console.warn(`G2P mapping failed for "${token}", recalculating from next word...`);
 
-    // Remove IPA entry for this failed word
-    ipaMap.delete(token);
-
-    // Preserve the original word
-    g2pTokens.push(token);
-
-    // Get remaining word tokens *after* this failed one
+    // Get remaining tokens after this one
     const remainingWords = tokens
-      .slice(t + 1)
+      .slice(t)
       .filter(tt => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]*$/u.test(tt));
 
     if (remainingWords.length > 0) {
-      // 🔁 Recall eSpeak for the rest of the words
+      // Re-run eSpeak on the remaining portion only
       const newMarked = remainingWords.join('|');
       const newIpaRaw = await runESpeak(newMarked);
       const newIpaClean = newIpaRaw.replace(/\|/g, ' ').trim();
       const newIpaWords = newIpaClean.split(/\s+/);
 
-      // Update IPA map for the remaining words
+      // Rebuild ipaMap for remaining words
       for (let i = 0; i < remainingWords.length; i++) {
         ipaMap.set(remainingWords[i], newIpaWords[i] || '');
       }
     }
 
-    // Move on to the next token
+    // Skip this token (unmapped)
+    g2pTokens.push(token);
     continue;
   }
 
-  // ✅ If mapping succeeded, use it
   g2pTokens.push(mapped);
 }
 
@@ -548,21 +541,7 @@ function applyG2PMapping(text, ipa) {
     "vv": "vː", 
   };
 
-  function startsWithIpa(ipa, pattern) {
-    const variations = [`${pattern}`, `ˈ${pattern}`, `ˌ${pattern}`, `\u200D${pattern}`, `ˈ\u200D${pattern}`, `\u200Dˈ${pattern}`];
-    for (const variant of variations) {
-      if (ipa.startsWith(variant)) return { match: variant, len: variant.length };
-    }
-    return null;
-  }
-
-  // Check if 'tʃː' or 'dʒː' is followed by any of the specified vowels
-  function isFollowedByVowel(ipa, index) {
-    const following = ipa.slice(index + 3); // Skip 'ː' and check the following character
-    return following.startsWith('i') || following.startsWith('ˈi') || following.startsWith('j') || following.startsWith('ˈj') ||
-           following.startsWith('e') || following.startsWith('ˈe') || following.startsWith('ɛ') || following.startsWith('ˈɛ');
-  }
-
+ 
   // Process the word-by-word logic
   while (i < text.length && ipaIndex < ipa.length) {
     const letter = text[i];
