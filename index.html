@@ -12,14 +12,17 @@
       font-size: 16px;
     }
 
- /* Center the header content */
+/* Center everything inside the header */
 .site-header {
-  display: flex;              /* Use flexbox for alignment */
-  justify-content: center;    /* Center horizontally */
-  align-items: center;        /* Center vertically */
-  padding: 20px 0;            /* Spacing above/below logo */
-  background-color: #f8f8f8;  /* Optional background */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px 0;
+  background-color: #f8f8f8;
+  flex-direction: column; /* Stack logo and headings vertically */
+  text-align: center;     /* Center text inside the container */
 }
+
 
 /* Make the logo responsive */
 .site-logo {
@@ -167,6 +170,7 @@
 
 </body>
 </html>
+
 
 
 
