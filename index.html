@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <img src="/italiano/img/logo.svg" alt="Transcriptio Linguae Logo" class="site-logo" />
   <title>Transcriptio Linguae</title>
   <link rel="icon" type="image/x-icon" href="/italiano/favicon.ico">
 
@@ -10,6 +11,34 @@
     html {
       font-size: 16px;
     }
+
+    /* Center the header content */
+.site-header {
+  display: flex;              /* Use flexbox for alignment */
+  justify-content: center;    /* Center horizontally */
+  align-items: center;        /* Center vertically */
+  padding: 20px 0;            /* Optional spacing above/below logo */
+  background-color: #f8f8f8;  /* Optional background */
+}
+
+/* Make the logo responsive */
+.site-logo {
+  max-width: 100%;   /* Logo won't exceed container width */
+  height: auto;      /* Maintain aspect ratio */
+  width: 200px;      /* Default width */
+}
+
+/* Adjust logo size for smaller screens */
+@media (max-width: 768px) {
+  .site-logo {
+    width: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .site-logo {
+    width: 100px;
+  }
 
     body {
       font-family: Arial, sans-serif;
@@ -120,7 +149,6 @@
   </style>
 </head>
 <body>
-  <img src="/italiano/img/logo.svg" alt="Site Logo" style="height:25px; width:auto;" />
   <h1>Transcriptio Linguae</h1>
   <h3>Italiano → AFI Trascrizione</h3>
 
@@ -136,6 +164,7 @@
 
 </body>
 </html>
+
 
 
 
