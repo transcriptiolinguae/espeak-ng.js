@@ -12,26 +12,28 @@
       font-size: 16px;
     }
 
-/* Center everything inside the header */
+/* Reset max-width for header so it can center properly */
 .site-header {
   display: flex;
+  flex-direction: column;   /* Stack logo and headings vertically */
   justify-content: center;
-  align-items: center;
+  align-items: center;      /* Center horizontally */
   padding: 20px 0;
+  text-align: center;
+  width: 100%;              /* Full width of page */
+  box-sizing: border-box;   /* Ensure padding doesn’t break width */
   background-color: #f8f8f8;
-  flex-direction: column; /* Stack logo and headings vertically */
-  text-align: center;     /* Center text inside the container */
 }
-
 
 /* Make the logo responsive */
 .site-logo {
-  max-width: 100%;   /* Logo won't exceed container width */
-  height: auto;      /* Maintain aspect ratio */
+  max-width: 100%;   /* Never exceed container width */
+  height: auto;      /* Keep aspect ratio */
   width: 200px;      /* Default width */
+  margin-bottom: 10px;
 }
 
-/* Adjust logo size for smaller screens */
+/* Optional: Adjust logo size on smaller screens */
 @media (max-width: 768px) {
   .site-logo {
     width: 150px;
@@ -43,6 +45,13 @@
     width: 100px;
   }
 }
+
+/* Center headings under logo */
+.site-header h1,
+.site-header h3 {
+  margin: 0.2rem 0;
+}
+
 
 
     
@@ -170,6 +179,7 @@
 
 </body>
 </html>
+
 
 
 
