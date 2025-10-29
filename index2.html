@@ -532,10 +532,8 @@ function applyG2PMapping(text, ipa) {
     
   // Process the word-by-word logic
   while (i < text.length && ipaIndex < ipa.length) {
-    const startI = i;
-    const startIpaIndex = ipaIndex;
-    const wordResult = [];
-    let wordComplete = false;
+    const letter = text[i];
+    let ipaChar = ipa[ipaIndex];
 
 
 
