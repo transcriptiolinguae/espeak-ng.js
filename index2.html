@@ -452,16 +452,48 @@ document.getElementById('g2p').addEventListener('click', async () => {
         ipaMap.set(uniqueWords[i], ipaWords[i] || '');
       }
 
-      // Apply G2P mapping for each token
-      const g2pTokens = tokens.map(token => {
-        const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]*$/u.test(token);
-        if (isWord) {
-          const ipa = ipaMap.get(token) || '';
-          return applyG2PMapping(token, ipa);
-        } else {
-          return token;
-        }
-      });
+  const g2pTokens = [];
+for (let t = 0; t < tokens.length; t++) {
+  const token = tokens[t];
+  const isWord = /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]*$/u.test(token);
+
+  if (!isWord) {
+    g2pTokens.push(token);
+    continue;
+  }
+
+  const ipa = ipaMap.get(token) || '';
+  const mapped = applyG2PMapping(token, ipa);
+
+  // If mapping failed or incomplete — stop here, recall eSpeak for next word
+  if (mapped === null) {
+    console.warn(`G2P mapping failed for "${token}", recalculating from next word...`);
+
+    // Get remaining tokens after this one
+    const remainingWords = tokens
+      .slice(t)
+      .filter(tt => /^[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]+'?[A-Za-zÀ-ÖØ-öø-ÿĀ-žḀ-ỿ]*$/u.test(tt));
+
+    if (remainingWords.length > 0) {
+      // Re-run eSpeak on the remaining portion only
+      const newMarked = remainingWords.join('|');
+      const newIpaRaw = await runESpeak(newMarked);
+      const newIpaClean = newIpaRaw.replace(/\|/g, ' ').trim();
+      const newIpaWords = newIpaClean.split(/\s+/);
+
+      // Rebuild ipaMap for remaining words
+      for (let i = 0; i < remainingWords.length; i++) {
+        ipaMap.set(remainingWords[i], newIpaWords[i] || '');
+      }
+    }
+
+    // Skip this token (unmapped)
+    g2pTokens.push(token);
+    continue;
+  }
+
+  g2pTokens.push(mapped);
+}
 
       // Reconstruct chunk preserving spaces
       let reconstructed = '';
@@ -523,13 +555,7 @@ function applyG2PMapping(text, ipa) {
     return following.startsWith('i') || following.startsWith('ˈi') || following.startsWith('j') || following.startsWith('ˈj') ||
            following.startsWith('e') || following.startsWith('ˈe') || following.startsWith('ɛ') || following.startsWith('ˈɛ');
   }
-  while (i < text.length && ipaIndex < ipa.length) {
-    const startI = i;
-    const startIpaIndex = ipaIndex;
-    const wordResult = [];
-    let wordComplete = false;
 
-    
   // Process the word-by-word logic
   while (i < text.length && ipaIndex < ipa.length) {
     const letter = text[i];
@@ -1402,30 +1428,22 @@ else if (!/i|ˈi/.test(nextIpa)) { // If "tʃ" is not followed by those sounds
     i++;
   }
 
-
-    // After attempting the mapping for this word:
-    if (ipaIndex === ipa.length) {
-      // We consumed exactly the IPA string - good
-      result.push(wordResult.join(''));
-      wordComplete = true;
-      break; // finished processing word (and ipa)
-    } else {
-      // Unmapped leftover IPA symbols → skip this word entirely
-      // Reset pointers to skip the rest of this word (and leftover IPA)
-      // Move i to end of text (or next word boundary) if you had multiple words
-      // But since we treat text as one word, we simply discard and return empty
-      return ""; 
-    }
-  }
-
-  // If any leftover letters in text (not consumed) we can append them with empty IPA
-  // (optional: or skip them)
+  // If anything left in text, append with empty IPA
   while (i < text.length) {
     result.push(`${text[i]}()`);
     i++;
   }
 
+  
+
+  // If mapping finished but IPA wasn't fully consumed, or vice versa → stop
+  if (ipaIndex < ipa.length - 1 || i < text.length - 1) {
+    console.warn(`Partial mapping detected for "${text}" (IPA: "${ipa}")`);
+    return null; // indicate failure to map
+  }
+
   return result.join('');
+
 }
 
 
